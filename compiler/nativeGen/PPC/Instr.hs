@@ -49,8 +49,10 @@ import Data.Maybe (fromMaybe)
 --------------------------------------------------------------------------------
 -- Size of a PPC memory address, in bytes.
 --
-archWordSize :: Size
-archWordSize = II32
+archWordSize :: Bool -> Size
+archWordSize is32Bit
+ | is32Bit   = II32
+ | otherwise = II64
 
 
 -- | Instruction instance for powerpc
