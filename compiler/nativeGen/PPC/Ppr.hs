@@ -208,6 +208,7 @@ pprSize x
                 II8        -> sLit "b"
                 II16        -> sLit "h"
                 II32        -> sLit "w"
+                II64        -> sLit "d"
                 FF32        -> sLit "fs"
                 FF64        -> sLit "fd"
                 _        -> panic "PPC.Ppr.pprSize: no match")
@@ -365,6 +366,7 @@ pprInstr (LD sz reg addr) = hcat [
             II8  -> sLit "bz"
             II16 -> sLit "hz"
             II32 -> sLit "wz"
+            II64 -> sLit "dz"
             FF32 -> sLit "fs"
             FF64 -> sLit "fd"
             _         -> panic "PPC.Ppr.pprInstr: no match"
@@ -383,6 +385,7 @@ pprInstr (LA sz reg addr) = hcat [
             II8  -> sLit "ba"
             II16 -> sLit "ha"
             II32 -> sLit "wa"
+            II64 -> sLit "da"
             FF32 -> sLit "fs"
             FF64 -> sLit "fd"
             _         -> panic "PPC.Ppr.pprInstr: no match"
