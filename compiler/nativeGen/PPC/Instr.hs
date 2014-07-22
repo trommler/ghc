@@ -76,16 +76,18 @@ instance Instruction Instr where
 ppc_mkStackAllocInstr :: Platform -> Int -> Instr
 ppc_mkStackAllocInstr platform amount
   = case platformArch platform of
-      ArchPPC -> -- SUB II32 (OpImm (ImmInt amount)) (OpReg esp)
-                 ADD sp sp (RIImm (ImmInt (-amount)))
-      arch -> panic $ "ppc_mkStackAllocInstr " ++ show arch
+      ArchPPC    -> -- SUB II32 (OpImm (ImmInt amount)) (OpReg esp)
+                    ADD sp sp (RIImm (ImmInt (-amount)))
+      ArchPPC_64 -> ADD sp sp (RIImm (ImmInt (-amount)))
+      arch       -> panic $ "ppc_mkStackAllocInstr " ++ show arch
 
 ppc_mkStackDeallocInstr :: Platform -> Int -> Instr
 ppc_mkStackDeallocInstr platform amount
   = case platformArch platform of
-      ArchPPC -> -- ADD II32 (OpImm (ImmInt amount)) (OpReg esp)
-                 ADD sp sp (RIImm (ImmInt amount))
-      arch -> panic $ "ppc_mkStackDeallocInstr " ++ show arch
+      ArchPPC    -> -- ADD II32 (OpImm (ImmInt amount)) (OpReg esp)
+                    ADD sp sp (RIImm (ImmInt amount))
+      ArchPPC_64 -> ADD sp sp (RIImm (ImmInt amount))
+      arch       -> panic $ "ppc_mkStackDeallocInstr " ++ show arch
 
 --
 -- See note [extra spill slots] in X86/Instr.hs
