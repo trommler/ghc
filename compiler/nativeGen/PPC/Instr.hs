@@ -463,11 +463,14 @@ ppc_mkSpillInstr
 ppc_mkSpillInstr dflags reg delta slot
   = let platform = targetPlatform dflags
         off      = spillSlotToOffset slot
+        arch     = platformArch platform
     in
     let sz = case targetClassOfReg platform reg of
-                RcInteger -> II32
+                RcInteger -> case arch of
+                                ArchPPC -> II32
+                                _       -> II64
                 RcDouble  -> FF64
-                _      -> panic "PPC.Instr.mkSpillInstr: no match"
+                _         -> panic "PPC.Instr.mkSpillInstr: no match"
     in ST sz reg (AddrRegImm sp (ImmInt (off-delta)))
 
 
@@ -481,9 +484,12 @@ ppc_mkLoadInstr
 ppc_mkLoadInstr dflags reg delta slot
   = let platform = targetPlatform dflags
         off     = spillSlotToOffset slot
+        arch     = platformArch platform
     in
     let sz = case targetClassOfReg platform reg of
-                RcInteger -> II32
+                RcInteger ->  case arch of
+                                 ArchPPC -> II32
+                                 _       -> II64
                 RcDouble  -> FF64
                 _         -> panic "PPC.Instr.mkLoadInstr: no match"
     in LD sz reg (AddrRegImm sp (ImmInt (off-delta)))
@@ -504,8 +510,8 @@ maxSpillSlots dflags
 --     = 0 -- useful for testing allocMoreStack
 
 -- | The number of bytes that the stack pointer should be aligned
--- to. This is 16 both on PPC32 and PPC64 at least for Darwin, but I'm
--- not sure this is correct for other OSes.
+-- to. This is 16 both on PPC32 and PPC64 at least for Darwin, and
+-- Linux (see ELF processor specific supplements).
 stackAlign :: Int
 stackAlign = 16
 
