@@ -294,26 +294,26 @@ pprSectionHeader seg =
 pprDataItem :: CmmLit -> SDoc
 pprDataItem lit
   = sdocWithDynFlags $ \dflags ->
-    vcat (ppr_item (cmmTypeSize $ cmmLitType dflags lit) lit)
+    vcat (ppr_item (cmmTypeSize $ cmmLitType dflags lit) lit dflags)
     where
         imm = litToImm lit
-        archPPC_64 = (platformArch $ targetPlatform dflags) == ArchPPC_64
+        archPPC_64 dflags = (platformArch $ targetPlatform dflags) == ArchPPC_64
 
-        ppr_item II8   _ = [ptext (sLit "\t.byte\t") <> pprImm imm]
+        ppr_item II8   _ _ = [ptext (sLit "\t.byte\t") <> pprImm imm]
 
-        ppr_item II32  _ = [ptext (sLit "\t.long\t") <> pprImm imm]
+        ppr_item II32  _ _ = [ptext (sLit "\t.long\t") <> pprImm imm]
 
-        ppr_item FF32 (CmmFloat r _)
+        ppr_item FF32 (CmmFloat r _) _
            = let bs = floatToBytes (fromRational r)
              in  map (\b -> ptext (sLit "\t.byte\t") <> pprImm (ImmInt b)) bs
 
-        ppr_item FF64 (CmmFloat r _)
+        ppr_item FF64 (CmmFloat r _) _
            = let bs = doubleToBytes (fromRational r)
              in  map (\b -> ptext (sLit "\t.byte\t") <> pprImm (ImmInt b)) bs
 
-        ppr_item II16 _        = [ptext (sLit "\t.short\t") <> pprImm imm]
+        ppr_item II16 _ _      = [ptext (sLit "\t.short\t") <> pprImm imm]
 
-        ppr_item II64 (CmmInt x _)  =
+        ppr_item II64 (CmmInt x _) dflags =
            if archPPC_64 then
                 [ptext (sLit "\t.quad\t") <> pprImm imm]
            else     
