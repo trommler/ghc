@@ -297,6 +297,7 @@ pprDataItem lit
     vcat (ppr_item (cmmTypeSize $ cmmLitType dflags lit) lit)
     where
         imm = litToImm lit
+        archPPC_64 = (platformArch $ targetPlatform dflags) == ArchPPC_64
 
         ppr_item II8   _ = [ptext (sLit "\t.byte\t") <> pprImm imm]
 
@@ -313,6 +314,9 @@ pprDataItem lit
         ppr_item II16 _        = [ptext (sLit "\t.short\t") <> pprImm imm]
 
         ppr_item II64 (CmmInt x _)  =
+           if archPPC_64 then
+                [ptext (sLit "\t.quad\t") <> pprImm imm]
+           else     
                 [ptext (sLit "\t.long\t")
                     <> int (fromIntegral 
                         (fromIntegral (x `shiftR` 32) :: Word32)),
