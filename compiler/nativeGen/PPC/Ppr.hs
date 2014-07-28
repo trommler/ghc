@@ -39,6 +39,7 @@ import Unique                ( pprUnique, Uniquable(..) )
 import Platform
 import FastString
 import Outputable
+import DynFlags
 
 import Data.Word
 import Data.Bits
@@ -314,7 +315,7 @@ pprDataItem lit
         ppr_item II16 _ _      = [ptext (sLit "\t.short\t") <> pprImm imm]
 
         ppr_item II64 (CmmInt x _) dflags =
-           if archPPC_64 then
+           if archPPC_64 dflags then
                 [ptext (sLit "\t.quad\t") <> pprImm imm]
            else     
                 [ptext (sLit "\t.long\t")
@@ -323,7 +324,7 @@ pprDataItem lit
                  ptext (sLit "\t.long\t")
                     <> int (fromIntegral (fromIntegral x :: Word32))]
 
-        ppr_item _ _
+        ppr_item _ _ _
                 = panic "PPC.Ppr.pprDataItem: no match"
 
 
