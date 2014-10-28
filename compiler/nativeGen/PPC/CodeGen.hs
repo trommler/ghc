@@ -469,6 +469,8 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | from == to    -> conversionNop (intSize to) x
 
         -- narrowing is a nop: we treat the high bits as undefined
+      MO_SS_Conv W64 to -> panic "PPC.CodeGen.getRegister MO_SS_Conv W64"
+        -- FIXME: treat 64 bit right
       MO_SS_Conv W32 to -> conversionNop (intSize to) x
       MO_SS_Conv W16 W8 -> conversionNop II8 x
       MO_SS_Conv W8  to -> triv_ucode_int to (EXTS II8)
@@ -477,6 +479,8 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
       MO_UU_Conv from to
         | from == to -> conversionNop (intSize to) x
         -- narrowing is a nop: we treat the high bits as undefined
+      MO_UU_Conv W64 to -> panic "PPC.CodeGen.getRegister MO_UU_Conv W64"
+        -- FIXME: treat 64 bit right
       MO_UU_Conv W32 to -> conversionNop (intSize to) x
       MO_UU_Conv W16 W8 -> conversionNop II8 x
       MO_UU_Conv W8 to  -> trivialCode to False AND x (CmmLit (CmmInt 255 W32))
