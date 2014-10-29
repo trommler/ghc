@@ -485,8 +485,12 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         -- narrowing is a nop: we treat the high bits as undefined
       MO_UU_Conv W64 to -> if arch32 then panic "PPC.CodeGen.getRegister no 64 bit target"
                                      else conversionNop (intSize to) x
-        -- FIXME: treat 64 bit right
-      MO_UU_Conv W32 to -> conversionNop (intSize to) x
+      MO_UU_Conv W32 to -> if arch32 then conversionNop (intSize to) x
+                                     else case to of
+                                           W64 -> trivialCode to False AND x (CmmLit (CmmInt 4294967295 W64))
+                                           W16 -> conversionNop II16 x
+                                           W8  -> conversionNop II8 x
+                                           _   ->panic "PPC.CodeGen.getRegister: no match"
       MO_UU_Conv W16 W8 -> conversionNop II8 x
       MO_UU_Conv W8 to  -> trivialCode to False AND x (CmmLit (CmmInt 255 W32))
       MO_UU_Conv W16 to -> trivialCode to False AND x (CmmLit (CmmInt 65535 W32))
