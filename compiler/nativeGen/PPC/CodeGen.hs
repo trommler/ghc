@@ -469,9 +469,14 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | from == to    -> conversionNop (intSize to) x
 
         -- narrowing is a nop: we treat the high bits as undefined
-      MO_SS_Conv W64 to -> conversionNop (intSize to) x
-        -- FIXME: treat 64 bit right
-      MO_SS_Conv W32 to -> conversionNop (intSize to) x
+      MO_SS_Conv W64 to -> if arch32 then panic "PPC.CodeGen.getRegister no 64 bit integer register"
+                                     else conversionNop (intSize to) x
+      MO_SS_Conv W32 to -> if arch32 then conversionNop (intSize to) x
+                                     else case to of
+                                           W64 -> triv_ucode_int to (EXTS II32)
+                                           W16 -> conversionNop II16 x
+                                           W8  -> conversionNop II8 x
+                                           _   ->panic "PPC.CodeGen.getRegister: no match" 
       MO_SS_Conv W16 W8 -> conversionNop II8 x
       MO_SS_Conv W8  to -> triv_ucode_int to (EXTS II8)
       MO_SS_Conv W16 to -> triv_ucode_int to (EXTS II16)
@@ -479,7 +484,8 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
       MO_UU_Conv from to
         | from == to -> conversionNop (intSize to) x
         -- narrowing is a nop: we treat the high bits as undefined
-      MO_UU_Conv W64 to -> conversionNop (intSize to) x
+      MO_UU_Conv W64 to -> if arch32 then panic "PPC.CodeGen.getRegister no 64 bit target"
+                                     else conversionNop (intSize to) x
         -- FIXME: treat 64 bit right
       MO_UU_Conv W32 to -> conversionNop (intSize to) x
       MO_UU_Conv W16 W8 -> conversionNop II8 x
@@ -494,6 +500,7 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         conversionNop new_size expr
             = do e_code <- getRegister' dflags expr
                  return (swizzleRegisterRep e_code new_size)
+        arch32 = target32Bit $ targetPlatform dflags
 
 getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
   = case mop of
