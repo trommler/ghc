@@ -613,7 +613,7 @@ getRegister' dflags (CmmLit lit)
           ]
     in return (Any (cmmTypeSize rep) code)
 
-getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
+getRegister' _ other = pprPanic "getRegister(ppc)"  (ppr other) --(pprExpr other)
 
     -- extend?Rep: wrap integer expression of type rep
     -- in a conversion to II32
