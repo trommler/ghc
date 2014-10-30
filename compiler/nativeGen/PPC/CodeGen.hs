@@ -469,8 +469,9 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | from == to    -> conversionNop (intSize to) x
 
         -- narrowing is a nop: we treat the high bits as undefined
-      MO_SS_Conv W64 to -> if arch32 then panic "PPC.CodeGen.getRegister no 64 bit integer register"
-                                     else conversionNop (intSize to) x
+      MO_SS_Conv W64 to 
+        | arch32    -> panic "PPC.CodeGen.getRegister no 64 bit int register"
+        | otherwise -> conversionNop (intSize to) x
       MO_SS_Conv W32 to 
         | arch32    -> conversionNop (intSize to) x
         | otherwise -> case to of
