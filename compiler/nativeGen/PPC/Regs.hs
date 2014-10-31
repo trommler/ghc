@@ -64,8 +64,8 @@ import FastBool
 import FastTypes
 import Platform
 
-import Data.Word        ( Word8, Word16, Word32 )
-import Data.Int         ( Int8, Int16, Int32 )
+import Data.Word        ( Word8, Word16, Word32, Word64 )
+import Data.Int         ( Int8, Int16, Int32, Int64 )
 
 
 -- squeese functions for the graph allocator -----------------------------------
