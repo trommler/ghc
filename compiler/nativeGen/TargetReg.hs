@@ -93,9 +93,9 @@ targetMkVirtualReg platform
       ArchX86_64    -> X86.mkVirtualReg
       ArchPPC       -> PPC.mkVirtualReg
       ArchSPARC     -> SPARC.mkVirtualReg
-      ArchPPC_64    -> panic "targetMkVirtualReg ArchPPC_64"
+      ArchPPC_64    -> PPC.mkVirtualReg
       ArchARM _ _ _ -> panic "targetMkVirtualReg ArchARM"
-      ArchARM64     -> PPC.mkVirtualReg
+      ArchARM64     -> panic "targetMkVirtualReg ArchARM64"
       ArchAlpha     -> panic "targetMkVirtualReg ArchAlpha"
       ArchMipseb    -> panic "targetMkVirtualReg ArchMipseb"
       ArchMipsel    -> panic "targetMkVirtualReg ArchMipsel"
