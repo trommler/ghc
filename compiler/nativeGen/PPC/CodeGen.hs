@@ -614,9 +614,6 @@ getRegister' dflags (CmmLit lit)
           ]
     in return (Any (cmmTypeSize rep) code)
 
-getRegister' _ (CmmStackSlot _ _) = panic "getRegister StackSlot"
-getRegister' _ (CmmLoad _ _) = panic "getRegister Load"
-
 getRegister' _ other = pprPanic "getRegister(ppc)"  (pprExpr other)
 
     -- extend?Rep: wrap integer expression of type rep
