@@ -269,9 +269,11 @@ fits16Bits x = x >= -32768 && x < 32768
 makeImmediate :: Integral a => Width -> Bool -> a -> Maybe Imm
 makeImmediate rep signed x = fmap ImmInt (toI16 rep signed)
     where
+        narrow W64 False = fromIntegral (fromIntegral x :: Word64)
         narrow W32 False = fromIntegral (fromIntegral x :: Word32)
         narrow W16 False = fromIntegral (fromIntegral x :: Word16)
         narrow W8  False = fromIntegral (fromIntegral x :: Word8)
+        narrow W64 True  = fromIntegral (fromIntegral x :: Int64)
         narrow W32 True  = fromIntegral (fromIntegral x :: Int32)
         narrow W16 True  = fromIntegral (fromIntegral x :: Int16)
         narrow W8  True  = fromIntegral (fromIntegral x :: Int8)
@@ -283,6 +285,12 @@ makeImmediate rep signed x = fmap ImmInt (toI16 rep signed)
             | narrowed >= -32768 && narrowed < 32768 = Just narrowed
             | otherwise = Nothing
         toI16 W32 False
+            | narrowed >= 0 && narrowed < 65536 = Just narrowed
+            | otherwise = Nothing
+        toI16 W64 True
+            | narrowed >= -32768 && narrowed < 32768 = Just narrowed
+            | otherwise = Nothing
+        toI16 W64 False
             | narrowed >= 0 && narrowed < 65536 = Just narrowed
             | otherwise = Nothing
         toI16 _ _  = Just narrowed
