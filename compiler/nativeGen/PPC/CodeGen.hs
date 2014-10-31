@@ -428,7 +428,7 @@ getRegister' dflags (CmmMachOp (MO_SS_Conv W64 W32) [x])
   return $ Fixed II32 rlo code
 
 getRegister' dflags (CmmLoad mem pk)
-  | not (isWord64 pk)
+  | not (isWord64 pk) || not (target32Bit (targetPlatform dflags))
   = do
         let platform = targetPlatform dflags
         Amode addr addr_code <- getAmode mem
