@@ -305,6 +305,10 @@ pprDataItem lit
 
         ppr_item II32  _ _ = [ptext (sLit "\t.long\t") <> pprImm imm]
 
+        ppr_item II64 _ dflags
+           | archPPC_64 dflags = [ptext (sLit "\t.quad\t") <> pprImm imm]
+
+
         ppr_item FF32 (CmmFloat r _) _
            = let bs = floatToBytes (fromRational r)
              in  map (\b -> ptext (sLit "\t.byte\t") <> pprImm (ImmInt b)) bs
@@ -315,10 +319,8 @@ pprDataItem lit
 
         ppr_item II16 _ _      = [ptext (sLit "\t.short\t") <> pprImm imm]
 
-        ppr_item II64 (CmmInt x _) dflags =
-           if archPPC_64 dflags then
-                [ptext (sLit "\t.quad\t") <> pprImm imm]
-           else     
+        ppr_item II64 (CmmInt x _) dflags
+           | not(archPPC_64 dflags) =
                 [ptext (sLit "\t.long\t")
                     <> int (fromIntegral 
                         (fromIntegral (x `shiftR` 32) :: Word32)),
