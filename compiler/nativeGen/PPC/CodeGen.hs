@@ -1027,7 +1027,8 @@ genCCall' dflags gcp target dest_regs args0
 
         passArguments [] _ _ stackOffset accumCode accumUsed = return (stackOffset, accumCode, accumUsed)
         passArguments ((arg,arg_ty):args) gprs fprs stackOffset
-               accumCode accumUsed | isWord64 arg_ty =
+               accumCode accumUsed | isWord64 arg_ty 
+                                     && target32Bit (targetPlatform dflags) =
             do
                 ChildCode64 code vr_lo <- iselExpr64 arg
                 let vr_hi = getHiVRegFromLo vr_lo
