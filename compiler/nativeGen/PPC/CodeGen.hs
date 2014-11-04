@@ -923,7 +923,11 @@ genCCall'
     * The SysV spec claims that FF32 is represented as FF64 on the stack. GCC on
       PowerPC Linux does not agree, so neither do we.
 
-    According to both conventions, The parameter area should be part of the
+    PowerPC 64 Linux uses the System V Release 4 Calling Convention for
+    64-bit PowerPC. It is specified in
+    "64-bit PowerPC ELF Application Binary Interface Supplement 1.9".
+    
+    According to both conventions, the parameter area should be part of the
     caller's stack frame, allocated in the caller's prologue code (large enough
     to hold the parameter lists for all called routines). The NCG already
     uses the stack for register spilling, leaving 64 bytes free at the top.
@@ -1027,7 +1031,7 @@ genCCall' dflags gcp target dest_regs args0
 
         passArguments [] _ _ stackOffset accumCode accumUsed = return (stackOffset, accumCode, accumUsed)
         passArguments ((arg,arg_ty):args) gprs fprs stackOffset
-               accumCode accumUsed | isWord64 arg_ty 
+               accumCode accumUsed | isWord64 arg_ty
                                      && target32Bit (targetPlatform dflags) =
             do
                 ChildCode64 code vr_lo <- iselExpr64 arg
