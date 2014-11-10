@@ -881,11 +881,16 @@ genCCall target dest_regs argsAndHints
  = do dflags <- getDynFlags
       let platform = targetPlatform dflags
       case platformOS platform of
-          OSLinux    -> genCCall' dflags GCPLinux  target dest_regs argsAndHints
+          OSLinux    -> case platformArch platform of 
+                        ArchPPC    -> genCCall' dflags GCPLinux 
+                                                target dest_regs argsAndHints
+                        ArchPPC_64 -> genCCall' dflags GCPLinux64ELF1
+                                                target dest_regs argsAndHints
+                        _          -> panic "PPC.CodeGen.genCCall: Unknown Linux"
           OSDarwin   -> genCCall' dflags GCPDarwin target dest_regs argsAndHints
           _ -> panic "PPC.CodeGen.genCCall: not defined for this os"
 
-data GenCCallPlatform = GCPLinux | GCPDarwin
+data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF1
 
 genCCall'
     :: DynFlags
@@ -992,14 +997,18 @@ genCCall' dflags gcp target dest_regs args0
                 return ()
 
         initialStackOffset = case gcp of
-                             GCPDarwin -> 24
-                             GCPLinux  -> 8
+                             GCPDarwin      -> 24
+                             GCPLinux       -> 8
+                             GCPLinux64ELF1 -> 48
             -- size of linkage area + size of arguments, in bytes
         stackDelta finalStack = case gcp of
                                 GCPDarwin ->
                                     roundTo 16 $ (24 +) $ max 32 $ sum $
                                     map (widthInBytes . typeWidth) argReps
                                 GCPLinux -> roundTo 16 finalStack
+                                GCPLinux64ELF1 -> 
+                                    roundTo 16 $ (48 +) $ max 64 $ sum $
+                                    map (widthInBytes . typeWidth) argReps
 
         -- need to remove alignment information
         args | PrimTarget mop <- target,
@@ -1071,6 +1080,7 @@ genCCall' dflags gcp target dest_regs args0
                                _ -> -- only one or no regs left
                                    passArguments args [] fprs (stackOffset'+8)
                                                  stackCode accumUsed
+                    GCPLinux64ELF1 -> panic "passArguments: 32 bit code"
 
         passArguments ((arg,rep):args) gprs fprs stackOffset accumCode accumUsed
             | reg : _ <- regs = do
@@ -1084,6 +1094,8 @@ genCCall' dflags gcp target dest_regs args0
                                      GCPDarwin -> stackOffset + stackBytes
                                      -- ... the SysV ABI doesn't.
                                      GCPLinux -> stackOffset
+                                     -- ... but ELFv1 does.
+                                     GCPLinux64ELF1 -> stackOffset + stackBytes
                 passArguments args
                               (drop nGprs gprs)
                               (drop nFprs fprs)
@@ -1111,6 +1123,10 @@ genCCall' dflags gcp target dest_regs args0
                                    roundTo 8 stackOffset
                                 | otherwise ->
                                    stackOffset
+                               GCPLinux64ELF1 ->
+                                   -- everything on the stack is 8-byte aligned
+                                   -- on a 64 bit system (vector status excepted)
+                                   stackOffset
                 stackSlot = AddrRegImm sp (ImmInt stackOffset')
                 (nGprs, nFprs, stackBytes, regs)
                     = case gcp of
@@ -1135,6 +1151,18 @@ genCCall' dflags gcp target dest_regs args0
                           FF32 -> (0, 1, 4, fprs)
                           FF64 -> (0, 1, 8, fprs)
                           II64 -> panic "genCCall' passArguments II64"
+                          FF80 -> panic "genCCall' passArguments FF80"
+                      GCPLinux64ELF1 ->
+                          case cmmTypeSize rep of
+                          II8  -> (1, 0, 8, gprs)
+                          II16 -> (1, 0, 8, gprs)
+                          II32 -> (1, 0, 8, gprs)
+                          II64 -> (1, 0, 8, gprs)
+                          -- The ELFv1 ABI requires that we skip a
+                          -- corresponding number of GPRs when we use
+                          -- the FPRs.
+                          FF32 -> (1, 1, 8, fprs)
+                          FF64 -> (2, 1, 8, fprs)
                           FF80 -> panic "genCCall' passArguments FF80"
 
         moveResult reduceToFF32 =
