@@ -1161,7 +1161,7 @@ genCCall' dflags gcp target dest_regs args0
                           -- corresponding number of GPRs when we use
                           -- the FPRs.
                           FF32 -> (1, 1, 8, fprs)
-                          FF64 -> (2, 1, 8, fprs)
+                          FF64 -> (1, 1, 8, fprs)
                           FF80 -> panic "genCCall' passArguments FF80"
 
         moveResult reduceToFF32 =
