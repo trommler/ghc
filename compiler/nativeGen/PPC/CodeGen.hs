@@ -1024,9 +1024,11 @@ genCCall' dflags gcp target dest_regs args0
         roundTo a x | x `mod` a == 0 = x
                     | otherwise = x + a - (x `mod` a)
 
+        spSize = if target32Bit platform then II32 else II64
+        
         move_sp_down finalStack
                | delta > 64 =
-                        toOL [STU II32 sp (AddrRegImm sp (ImmInt (-delta))),
+                        toOL [STU spSize sp (AddrRegImm sp (ImmInt (-delta))),
                               DELTA (-delta)]
                | otherwise = nilOL
                where delta = stackDelta finalStack
