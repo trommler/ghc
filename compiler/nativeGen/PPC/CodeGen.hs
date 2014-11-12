@@ -1264,7 +1264,6 @@ genSwitch dflags expr targets
         (reg,e_code) <- getSomeReg (cmmOffset dflags expr offset)
         tmp <- getNewRegNat II32
         lbl <- getNewLabelNat
-        dflags <- getDynFlags
         dynRef <- cmmMakeDynamicReference dflags DataReference lbl
         (tableReg,t_code) <- getSomeReg $ dynRef
         let code = e_code `appOL` t_code `appOL` toOL [
