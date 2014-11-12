@@ -224,6 +224,12 @@ data Instr
                                     -- mullwo. dst, src1, src2
                                     -- mfxer dst
                                     -- rlwinm dst, dst, 2, 31,31
+    | MULLD_MayOflo Reg Reg Reg
+                                    -- dst = 1 if src1 * src2 overflows
+                                    -- pseudo-instruction; pretty-printed as:
+                                    -- mulldo. dst, src1, src2
+                                    -- mfxer dst
+                                    -- rlwinm dst, dst, 2, 31,31
 
     | AND     Reg Reg RI            -- dst, src1, src2
     | OR      Reg Reg RI            -- dst, src1, src2
@@ -303,6 +309,8 @@ ppc_regUsageOfInstr platform instr
 
     MULLW_MayOflo reg1 reg2 reg3
                             -> usage ([reg2,reg3], [reg1])
+    MULLD_MayOflo reg1 reg2 reg3
+                            -> usage ([reg2,reg3], [reg1])
     AND     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     OR      reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     XOR     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
@@ -380,6 +388,8 @@ ppc_patchRegsOfInstr instr env
     DIVWU   reg1 reg2 reg3  -> DIVWU (env reg1) (env reg2) (env reg3)
     MULLW_MayOflo reg1 reg2 reg3
                             -> MULLW_MayOflo (env reg1) (env reg2) (env reg3)
+    MULLD_MayOflo reg1 reg2 reg3
+                            -> MULLD_MayOflo (env reg1) (env reg2) (env reg3)
     AND     reg1 reg2 ri    -> AND (env reg1) (env reg2) (fixRI ri)
     OR      reg1 reg2 ri    -> OR  (env reg1) (env reg2) (fixRI ri)
     XOR     reg1 reg2 ri    -> XOR (env reg1) (env reg2) (fixRI ri)
