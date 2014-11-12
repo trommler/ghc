@@ -1458,9 +1458,14 @@ remainderCode rep div x y = do
             ]
     return (Any (intSize rep) code)
 
-
 coerceInt2FP :: Width -> Width -> CmmExpr -> NatM Register
 coerceInt2FP fromRep toRep x = do
+    dflags <- getDynFlags
+    let arch =  platformArch $ targetPlatform dflags
+    coerceInt2FP' arch fromRep toRep x
+
+coerceInt2FP' :: Arch -> Width -> Width -> CmmExpr -> NatM Register
+coerceInt2FP' ArchPPC fromRep toRep x = do
     (src, code) <- getSomeReg x
     lbl <- getNewLabelNat
     itmp <- getNewRegNat II32
@@ -1496,6 +1501,34 @@ coerceInt2FP fromRep toRep x = do
                         _       -> panic "PPC.CodeGen.coerceInt2FP: no match"
 
     return (Any (floatSize toRep) code')
+
+coerceInt2FP' ArchPPC_64 fromRep toRep x = do
+    (src, code) <- getSomeReg x
+    dflags <- getDynFlags
+    let
+        code' dst = code `appOL` maybe_exts `appOL` toOL [
+                ST II64 src (spRel dflags 2),
+                LD FF64 dst (spRel dflags 2),
+                FCFID dst dst
+            ] `appOL` maybe_frsp dst
+
+        maybe_exts = case fromRep of
+                        W8 ->  unitOL $ EXTS II8 src src
+                        W16 -> unitOL $ EXTS II16 src src
+                        W32 -> unitOL $ EXTS II32 src src
+                        W64 -> nilOL
+                        _       -> panic "PPC.CodeGen.coerceInt2FP: no match"
+
+        maybe_frsp dst
+                = case toRep of
+                        W32 -> unitOL $ FRSP dst dst
+                        W64 -> nilOL
+                        _       -> panic "PPC.CodeGen.coerceInt2FP: no match"
+
+    return (Any (floatSize toRep) code')
+    
+coerceInt2FP' _ _ _ _ = panic $ "PPC.CodeGen.coerceInt2FP: unknown arch"
+
 
 coerceFP2Int :: Width -> Width -> CmmExpr -> NatM Register
 coerceFP2Int _ toRep x = do

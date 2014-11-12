@@ -250,6 +250,7 @@ data Instr
     | FCMP    Reg Reg
 
     | FCTIWZ  Reg Reg           -- convert to integer word
+    | FCFID   Reg Reg           -- convert from integer double word
     | FRSP    Reg Reg           -- reduce to single precision
                                 -- (but destination is a FP register)
 
@@ -321,6 +322,7 @@ ppc_regUsageOfInstr platform instr
     FNEG    r1 r2           -> usage ([r2], [r1])
     FCMP    r1 r2           -> usage ([r1,r2], [])
     FCTIWZ  r1 r2           -> usage ([r2], [r1])
+    FCFID   r1 r2           -> usage ([r2], [r1])
     FRSP    r1 r2           -> usage ([r2], [r1])
     MFCR    reg             -> usage ([], [reg])
     MFLR    reg             -> usage ([], [reg])
@@ -397,6 +399,7 @@ ppc_patchRegsOfInstr instr env
     FNEG    r1 r2           -> FNEG (env r1) (env r2)
     FCMP    r1 r2           -> FCMP (env r1) (env r2)
     FCTIWZ  r1 r2           -> FCTIWZ (env r1) (env r2)
+    FCFID   r1 r2           -> FCFID (env r1) (env r2)
     FRSP    r1 r2           -> FRSP (env r1) (env r2)
     MFCR    reg             -> MFCR (env reg)
     MFLR    reg             -> MFLR (env reg)
