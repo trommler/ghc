@@ -563,6 +563,7 @@ getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_Mul rep -> trivialCode rep True MULLW x y
 
       MO_S_MulMayOflo W32 -> trivialCodeNoImm' II32 MULLW_MayOflo x y
+      MO_S_MulMayOflo W64 -> trivialCodeNoImm' II64 MULLD_MayOflo x y
 
       MO_S_MulMayOflo _ -> panic "S_MulMayOflo (rep /= II32): not implemented"
       MO_U_MulMayOflo _ -> panic "U_MulMayOflo: not implemented"

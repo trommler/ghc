@@ -576,6 +576,15 @@ pprInstr (MULLW_MayOflo reg1 reg2 reg3) = vcat [
                                           pprReg reg1, ptext (sLit ", "),
                                           ptext (sLit "2, 31, 31") ]
     ]
+pprInstr (MULLD_MayOflo reg1 reg2 reg3) = vcat [
+         hcat [ ptext (sLit "\tmulldo\t"), pprReg reg1, ptext (sLit ", "),
+                                          pprReg reg2, ptext (sLit ", "),
+                                          pprReg reg3 ],
+         hcat [ ptext (sLit "\tmfxer\t"),  pprReg reg1 ],
+         hcat [ ptext (sLit "\trlwinm\t"), pprReg reg1, ptext (sLit ", "),
+                                          pprReg reg1, ptext (sLit ", "),
+                                          ptext (sLit "2, 31, 31") ]
+    ]
 
             -- for some reason, "andi" doesn't exist.
         -- we'll use "andi." instead.
