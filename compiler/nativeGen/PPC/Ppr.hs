@@ -660,6 +660,7 @@ pprInstr (FCMP reg1 reg2) = hcat [
     ]
 
 pprInstr (FCTIWZ reg1 reg2) = pprUnary (sLit "fctiwz") reg1 reg2
+pprInstr (FCFID reg1 reg2) = pprUnary (sLit "fcfid") reg1 reg2
 pprInstr (FRSP reg1 reg2) = pprUnary (sLit "frsp") reg1 reg2
 
 pprInstr (CRNOR dst src1 src2) = hcat [
