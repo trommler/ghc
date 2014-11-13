@@ -579,9 +579,9 @@ getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_Or rep    -> trivialCode rep False OR x y
       MO_Xor rep   -> trivialCode rep False XOR x y
 
-      MO_Shl rep   -> trivialCode rep False SLW x y
-      MO_S_Shr rep -> trivialCode rep False SRAW (extendSExpr rep x) y
-      MO_U_Shr rep -> trivialCode rep False SRW (extendUExpr rep x) y
+      MO_Shl rep   -> shiftCode rep SL x y
+      MO_S_Shr rep -> shiftCode rep SRA (extendSExpr rep x) y
+      MO_U_Shr rep -> shiftCode rep SR (extendUExpr rep x) y
       _         -> panic "PPC.CodeGen.getRegister: no match"
 
   where
@@ -1262,13 +1262,14 @@ genSwitch dflags expr targets
   | gopt Opt_PIC dflags
   = do
         (reg,e_code) <- getSomeReg (cmmOffset dflags expr offset)
-        tmp <- getNewRegNat II32
+        let sz = archWordSize $ target32Bit $ targetPlatform dflags
+        tmp <- getNewRegNat sz
         lbl <- getNewLabelNat
         dynRef <- cmmMakeDynamicReference dflags DataReference lbl
         (tableReg,t_code) <- getSomeReg $ dynRef
         let code = e_code `appOL` t_code `appOL` toOL [
-                            SLW tmp reg (RIImm (ImmInt 2)),
-                            LD II32 tmp (AddrRegReg tableReg tmp),
+                            SL sz tmp reg (RIImm (ImmInt 2)),
+                            LD sz tmp (AddrRegReg tableReg tmp),
                             ADD tmp tmp (RIReg tableReg),
                             MTCTR tmp,
                             BCTR ids (Just lbl)
@@ -1277,12 +1278,13 @@ genSwitch dflags expr targets
   | otherwise
   = do
         (reg,e_code) <- getSomeReg (cmmOffset dflags expr offset)
-        tmp <- getNewRegNat II32
+        let sz = archWordSize $ target32Bit $ targetPlatform dflags
+        tmp <- getNewRegNat sz
         lbl <- getNewLabelNat
         let code = e_code `appOL` toOL [
-                            SLW tmp reg (RIImm (ImmInt 2)),
+                            SL sz tmp reg (RIImm (ImmInt 2)),
                             ADDIS tmp tmp (HA (ImmCLbl lbl)),
-                            LD II32 tmp (AddrRegImm tmp (LO (ImmCLbl lbl))),
+                            LD sz tmp (AddrRegImm tmp (LO (ImmCLbl lbl))),
                             MTCTR tmp,
                             BCTR ids (Just lbl)
                     ]
@@ -1420,6 +1422,27 @@ trivialCode rep _ instr x y = do
     (src2, code2) <- getSomeReg y
     let code dst = code1 `appOL` code2 `snocOL` instr dst src1 (RIReg src2)
     return (Any (intSize rep) code)
+
+shiftCode
+        :: Width
+        -> (Size-> Reg -> Reg -> RI -> Instr)
+        -> CmmExpr
+        -> CmmExpr
+        -> NatM Register
+shiftCode width instr x (CmmLit (CmmInt y _))
+    | Just imm <- makeImmediate width False y
+    = do
+        (src1, code1) <- getSomeReg x
+        let size = intSize width
+        let code dst = code1 `snocOL` instr size dst src1 (RIImm imm)
+        return (Any size code)
+
+shiftCode width instr x y = do
+    (src1, code1) <- getSomeReg x
+    (src2, code2) <- getSomeReg y
+    let size = intSize width
+    let code dst = code1 `appOL` code2 `snocOL` instr size dst src1 (RIReg src2)
+    return (Any size code)
 
 trivialCodeNoImm' :: Size -> (Reg -> Reg -> Reg -> Instr)
                  -> CmmExpr -> CmmExpr -> NatM Register

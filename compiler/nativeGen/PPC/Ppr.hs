@@ -627,17 +627,33 @@ pprInstr (EXTS sz reg1 reg2) = hcat [
 pprInstr (NEG reg1 reg2) = pprUnary (sLit "neg") reg1 reg2
 pprInstr (NOT reg1 reg2) = pprUnary (sLit "not") reg1 reg2
 
-pprInstr (SLW reg1 reg2 ri) = pprLogic (sLit "slw") reg1 reg2 (limitShiftRI ri)
+pprInstr (SL sz reg1 reg2 ri) = 
+         let op = case sz of
+                       II32 -> "slw"
+                       II64 -> "sld" 
+                       _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
+         in pprLogic (sLit op) reg1 reg2 (limitShiftRI ri)
 
-pprInstr (SRW reg1 reg2 (RIImm (ImmInt i))) | i > 31 || i < 0 =
+pprInstr (SR II32 reg1 reg2 (RIImm (ImmInt i))) | i > 31 || i < 0 =
     -- Handle the case where we are asked to shift a 32 bit register by
     -- less than zero or more than 31 bits. We convert this into a clear
     -- of the destination register.
     -- Fixes ticket http://ghc.haskell.org/trac/ghc/ticket/5900
     pprInstr (XOR reg1 reg2 (RIReg reg2))
-pprInstr (SRW reg1 reg2 ri) = pprLogic (sLit "srw") reg1 reg2 (limitShiftRI ri)
+pprInstr (SR sz reg1 reg2 ri) = 
+         let op = case sz of
+                       II32 -> "srw"
+                       II64 -> "srd"
+                       _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
+         in pprLogic (sLit op) reg1 reg2 (limitShiftRI ri)
 
-pprInstr (SRAW reg1 reg2 ri) = pprLogic (sLit "sraw") reg1 reg2 (limitShiftRI ri)
+pprInstr (SRA sz reg1 reg2 ri) =
+         let op = case sz of
+                       II32 -> "sraw"
+                       II64 -> "srad"
+                       _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
+         in pprLogic (sLit op) reg1 reg2 (limitShiftRI ri)
+
 pprInstr (RLWINM reg1 reg2 sh mb me) = hcat [
         ptext (sLit "\trlwinm\t"),
         pprReg reg1,
@@ -761,3 +777,8 @@ limitShiftRI (RIImm (ImmInt i)) | i > 31 || i < 0 =
   panic $ "PPC.Ppr: Shift by " ++ show i ++ " bits is not allowed."
 limitShiftRI x = x
 
+{-limitShiftRId :: RI -> RI
+limitShiftRId (RIImm (ImmInt i)) | i > 63 || i < 0 =
+  panic $ "PPC.Ppr: Shift by " ++ show i ++ " bits is not allowed."
+limitShiftRId x = x
+-}

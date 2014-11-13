@@ -241,9 +241,9 @@ data Instr
     | NEG     Reg Reg
     | NOT     Reg Reg
 
-    | SLW     Reg Reg RI            -- shift left word
-    | SRW     Reg Reg RI            -- shift right word
-    | SRAW    Reg Reg RI            -- shift right arithmetic word
+    | SL      Size Reg Reg RI            -- shift left
+    | SR      Size Reg Reg RI            -- shift right
+    | SRA     Size Reg Reg RI            -- shift right arithmetic
 
     | RLWINM  Reg Reg Int Int Int   -- Rotate Left Word Immediate then AND with Mask
 
@@ -318,9 +318,9 @@ ppc_regUsageOfInstr platform instr
     EXTS    _  reg1 reg2    -> usage ([reg2], [reg1])
     NEG     reg1 reg2       -> usage ([reg2], [reg1])
     NOT     reg1 reg2       -> usage ([reg2], [reg1])
-    SLW     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
-    SRW     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
-    SRAW    reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
+    SL      _ reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
+    SR      _ reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
+    SRA     _ reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     RLWINM  reg1 reg2 _ _ _ -> usage ([reg2], [reg1])
 
     FADD    _ r1 r2 r3      -> usage ([r2,r3], [r1])
@@ -397,9 +397,9 @@ ppc_patchRegsOfInstr instr env
     EXTS    sz reg1 reg2    -> EXTS sz (env reg1) (env reg2)
     NEG     reg1 reg2       -> NEG (env reg1) (env reg2)
     NOT     reg1 reg2       -> NOT (env reg1) (env reg2)
-    SLW     reg1 reg2 ri    -> SLW (env reg1) (env reg2) (fixRI ri)
-    SRW     reg1 reg2 ri    -> SRW (env reg1) (env reg2) (fixRI ri)
-    SRAW    reg1 reg2 ri    -> SRAW (env reg1) (env reg2) (fixRI ri)
+    SL      sz reg1 reg2 ri -> SL sz (env reg1) (env reg2) (fixRI ri)
+    SR      sz reg1 reg2 ri -> SR sz (env reg1) (env reg2) (fixRI ri)
+    SRA     sz reg1 reg2 ri -> SRA sz (env reg1) (env reg2) (fixRI ri)
     RLWINM  reg1 reg2 sh mb me
                             -> RLWINM (env reg1) (env reg2) sh mb me
     FADD    sz r1 r2 r3     -> FADD sz (env r1) (env r2) (env r3)
