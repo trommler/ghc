@@ -776,7 +776,7 @@ pprFSize _        = panic "PPC.Ppr.pprFSize: no match"
 limitShiftRI :: Size -> RI -> RI
 limitShiftRI II64 (RIImm (ImmInt i)) | i > 63 || i < 0 =
   panic $ "PPC.Ppr: Shift by " ++ show i ++ " bits is not allowed."
-limitShiftRI _ (RIImm (ImmInt i)) | i > 31 || i < 0 =
+limitShiftRI II32 (RIImm (ImmInt i)) | i > 31 || i < 0 =
   panic $ "PPC.Ppr: 32 bit: Shift by " ++ show i ++ " bits is not allowed."
 limitShiftRI _ x = x
 
