@@ -632,7 +632,7 @@ pprInstr (SL sz reg1 reg2 ri) =
                        II32 -> "slw"
                        II64 -> "sld" 
                        _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
-         in pprLogic (sLit op) reg1 reg2 (limitShiftRI ri)
+         in pprLogic (sLit op) reg1 reg2 (limitShiftRI sz ri)
 
 pprInstr (SR II32 reg1 reg2 (RIImm (ImmInt i))) | i > 31 || i < 0 =
     -- Handle the case where we are asked to shift a 32 bit register by
@@ -645,14 +645,14 @@ pprInstr (SR sz reg1 reg2 ri) =
                        II32 -> "srw"
                        II64 -> "srd"
                        _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
-         in pprLogic (sLit op) reg1 reg2 (limitShiftRI ri)
+         in pprLogic (sLit op) reg1 reg2 (limitShiftRI sz ri)
 
 pprInstr (SRA sz reg1 reg2 ri) =
          let op = case sz of
                        II32 -> "sraw"
                        II64 -> "srad"
                        _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
-         in pprLogic (sLit op) reg1 reg2 (limitShiftRI ri)
+         in pprLogic (sLit op) reg1 reg2 (limitShiftRI sz ri)
 
 pprInstr (RLWINM reg1 reg2 sh mb me) = hcat [
         ptext (sLit "\trlwinm\t"),
@@ -771,14 +771,12 @@ pprFSize FF64     = empty
 pprFSize FF32     = char 's'
 pprFSize _        = panic "PPC.Ppr.pprFSize: no match"
 
-    -- limit immediate argument for shift instruction to range 0..31
-limitShiftRI :: RI -> RI
-limitShiftRI (RIImm (ImmInt i)) | i > 31 || i < 0 =
+    -- limit immediate argument for shift instruction to range 0..63
+    -- for 64 bit size and 0..32 otherwise
+limitShiftRI :: Size -> RI -> RI
+limitShiftRI II64 (RIImm (ImmInt i)) | i > 63 || i < 0 =
   panic $ "PPC.Ppr: Shift by " ++ show i ++ " bits is not allowed."
-limitShiftRI x = x
+limitShiftRI _ (RIImm (ImmInt i)) | i > 31 || i < 0 =
+  panic $ "PPC.Ppr: Shift by " ++ show i ++ " bits is not allowed."
+limitShiftRI _ x = x
 
-{-limitShiftRId :: RI -> RI
-limitShiftRId (RIImm (ImmInt i)) | i > 63 || i < 0 =
-  panic $ "PPC.Ppr: Shift by " ++ show i ++ " bits is not allowed."
-limitShiftRId x = x
--}
