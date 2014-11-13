@@ -318,9 +318,9 @@ ppc_regUsageOfInstr platform instr
     EXTS    _  reg1 reg2    -> usage ([reg2], [reg1])
     NEG     reg1 reg2       -> usage ([reg2], [reg1])
     NOT     reg1 reg2       -> usage ([reg2], [reg1])
-    SL      _ reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
-    SR      _ reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
-    SRA     _ reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
+    SL      _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
+    SR      _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
+    SRA     _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
     RLWINM  reg1 reg2 _ _ _ -> usage ([reg2], [reg1])
 
     FADD    _ r1 r2 r3      -> usage ([r2,r3], [r1])
