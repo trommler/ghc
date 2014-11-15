@@ -430,6 +430,11 @@ needImportedSymbols dflags arch os
         , arch  == ArchPPC
         = gopt Opt_PIC dflags || not (gopt Opt_Static dflags)
 
+        -- PowerPC 64 Linux: always
+        | osElfTarget os
+        , arch == ArchPPC_64
+        = True
+
         -- i386 (and others?): -dynamic but not -fPIC
         | osElfTarget os
         , arch  /= ArchPPC_64
