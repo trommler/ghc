@@ -266,7 +266,13 @@ data Instr
     | MFLR    Reg               -- move from link register
     | FETCHPC Reg               -- pseudo-instruction:
                                 -- bcl to next insn, mflr reg
-
+    | FUNDESC CLabel            -- pseudo instrucuction: function descriptor
+                                -- .section "opd", "aw"
+                                -- .align 3
+                                -- label:
+                                -- .quad .label,.TOC.@tocbase,0
+                                -- .previous
+                                -- .type label, @function
     | LWSYNC                    -- memory barrier
 
 
