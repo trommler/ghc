@@ -282,6 +282,7 @@ pprSectionHeader seg =
    | otherwise      -> ptext (sLit ".data\n.align 2")
   ReadOnlyData
    | osDarwin       -> text ".const\n\t.align 2"
+   | ppc64          -> ptext (sLit ".section .rodata\n\t.align 3")
    | otherwise      -> text ".section .rodata\n\t.align 2"
   RelocatableReadOnlyData
    | osDarwin       -> text ".const_data\n\t.align 2"
