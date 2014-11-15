@@ -720,6 +720,19 @@ pprInstr (FETCHPC reg) = vcat [
         hcat [ ptext (sLit "1:\tmflr\t"), pprReg reg ]
     ]
 
+pprInstr (FUNDESC label) = vcat [
+        ptext (sLit ".section \"opd\", \"aw\""),
+        ptext (sLit ".align 3"),
+        hcat [ (ppr label), ptext (sLit ":")],
+        hcat [ ptext (sLit "\t.quad ."), 
+               ppr label, 
+               ptext (sLit ",.TOC.@tocbase,0")],
+        ptext (sLit ".previous"),
+        hcat [ ptext (sLit ".type "), 
+               ppr label, 
+               ptext (sLit ", @function")]
+     ]
+
 pprInstr LWSYNC = ptext (sLit "\tlwsync")
 
 -- pprInstr _ = panic "pprInstr (ppc)"
