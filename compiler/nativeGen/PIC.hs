@@ -635,9 +635,18 @@ pprImportedSymbol _ (Platform { platformOS = OSDarwin }) _
 -- the NCG will keep track of all DynamicLinkerLabels it uses
 -- and output each of them using pprImportedSymbol.
 
-pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 }) _
+pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 })
+                  importedLbl
         | osElfTarget (platformOS platform)
-        = empty
+        = case dynamicLinkerLabelInfo importedLbl of
+            Just (SymbolPtr, lbl)
+              -> vcat [
+                   ptext (sLit ".section \".toc\", \"aw\""),
+                   ptext (sLit ".LC_") <> pprCLabel platform lbl <> char ':',
+                   ptext (sLit "\t.quad") <+> pprCLabel platform lbl ]
+
+            -- PLT code stubs are generated automatically by the dynamic linker.
+            _ -> empty
 
 pprImportedSymbol dflags platform importedLbl
         | osElfTarget (platformOS platform)
