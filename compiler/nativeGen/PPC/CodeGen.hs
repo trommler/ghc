@@ -395,6 +395,10 @@ getRegister e = do dflags <- getDynFlags
 getRegister' :: DynFlags -> CmmExpr -> NatM Register
 
 getRegister' dflags (CmmReg (CmmGlobal PicBaseReg))
+    | ArchPPC_64 == (platformArch $ targetPlatform dflags)
+    = return (Fixed II64 toc nilOL)
+
+getRegister' dflags (CmmReg (CmmGlobal PicBaseReg))
   = do
       reg <- getPicBaseNat $ archWordSize (target32Bit (targetPlatform dflags))
       return (Fixed (archWordSize (target32Bit (targetPlatform dflags))) reg nilOL)

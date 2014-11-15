@@ -159,6 +159,13 @@ cmmMakePicReference dflags lbl
         | OSMinGW32 <- platformOS $ targetPlatform dflags
         = CmmLit $ CmmLabel lbl
 
+        | ArchPPC_64 <- platformArch $ targetPlatform dflags
+        = CmmMachOp (MO_Add W32) -- code model medium
+                [ CmmReg (CmmGlobal PicBaseReg)
+                , CmmLit $ picRelative
+                                (platformArch   $ targetPlatform dflags)
+                                (platformOS     $ targetPlatform dflags)
+                                lbl ]
 
         | (gopt Opt_PIC dflags || not (gopt Opt_Static dflags)) && absoluteLabel lbl
         = CmmMachOp (MO_Add (wordWidth dflags))
