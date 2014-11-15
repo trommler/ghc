@@ -273,10 +273,13 @@ pprAddr (AddrRegImm r1 imm) = hcat [ pprImm imm, char '(', pprReg r1, char ')' ]
 pprSectionHeader :: Section -> SDoc
 pprSectionHeader seg =
  sdocWithPlatform $ \platform ->
- let osDarwin = platformOS platform == OSDarwin in
+ let osDarwin = platformOS platform == OSDarwin
+     ppc64    = platformArch platform == ArchPPC_64 in
  case seg of
   Text              -> text ".text\n\t.align 2"
   Data              -> text ".data\n\t.align 2"
+   | ppc64          -> ptext (sLit ".data\n.align 3")
+   | otherwise      -> ptext (sLit ".data\n.align 2")
   ReadOnlyData
    | osDarwin       -> text ".const\n\t.align 2"
    | otherwise      -> text ".section .rodata\n\t.align 2"
