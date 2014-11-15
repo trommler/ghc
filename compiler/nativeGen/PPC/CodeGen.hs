@@ -82,8 +82,9 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
   let proc = CmmProc info lab live (ListGraph $ concat nat_blocks)
       tops = proc : concat statics
       os   = platformOS $ targetPlatform dflags
+      arch = platformArch $ targetPlatform dflags
   case picBaseMb of
-      Just picBase -> initializePicBase_ppc ArchPPC os picBase tops
+      Just picBase -> initializePicBase_ppc arch os picBase tops
       Nothing -> return tops
 
 cmmTopCodeGen (CmmData sec dat) = do
