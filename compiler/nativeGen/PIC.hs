@@ -472,6 +472,10 @@ pprGotDeclaration dflags ArchX86 OSDarwin
 pprGotDeclaration _ _ OSDarwin
         = empty
 
+-- PPC 64 needs a Table Of Contents (TOC)
+pprGotDeclaration _ ArchPPC_64 OSLinux
+        = ptext (sLit ".section \".toc\",\"aw\"")
+
 -- Emit GOT declaration
 -- Output whatever needs to be output once per .s file.
 pprGotDeclaration dflags arch os
