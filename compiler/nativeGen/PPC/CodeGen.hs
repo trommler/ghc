@@ -79,16 +79,17 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
   let blocks = toBlockListEntryFirst graph
   (nat_blocks,statics) <- mapAndUnzipM basicBlockCodeGen blocks
   dflags <- getDynFlags
-  picBaseMb <- getPicBaseMaybeNat
   let proc = CmmProc info lab live (ListGraph $ concat nat_blocks)
       tops = proc : concat statics
       os   = platformOS $ targetPlatform dflags
       arch = platformArch $ targetPlatform dflags
   case arch of
-    ArchPPC    -> case picBaseMb of
-      Just picBase -> initializePicBase_ppc arch os picBase tops
-      Nothing -> return tops
-    ArchPPC_64 -> return tops
+    ArchPPC    -> do
+      picBaseMb <- getPicBaseMaybeNat
+      case picBaseMb of
+           Just picBase -> initializePicBase_ppc arch os picBase tops
+           Nothing -> return tops
+    ArchPPC_64 -> initializePicBase_ppc arch os toc tops
     _          -> panic "PPC.cmmTopCodeGen: unknown arch" 
 
 cmmTopCodeGen (CmmData sec dat) = do
