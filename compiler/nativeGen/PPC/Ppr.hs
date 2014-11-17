@@ -56,12 +56,15 @@ pprNatCmmDecl (CmmData section dats) =
 pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
   case topInfoTable proc of
     Nothing ->
+       sdocWithPlatform $ \platform ->
        case blocks of
          []     -> -- special case for split markers:
            pprLabel lbl
          blocks -> -- special case for code without info table:
            pprSectionHeader Text $$
-           pprLabel lbl $$ -- blocks guaranteed not null, so label needed
+           (if platformArch platform == ArchPPC_64
+               then pprFunctionDescriptor lbl
+               else pprLabel lbl) $$ -- blocks guaranteed not null, so label needed
            vcat (map (pprBasicBlock top_info) blocks)
 
     Just (Statics info_lbl _) ->
@@ -82,20 +85,22 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
                   <+> ppr (mkDeadStripPreventer info_lbl)
              else empty)
 
+
 pprFunctionDescriptor :: CLabel -> SDoc
-pprFunctionDescriptor lab = text ".section \".opd\",\"aw\""
+pprFunctionDescriptor lab = pprGloblDecl lab
+                        $$  text ".section \".opd\",\"aw\""
                         $$  text ".align 3"
-                        $$  pprLabel lab
+                        $$  ppr lab
                         $$  text ".quad ."  
-                        <+> pprLabel lab
+                        <+> ppr lab
                         <+> text ",.TOC.@tocbase,0"
+                        $$  text ".previous"
                         $$  text ".type "
-                        <+> pprLabel lab
+                        <+> ppr lab
                         <+> text ", @function"
                         $$  char '.'
-                        <+> pprLabel lab
+                        <+> ppr lab
                         <+> char ':'
-
 
 pprBasicBlock :: BlockEnv CmmStatics -> NatBasicBlock Instr -> SDoc
 pprBasicBlock info_env (BasicBlock blockid instrs)
