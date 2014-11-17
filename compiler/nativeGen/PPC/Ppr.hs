@@ -90,7 +90,7 @@ pprFunctionDescriptor :: CLabel -> SDoc
 pprFunctionDescriptor lab = pprGloblDecl lab
                         $$  text ".section \".opd\",\"aw\""
                         $$  text ".align 3"
-                        $$  ppr lab
+                        $$  ppr lab <> char ':'
                         $$  text ".quad ."  
                         <> ppr lab
                         <> text ",.TOC.@tocbase,0"
