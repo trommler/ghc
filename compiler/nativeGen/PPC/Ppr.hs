@@ -82,6 +82,20 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
                   <+> ppr (mkDeadStripPreventer info_lbl)
              else empty)
 
+pprFunctionDescriptor :: CLabel -> SDoc
+pprFunctionDescriptor lab = text ".section \".opd\",\"aw\""
+                        $$  text ".align 3"
+                        $$  pprLabel lab
+                        $$  text ".quad ."  
+                        <+> pprLabel lab
+                        <+> text ",.TOC.@tocbase,0"
+                        $$  text ".type "
+                        <+> pprLabel lab
+                        <+> text ", @function"
+                        $$  char '.'
+                        <+> pprLabel lab
+                        <+> char ':'
+
 
 pprBasicBlock :: BlockEnv CmmStatics -> NatBasicBlock Instr -> SDoc
 pprBasicBlock info_env (BasicBlock blockid instrs)

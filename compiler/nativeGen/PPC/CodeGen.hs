@@ -88,7 +88,8 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
       case picBaseMb of
            Just picBase -> initializePicBase_ppc arch os picBase tops
            Nothing -> return tops
-    ArchPPC_64 -> initializePicBase_ppc arch os toc tops
+    ArchPPC_64 -> return tops -- generating function descriptor handled in 
+                              -- pretty printer
     _          -> panic "PPC.cmmTopCodeGen: unknown arch" 
 
 cmmTopCodeGen (CmmData sec dat) = do
