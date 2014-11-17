@@ -266,15 +266,10 @@ data Instr
     | MFLR    Reg               -- move from link register
     | FETCHPC Reg               -- pseudo-instruction:
                                 -- bcl to next insn, mflr reg
-    | FUNDESC CLabel            -- pseudo instrucuction: function descriptor
-                                -- .section "opd", "aw"
-                                -- .align 3
-                                -- label:
-                                -- .quad .label,.TOC.@tocbase,0
-                                -- .previous
-                                -- .type label, @function
     | LWSYNC                    -- memory barrier
-
+    | NOP                       -- no operation, PowerPC 64 bit
+                                -- needs this as place holder to
+                                -- reload TOC pointer
 
 -- | Get the registers that are being used by this instruction.
 -- regUsage doesn't need to do any trickery for jumps and such.
