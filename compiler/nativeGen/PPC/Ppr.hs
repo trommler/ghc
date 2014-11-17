@@ -92,15 +92,15 @@ pprFunctionDescriptor lab = pprGloblDecl lab
                         $$  text ".align 3"
                         $$  ppr lab
                         $$  text ".quad ."  
-                        <+> ppr lab
-                        <+> text ",.TOC.@tocbase,0"
+                        <> ppr lab
+                        <> text ",.TOC.@tocbase,0"
                         $$  text ".previous"
                         $$  text ".type "
-                        <+> ppr lab
-                        <+> text ", @function"
+                        <> ppr lab
+                        <> text ", @function"
                         $$  char '.'
-                        <+> ppr lab
-                        <+> char ':'
+                        <> ppr lab
+                        <> char ':'
 
 pprBasicBlock :: BlockEnv CmmStatics -> NatBasicBlock Instr -> SDoc
 pprBasicBlock info_env (BasicBlock blockid instrs)
