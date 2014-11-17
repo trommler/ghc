@@ -760,23 +760,6 @@ initializePicBase_ppc ArchPPC OSDarwin picReg
         where   BasicBlock bID insns = entry
                 b' = BasicBlock bID (PPC.FETCHPC picReg : insns)
 
--- PowerPC 64 ELF v 1 uses function descriptors to set up the TOC register
--- We define a pseudo-instruction FUNDESC which pretty-prints as:
--- .section "opd", "aw"
--- .align 3
--- label:
---               .quad .label,.TOC.@tocbase,0
--- .previous
--- .type label, @function
-initializePicBase_ppc ArchPPC_64 OSLinux _
-        (CmmProc info lab live (ListGraph (entry:blocks)) : statics)
-        -- just one entry because of splitting
-        -- TODO: prepend lable with "."
-        = return (CmmProc info lab live (ListGraph (b':blocks)) : statics)
-
-        where   BasicBlock bID insns = entry
-                b' = BasicBlock bID (PPC.FUNDESC lab : insns)
-
 initializePicBase_ppc _ _ _ _
         = panic "initializePicBase_ppc: not needed"
 
