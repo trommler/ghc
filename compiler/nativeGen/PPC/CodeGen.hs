@@ -982,7 +982,8 @@ genCCall' dflags gcp target dest_regs args0
             PrimTarget mop -> outOfLineMachOp mop
 
         let codeBefore = move_sp_down finalStack `appOL` passArgumentsCode
-            codeAfter = linker_word `appOL` move_sp_up finalStack
+                         `appOL` toc_before
+            codeAfter = toc_after `appOL` move_sp_up finalStack
                         `appOL` moveResult reduceToFF32
 
         case labelOrExpr of
@@ -1044,9 +1045,12 @@ genCCall' dflags gcp target dest_regs args0
                               DELTA (-delta)]
                | otherwise = nilOL
                where delta = stackDelta finalStack
-        linker_word = case gcp of
-                      GCPLinux64ELF1 -> toOL [ NOP ]
-                      _       -> nilOL
+        toc_before = case gcp of
+           GCPLinux64ELF1 -> unitOL $ ST spSize toc (AddrRegImm sp (ImmInt 40))
+           _              -> nilOL
+        toc_after = case gcp of
+                  GCPLinux64ELF1 -> toOL [ NOP ]
+                  _              -> nilOL
         move_sp_up finalStack
                | delta > 64 =
                         toOL [ADD sp sp (RIImm (ImmInt delta)),
