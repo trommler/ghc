@@ -533,13 +533,29 @@ pprInstr (BCCFAR cond blockid) = vcat [
     ]
     where lbl = mkAsmTempLabel (getUnique blockid)
 
-pprInstr (JMP lbl) = hcat [ -- an alias for b that takes a CLabel
-        char '\t',
-        ptext (sLit "b"),
-        char '\t',
-        ppr lbl
-    ]
-
+pprInstr (JMP lbl) = 
+       sdocWithPlatform $ \platform ->
+           case platformArch platform of
+                ArchPPC -> hcat [ -- an alias for b that takes a CLabel
+                        char '\t',
+                        ptext (sLit "b"),
+                        char '\t',
+                        ppr lbl
+                        ]
+                ArchPPC_64 -> vcat [ 
+                           hcat [ ptext (sLit "\taddis\t12,2,"),
+                                  ppr lbl, ptext(sLit"@toc@ha") ],
+                           hcat [ ptext (sLit "\taddi\t12,12,"),
+                                  ppr lbl, ptext(sLit"@toc@l") ],
+                           ptext (sLit "\tld\t12,0(12)"),
+                           ptext (sLit "\tld\t11,0(12)"),
+                           ptext (sLit "\tld\t2,8(12)"),
+                           ptext (sLit "\tmtctr\t11"),
+                           ptext (sLit "\tld\t11,16(12)"),
+                           ptext (sLit "\tbctr")
+                           ]
+                _ -> panic "PPC.Ppr.pprInstr: JMP unknown arch"
+    
 pprInstr (MTCTR reg) = hcat [
         char '\t',
         ptext (sLit "mtctr"),
