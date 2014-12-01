@@ -1189,7 +1189,7 @@ pprDynamicLinkerAsmLabel platform dllInfo lbl
                        SymbolPtr       -> text ".LC_" <> ppr lbl
              else if platformArch platform == ArchPPC_64
                   then case dllInfo of
-                       CodeStub        -> ppr lbl <> text "@plt"
+                       CodeStub        -> ppr lbl <> text "@toc"
                        GotSymbolPtr    -> ppr lbl <> text "@toc"
                        GotSymbolOffset -> ppr lbl
                        SymbolPtr       -> text ".LC_" <> ppr lbl
