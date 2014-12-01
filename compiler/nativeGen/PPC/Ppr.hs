@@ -543,9 +543,9 @@ pprInstr (JMP lbl) =
                         ppr lbl
                         ]
                 ArchPPC_64 -> vcat [ 
-                           hcat [ ptext (sLit "\taddis\t12,2,"),
+                           hcat [ ptext (sLit "\taddis\t12,2,.LC_"),
                                   ppr lbl, ptext(sLit"@toc@ha") ],
-                           hcat [ ptext (sLit "\taddi\t12,12,"),
+                           hcat [ ptext (sLit "\taddi\t12,12,.LC_"),
                                   ppr lbl, ptext(sLit"@toc@l") ],
                            ptext (sLit "\tld\t12,0(12)"),
                            ptext (sLit "\tld\t11,0(12)"),
