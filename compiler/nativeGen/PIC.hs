@@ -302,11 +302,14 @@ howToAccessLabel dflags arch OSDarwin this_mod _ lbl
 
 howToAccessLabel _ ArchPPC_64 os _ kind _
         | osElfTarget os
-        = if kind == DataReference
-            -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
-            then AccessViaSymbolPtr
+        = case kind of 
+          -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
+          DataReference -> AccessViaSymbolPtr
+          -- RTLD does not generate stubs for function descriptors
+          -- in tail calls.
+          JumpReference -> AccessViaStub
             -- actually, .label instead of label
-            else AccessDirectly
+          _             -> AccessDirectly
 
 howToAccessLabel dflags _ os _ _ _
         -- no PIC -> the dynamic linker does everything for us;
@@ -660,8 +663,25 @@ pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 })
                    ptext (sLit ".section \".toc\", \"aw\""),
                    ptext (sLit ".LC_") <> pprCLabel platform lbl <> char ':',
                    ptext (sLit "\t.quad") <+> pprCLabel platform lbl ]
+            -- generate code stubs for tail calls
+            Just (CodeStub, lbl)
+              -> vcat [ 
+                   ptext (sLit ".section \".toc\", \"aw\""),
+                   ptext (sLit ".LC_") <> pprCLabel platform lbl <> char ':',
+                   ptext (sLit "\t.quad") <+> pprCLabel platform lbl,
+                   ptext (sLit ".text"),
+                   hcat [ ptext (sLit "\taddis\t12,2,"),
+                          ppr lbl, ptext(sLit"@toc@ha") ],
+                   hcat [ ptext (sLit "\taddi\t12,12,"),
+                          ppr lbl, ptext(sLit"@toc@l") ],
+                   ptext (sLit "\tld\t12,0(12)"),
+                   ptext (sLit "\tld\t11,0(12)"),
+                   ptext (sLit "\tld\t2,8(12)"),
+                   ptext (sLit "\tmtctr\t11"),
+                   ptext (sLit "\tld\t11,16(12)"),
+                   ptext (sLit "\tbctr")
+                   ]
 
-            -- PLT code stubs are generated automatically by the dynamic linker.
             _ -> empty
 
 pprImportedSymbol dflags platform importedLbl
