@@ -306,9 +306,10 @@ howToAccessLabel _ ArchPPC_64 os _ kind _
           -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
           DataReference -> AccessViaSymbolPtr
           -- RTLD does not generate stubs for function descriptors
-          -- in tail calls.
-          JumpReference -> AccessViaStub
-            -- actually, .label instead of label
+          -- in tail calls. Create a symbol pointer and generate
+          -- the code to load the function descriptor at the call site.
+          JumpReference -> AccessViaSymbolPtr
+          -- regular calls are handled by the runtime linker
           _             -> AccessDirectly
 
 howToAccessLabel dflags _ os _ _ _
