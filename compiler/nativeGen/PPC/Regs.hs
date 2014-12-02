@@ -37,7 +37,7 @@ module PPC.Regs (
         fits16Bits,
         makeImmediate,
         fReg,
-        sp, toc, r3, r4, r27, r28, r30,
+        sp, toc, r3, r4, r11, r12, r27, r28, r30,
         f1, f20, f21,
 
         allocatableRegs
@@ -304,11 +304,13 @@ point registers.
 fReg :: Int -> RegNo
 fReg x = (32 + x)
 
-sp, toc, r3, r4, r27, r28, r30, f1, f20, f21 :: Reg
+sp, toc, r3, r4, r11, r12, r27, r28, r30, f1, f20, f21 :: Reg
 sp      = regSingle 1
 toc     = regSingle 2
 r3      = regSingle 3
 r4      = regSingle 4
+r11     = regSingle 11
+r12     = regSingle 12
 r27     = regSingle 27
 r28     = regSingle 28
 r30     = regSingle 30
