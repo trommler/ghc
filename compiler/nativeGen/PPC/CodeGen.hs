@@ -767,17 +767,26 @@ condIntCode cond x (CmmLit (CmmInt y rep))
   | Just src2 <- makeImmediate rep (not $ condUnsigned cond) y
   = do
         (src1, code) <- getSomeReg x
+        dflags <- getDynFlags
+        let size = case platformArch $ targetPlatform dflags of
+                     ArchPPC -> II32
+                     _       -> II64
         let
             code' = code `snocOL`
-                (if condUnsigned cond then CMPL else CMP) II32 src1 (RIImm src2)
+                (if condUnsigned cond then CMPL else CMP) size src1 (RIImm src2)
         return (CondCode False cond code')
 
 condIntCode cond x y = do
     (src1, code1) <- getSomeReg x
     (src2, code2) <- getSomeReg y
+    dflags <- getDynFlags
+    let size = case platformArch $ targetPlatform dflags of
+                ArchPPC -> II32
+                _       -> II64
     let
         code' = code1 `appOL` code2 `snocOL`
-                  (if condUnsigned cond then CMPL else CMP) II32 src1 (RIReg src2)
+                  (if condUnsigned cond then CMPL else CMP) size src1
+                      (RIReg src2)
     return (CondCode False cond code')
 
 condFltCode cond x y = do
