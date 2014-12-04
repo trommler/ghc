@@ -865,21 +865,11 @@ genJump tree
 
 genJump' :: CmmExpr -> GenCCallPlatform -> NatM InstrBlock
 
-
-{-
-                   ptext (sLit "\tld\t12,0(12)"),
-                   ptext (sLit "\tld\t11,0(12)"),
-                   ptext (sLit "\tld\t2,8(12)"),
-                   ptext (sLit "\tmtctr\t11"),
-                   ptext (sLit "\tld\t11,16(12)"),
-                   ptext (sLit "\tbctr")
--}
-
 genJump' tree GCPLinux64ELF1
   = do
         (target,code) <- getSomeReg tree
-        return (code
-               `snocOL` LD II64 r12 (AddrRegImm target (ImmInt 0))
+        return (code -- TODO load function descriptor into r12 directly
+               `snocOL` MR r12 target
                `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 0))
                `snocOL` LD II64 toc (AddrRegImm r12 (ImmInt 8))
                `snocOL` MTCTR r11
