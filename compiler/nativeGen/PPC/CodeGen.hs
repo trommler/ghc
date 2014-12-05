@@ -632,6 +632,7 @@ getRegister' _ (CmmLit (CmmFloat f frep)) = do
     return (Any size code)
 
 getRegister' dflags (CmmLit lit)
+  | ArchPPC == (platformArch $ targetPlatform dflags)
   = let rep = cmmLitType dflags lit
         imm = litToImm lit
         code dst = toOL [
@@ -640,7 +641,7 @@ getRegister' dflags (CmmLit lit)
           ]
     in return (Any (cmmTypeSize rep) code)
 
-getRegister' _ other = pprPanic "getRegister(ppc)"  (pprExpr other)
+getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
 
     -- extend?Rep: wrap integer expression of type rep
     -- in a conversion to II32
