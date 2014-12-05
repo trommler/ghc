@@ -203,26 +203,6 @@ getRegisterReg platform (CmmGlobal mid)
         -- ones which map to a real machine register on this
         -- platform.  Hence ...
 
-
-{-
-Now, given a tree (the argument to an CmmLoad) that references memory,
-produce a suitable addressing mode.
-
-A Rule of the Game (tm) for Amodes: use of the addr bit must
-immediately follow use of the code part, since the code part puts
-values in registers which the addr then refers to.  So you can't put
-anything in between, lest it overwrite some of those registers.  If
-you need to do some other computation between the code part and use of
-the addr bit, first store the effective address from the amode in a
-temporary, then do the other computation, and then use the temporary:
-
-    code
-    LEA amode, tmp
-    ... other computation ...
-    ... (tmp) ...
--}
-
-
 -- | Convert a BlockId to some CmmStatic data
 jumpTableEntry :: DynFlags -> Maybe BlockId -> CmmStatic
 jumpTableEntry dflags Nothing = CmmStaticLit (CmmInt 0 (wordWidth dflags))
