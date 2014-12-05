@@ -271,7 +271,7 @@ data ChildCode64        -- a.k.a "Register64"
                         -- Reg may be modified
 
 
--- | The dual to getAnyReg: compute an expression into a register, but
+-- | Compute an expression into a register, but
 --      we don't mind which one it is.
 getSomeReg :: CmmExpr -> NatM (Reg, InstrBlock)
 getSomeReg expr = do
@@ -520,7 +520,7 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
                  return (swizzleRegisterRep e_code new_size)
         arch32 = target32Bit $ targetPlatform dflags
 
-getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
+getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
   = case mop of
       MO_F_Eq _ -> condFltReg EQQ x y
       MO_F_Ne _ -> condFltReg NE  x y
@@ -529,18 +529,28 @@ getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_F_Lt _ -> condFltReg LTT x y
       MO_F_Le _ -> condFltReg LE  x y
 
-      MO_Eq rep -> condIntReg EQQ  (extendUExpr rep x) (extendUExpr rep y)
-      MO_Ne rep -> condIntReg NE   (extendUExpr rep x) (extendUExpr rep y)
+      MO_Eq rep -> condIntReg EQQ  (extendUExpr dflags rep x)
+                                   (extendUExpr dflags rep y)
+      MO_Ne rep -> condIntReg NE   (extendUExpr dflags rep x)
+                                   (extendUExpr dflags rep y)
 
-      MO_S_Gt rep -> condIntReg GTT  (extendSExpr rep x) (extendSExpr rep y)
-      MO_S_Ge rep -> condIntReg GE   (extendSExpr rep x) (extendSExpr rep y)
-      MO_S_Lt rep -> condIntReg LTT  (extendSExpr rep x) (extendSExpr rep y)
-      MO_S_Le rep -> condIntReg LE   (extendSExpr rep x) (extendSExpr rep y)
+      MO_S_Gt rep -> condIntReg GTT  (extendSExpr dflags rep x)
+                                     (extendSExpr dflags rep y)
+      MO_S_Ge rep -> condIntReg GE   (extendSExpr dflags rep x)
+                                     (extendSExpr dflags rep y)
+      MO_S_Lt rep -> condIntReg LTT  (extendSExpr dflags rep x)
+                                     (extendSExpr dflags rep y)
+      MO_S_Le rep -> condIntReg LE   (extendSExpr dflags rep x)
+                                     (extendSExpr dflags rep y)
 
-      MO_U_Gt rep -> condIntReg GU   (extendUExpr rep x) (extendUExpr rep y)
-      MO_U_Ge rep -> condIntReg GEU  (extendUExpr rep x) (extendUExpr rep y)
-      MO_U_Lt rep -> condIntReg LU   (extendUExpr rep x) (extendUExpr rep y)
-      MO_U_Le rep -> condIntReg LEU  (extendUExpr rep x) (extendUExpr rep y)
+      MO_U_Gt rep -> condIntReg GU   (extendUExpr dflags rep x)
+                                     (extendUExpr dflags rep y)
+      MO_U_Ge rep -> condIntReg GEU  (extendUExpr dflags rep x)
+                                     (extendUExpr dflags rep y)
+      MO_U_Lt rep -> condIntReg LU   (extendUExpr dflags rep x)
+                                     (extendUExpr dflags rep y)
+      MO_U_Le rep -> condIntReg LEU  (extendUExpr dflags rep x)
+                                     (extendUExpr dflags rep y)
 
       MO_F_Add w  -> triv_float w FADD
       MO_F_Sub w  -> triv_float w FSUB
@@ -579,19 +589,23 @@ getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_S_MulMayOflo _ -> panic "S_MulMayOflo (rep /= II32): not implemented"
       MO_U_MulMayOflo _ -> panic "U_MulMayOflo: not implemented"
 
-      MO_S_Quot rep -> trivialCodeNoImm' (intSize rep) DIVW (extendSExpr rep x) (extendSExpr rep y)
-      MO_U_Quot rep -> trivialCodeNoImm' (intSize rep) DIVWU (extendUExpr rep x) (extendUExpr rep y)
+      MO_S_Quot rep -> trivialCodeNoImm' (intSize rep) DIVW
+                (extendSExpr dflags rep x) (extendSExpr dflags rep y)
+      MO_U_Quot rep -> trivialCodeNoImm' (intSize rep) DIVWU
+                (extendUExpr dflags rep x) (extendUExpr dflags rep y)
 
-      MO_S_Rem rep -> remainderCode rep DIVW (extendSExpr rep x) (extendSExpr rep y)
-      MO_U_Rem rep -> remainderCode rep DIVWU (extendUExpr rep x) (extendUExpr rep y)
+      MO_S_Rem rep -> remainderCode rep DIVW (extendSExpr dflags rep x)
+                                             (extendSExpr dflags rep y)
+      MO_U_Rem rep -> remainderCode rep DIVWU (extendUExpr dflags rep x)
+                                              (extendUExpr dflags rep y)
 
       MO_And rep   -> trivialCode rep False AND x y
       MO_Or rep    -> trivialCode rep False OR x y
       MO_Xor rep   -> trivialCode rep False XOR x y
 
       MO_Shl rep   -> shiftCode rep SL x y
-      MO_S_Shr rep -> shiftCode rep SRA (extendSExpr rep x) y
-      MO_U_Shr rep -> shiftCode rep SR (extendUExpr rep x) y
+      MO_S_Shr rep -> shiftCode rep SRA (extendSExpr dflags rep x) y
+      MO_U_Shr rep -> shiftCode rep SR (extendUExpr dflags rep x) y
       _         -> panic "PPC.CodeGen.getRegister: no match"
 
   where
@@ -630,13 +644,24 @@ getRegister' _ other = pprPanic "getRegister(ppc)"  (pprExpr other)
 
     -- extend?Rep: wrap integer expression of type rep
     -- in a conversion to II32
-extendSExpr :: Width -> CmmExpr -> CmmExpr
-extendSExpr W32 x = x
-extendSExpr rep x = CmmMachOp (MO_SS_Conv rep W32) [x]
+extendSExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
+extendSExpr dflags W32 x
+ | (platformArch $ targetPlatform dflags) == ArchPPC = x
 
-extendUExpr :: Width -> CmmExpr -> CmmExpr
-extendUExpr W32 x = x
-extendUExpr rep x = CmmMachOp (MO_UU_Conv rep W32) [x]
+extendSExpr dflags rep x = 
+    let size = case platformArch $ targetPlatform dflags of
+                ArchPPC -> W32
+                _       -> W64
+    in CmmMachOp (MO_SS_Conv rep size) [x]
+
+extendUExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
+extendUExpr dflags W32 x
+ | (platformArch $ targetPlatform dflags) == ArchPPC = x
+extendUExpr dflags rep x =
+    let size = case platformArch $ targetPlatform dflags of
+                ArchPPC -> W32
+                _       -> W64
+    in CmmMachOp (MO_SS_Conv rep size) [x]
 
 -- -----------------------------------------------------------------------------
 --  The 'Amode' type: Memory addressing modes passed up the tree.
@@ -723,7 +748,9 @@ getCondCode :: CmmExpr -> NatM CondCode
 -- extend small integers to 32 bit first
 
 getCondCode (CmmMachOp mop [x, y])
-  = case mop of
+  = do
+    dflags <- getDynFlags
+    case mop of
       MO_F_Eq W32 -> condFltCode EQQ x y
       MO_F_Ne W32 -> condFltCode NE  x y
       MO_F_Gt W32 -> condFltCode GTT x y
@@ -738,18 +765,28 @@ getCondCode (CmmMachOp mop [x, y])
       MO_F_Lt W64 -> condFltCode LTT x y
       MO_F_Le W64 -> condFltCode LE  x y
 
-      MO_Eq rep -> condIntCode EQQ  (extendUExpr rep x) (extendUExpr rep y)
-      MO_Ne rep -> condIntCode NE   (extendUExpr rep x) (extendUExpr rep y)
+      MO_Eq rep -> condIntCode EQQ  (extendUExpr dflags rep x)
+                                    (extendUExpr dflags rep y)
+      MO_Ne rep -> condIntCode NE   (extendUExpr dflags rep x)
+                                    (extendUExpr dflags rep y)
 
-      MO_S_Gt rep -> condIntCode GTT  (extendSExpr rep x) (extendSExpr rep y)
-      MO_S_Ge rep -> condIntCode GE   (extendSExpr rep x) (extendSExpr rep y)
-      MO_S_Lt rep -> condIntCode LTT  (extendSExpr rep x) (extendSExpr rep y)
-      MO_S_Le rep -> condIntCode LE   (extendSExpr rep x) (extendSExpr rep y)
+      MO_S_Gt rep -> condIntCode GTT  (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
+      MO_S_Ge rep -> condIntCode GE   (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
+      MO_S_Lt rep -> condIntCode LTT  (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
+      MO_S_Le rep -> condIntCode LE   (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
 
-      MO_U_Gt rep -> condIntCode GU   (extendUExpr rep x) (extendUExpr rep y)
-      MO_U_Ge rep -> condIntCode GEU  (extendUExpr rep x) (extendUExpr rep y)
-      MO_U_Lt rep -> condIntCode LU   (extendUExpr rep x) (extendUExpr rep y)
-      MO_U_Le rep -> condIntCode LEU  (extendUExpr rep x) (extendUExpr rep y)
+      MO_U_Gt rep -> condIntCode GU   (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
+      MO_U_Ge rep -> condIntCode GEU  (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
+      MO_U_Lt rep -> condIntCode LU   (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
+      MO_U_Le rep -> condIntCode LEU  (extendSExpr dflags rep x)
+                                      (extendSExpr dflags rep y)
 
       _ -> pprPanic "getCondCode(powerpc)" (pprMachOp mop)
 
