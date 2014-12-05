@@ -147,6 +147,8 @@ data Imm
         | LO Imm
         | HI Imm
         | HA Imm        {- high halfword adjusted -}
+        | HIGHERA Imm
+        | HIGHESTA Imm
 
 
 strImmLit :: String -> Imm

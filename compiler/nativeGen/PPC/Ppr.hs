@@ -279,6 +279,18 @@ pprImm (HA i)
     then hcat [ text "ha16(", pprImm i, rparen ]
     else pprImm i <> text "@ha"
 
+pprImm (HIGHERA i)
+  = sdocWithPlatform $ \platform ->
+    if platformOS platform == OSDarwin
+    then panic "PPC.pprImm: highera not implemented on Darwin"
+    else pprImm i <> text "@highera"
+
+pprImm (HIGHESTA i)
+  = sdocWithPlatform $ \platform ->
+    if platformOS platform == OSDarwin
+    then panic "PPC.pprImm: highesta not implemented on Darwin"
+    else pprImm i <> text "@highesta"
+
 
 pprAddr :: AddrMode -> SDoc
 pprAddr (AddrRegReg r1 r2)

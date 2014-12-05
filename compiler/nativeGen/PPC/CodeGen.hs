@@ -619,6 +619,18 @@ getRegister' dflags (CmmLit lit)
               ADD dst dst (RIImm (LO imm))
           ]
     in return (Any (cmmTypeSize rep) code)
+  | otherwise
+  = let rep = cmmLitType dflags lit
+        imm = litToImm lit
+        code dst = toOL [
+              LIS dst (HIGHESTA imm),
+              ADD dst dst (RIImm (HIGHERA imm)),
+              SL  II64 dst dst (RIImm (ImmInt 32)),
+              LIS dst (HA imm),
+              ADD dst dst (RIImm (LO imm))
+          ]
+    in return (Any (cmmTypeSize rep) code)
+  
 
 getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
 
