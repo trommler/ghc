@@ -626,7 +626,7 @@ getRegister' dflags (CmmLit lit)
               LIS dst (HIGHESTA imm),
               ADD dst dst (RIImm (HIGHERA imm)),
               SL  II64 dst dst (RIImm (ImmInt 32)),
-              LIS dst (HA imm),
+              ADD dst dst (RIImm (HA imm)),
               ADD dst dst (RIImm (LO imm))
           ]
     in return (Any (cmmTypeSize rep) code)
