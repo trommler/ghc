@@ -685,7 +685,7 @@ getAmode tree@(CmmRegOff _ _) = do dflags <- getDynFlags
                                    getAmode (mangleIndexTree dflags tree)
 
 getAmode (CmmMachOp (MO_Sub W32) [x, CmmLit (CmmInt i _)])
-  | Just off <- makeImmediate W32 True (-i)
+  | Just off <- makeImmediate W32 True (-i) 
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
@@ -709,11 +709,24 @@ getAmode (CmmMachOp (MO_Add W32) [x, CmmLit lit])
 
 getAmode (CmmLit lit)
   = do
-        tmp <- getNewRegNat II32
-        let imm = litToImm lit
-            code = unitOL (LIS tmp (HA imm))
-        return (Amode (AddrRegImm tmp (LO imm)) code)
-
+        dflags <- getDynFlags
+        case platformArch $ targetPlatform dflags of
+             ArchPPC -> do
+                 tmp <- getNewRegNat II32
+                 let imm = litToImm lit
+                     code = unitOL (LIS tmp (HA imm))
+                 return (Amode (AddrRegImm tmp (LO imm)) code)
+             _        -> do
+                 tmp <- getNewRegNat II64
+                 let imm = litToImm lit
+                     code =  toOL [
+                          LIS tmp (HIGHESTA imm),
+                          ADD tmp tmp (RIImm (HIGHERA imm)),
+                          SL  II64 tmp tmp (RIImm (ImmInt 32)),
+                          ADD tmp tmp (RIImm (HA imm))
+                          ]
+                 return (Amode (AddrRegImm tmp (LO imm)) code)
+ 
 getAmode (CmmMachOp (MO_Add W32) [x, y])
   = do
         (regX, codeX) <- getSomeReg x
