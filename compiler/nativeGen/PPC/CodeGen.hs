@@ -1357,12 +1357,13 @@ genSwitch dflags expr ids
   = do
         (reg,e_code) <- getSomeReg expr
         let sz = archWordSize $ target32Bit $ targetPlatform dflags
+            sha = if target32Bit $ targetPlatform dflags then 2 else 3
         tmp <- getNewRegNat sz
         lbl <- getNewLabelNat
         dynRef <- cmmMakeDynamicReference dflags DataReference lbl
         (tableReg,t_code) <- getSomeReg $ dynRef
         let code = e_code `appOL` t_code `appOL` toOL [
-                            SL sz tmp reg (RIImm (ImmInt 2)),
+                            SL sz tmp reg (RIImm (ImmInt sha)),
                             LD sz tmp (AddrRegReg tableReg tmp),
                             ADD tmp tmp (RIReg tableReg),
                             MTCTR tmp,
@@ -1373,10 +1374,11 @@ genSwitch dflags expr ids
   = do
         (reg,e_code) <- getSomeReg expr
         let sz = archWordSize $ target32Bit $ targetPlatform dflags
+            sha = if target32Bit $ targetPlatform dflags then 2 else 3
         tmp <- getNewRegNat sz
         lbl <- getNewLabelNat
         let code = e_code `appOL` toOL [
-                            SL sz tmp reg (RIImm (ImmInt 2)),
+                            SL sz tmp reg (RIImm (ImmInt sha)),
                             ADDIS tmp tmp (HA (ImmCLbl lbl)),
                             LD sz tmp (AddrRegImm tmp (LO (ImmCLbl lbl))),
                             MTCTR tmp,
