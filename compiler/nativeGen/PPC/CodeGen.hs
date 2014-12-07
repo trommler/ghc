@@ -623,11 +623,11 @@ getRegister' dflags (CmmLit lit)
   = let rep = cmmLitType dflags lit
         imm = litToImm lit
         code dst = toOL [
-              LIS dst (HIGHESTA imm),
-              ADD dst dst (RIImm (HIGHERA imm)),
-              SL  II64 dst dst (RIImm (ImmInt 32)),
-              ADD dst dst (RIImm (HA imm)),
-              ADD dst dst (RIImm (LO imm))
+              LIS  dst (HIGHESTA imm),
+              OR   dst dst (RIImm (HIGHERA imm)),
+              SL   II64 dst dst (RIImm (ImmInt 32)),
+              ORIS dst dst (HA imm),
+              ADD  dst dst (RIImm (LO imm))
           ]
     in return (Any (cmmTypeSize rep) code)
   
@@ -720,9 +720,9 @@ getAmode (CmmLit lit)
                  let imm = litToImm lit
                      code =  toOL [
                           LIS tmp (HIGHESTA imm),
-                          ADD tmp tmp (RIImm (HIGHERA imm)),
-                          SL  II64 tmp tmp (RIImm (ImmInt 32)),
-                          ADD tmp tmp (RIImm (HA imm))
+                          OR tmp tmp (RIImm (HIGHERA imm)),
+                          SL II64 tmp tmp (RIImm (ImmInt 32)),
+                          ORIS tmp tmp (HA imm)
                           ]
                  return (Amode (AddrRegImm tmp (LO imm)) code)
  

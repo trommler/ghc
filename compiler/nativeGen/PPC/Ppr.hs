@@ -638,6 +638,17 @@ pprInstr (AND reg1 reg2 ri) = pprLogic (sLit "and") reg1 reg2 ri
 pprInstr (OR reg1 reg2 ri) = pprLogic (sLit "or") reg1 reg2 ri
 pprInstr (XOR reg1 reg2 ri) = pprLogic (sLit "xor") reg1 reg2 ri
 
+pprInstr (ORIS reg1 reg2 imm) = hcat [
+        char '\t',
+        ptext (sLit "oris"),
+        char '\t',
+        pprReg reg1,
+        ptext (sLit ", "),
+        pprReg reg2,
+        ptext (sLit ", "),
+        pprImm imm
+    ]
+
 pprInstr (XORIS reg1 reg2 imm) = hcat [
         char '\t',
         ptext (sLit "xoris"),
