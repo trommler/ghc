@@ -1354,7 +1354,7 @@ genCCall' dflags gcp target dest_regs args0
 
 genSwitch :: DynFlags -> CmmExpr -> SwitchTargets -> NatM InstrBlock
 genSwitch dflags expr targets
-  | gopt Opt_PIC dflags
+  | (gopt Opt_PIC dflags) || (not $ target32Bit $ targetPlatform dflags)
   = do
         (reg,e_code) <- getSomeReg (cmmOffset dflags expr offset)
         let sz = archWordSize $ target32Bit $ targetPlatform dflags
@@ -1392,7 +1392,9 @@ generateJumpTableForInstr :: DynFlags -> Instr
                           -> Maybe (NatCmmDecl CmmStatics Instr)
 generateJumpTableForInstr dflags (BCTR ids (Just lbl)) =
     let jumpTable
-            | gopt Opt_PIC dflags = map jumpTableEntryRel ids
+            | (gopt Opt_PIC dflags)
+              || (not $ target32Bit $ targetPlatform dflags)
+            = map jumpTableEntryRel ids
             | otherwise = map (jumpTableEntry dflags) ids
                 where jumpTableEntryRel Nothing
                         = CmmStaticLit (CmmInt 0 (wordWidth dflags))
