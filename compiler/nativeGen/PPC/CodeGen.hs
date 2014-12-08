@@ -1269,8 +1269,9 @@ genCCall' dflags gcp target dest_regs args0
                 [dest]
                     | reduceToFF32 && isFloat32 rep   -> unitOL (FRSP r_dest f1)
                     | isFloat32 rep || isFloat64 rep -> unitOL (MR r_dest f1)
-                    | isWord64 rep -> toOL [MR (getHiVRegFromLo r_dest) r3,
-                                          MR r_dest r4]
+                    | isWord64 rep && target32Bit (targetPlatform dflags)
+                       -> toOL [MR (getHiVRegFromLo r_dest) r3,
+                                MR r_dest r4]
                     | otherwise -> unitOL (MR r_dest r3)
                     where rep = cmmRegType dflags (CmmLocal dest)
                           r_dest = getRegisterReg platform (CmmLocal dest)
