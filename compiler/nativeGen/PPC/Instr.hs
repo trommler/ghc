@@ -233,7 +233,6 @@ data Instr
 
     | AND     Reg Reg RI            -- dst, src1, src2
     | OR      Reg Reg RI            -- dst, src1, src2
-    | ORIS    Reg Reg Imm           -- OR Immediate Shifted dst, src1, src2
     | XOR     Reg Reg RI            -- dst, src1, src2
     | XORIS   Reg Reg Imm           -- XOR Immediate Shifted dst, src1, src2
 
@@ -315,7 +314,6 @@ ppc_regUsageOfInstr platform instr
                             -> usage ([reg2,reg3], [reg1])
     AND     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     OR      reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
-    ORIS    reg1 reg2 _     -> usage ([reg2], [reg1])
     XOR     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     XORIS   reg1 reg2 _     -> usage ([reg2], [reg1])
     EXTS    _  reg1 reg2    -> usage ([reg2], [reg1])
@@ -395,7 +393,6 @@ ppc_patchRegsOfInstr instr env
                             -> MULLD_MayOflo (env reg1) (env reg2) (env reg3)
     AND     reg1 reg2 ri    -> AND (env reg1) (env reg2) (fixRI ri)
     OR      reg1 reg2 ri    -> OR  (env reg1) (env reg2) (fixRI ri)
-    ORIS    reg1 reg2 imm   -> ORIS (env reg1) (env reg2) imm
     XOR     reg1 reg2 ri    -> XOR (env reg1) (env reg2) (fixRI ri)
     XORIS   reg1 reg2 imm   -> XORIS (env reg1) (env reg2) imm
     EXTS    sz reg1 reg2    -> EXTS sz (env reg1) (env reg2)
