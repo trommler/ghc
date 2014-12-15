@@ -1070,12 +1070,23 @@ genCCall' dflags gcp target dest_regs args0
                         `appOL`  codeAfter)
             Right dyn -> do
                 (dynReg, dynCode) <- getSomeReg dyn
-                return (         dynCode
-                        `snocOL` MTCTR dynReg
-                        `appOL`  codeBefore
-                        `snocOL` BCTRL usedRegs
-                        `appOL`  codeAfter)
+                case gcp of
+                     GCPLinux64ELF1 -> return ( dynCode
+                               `snocOL` MR r12 dynReg
+                               `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 0))
+                               `snocOL` LD II64 toc (AddrRegImm r12 (ImmInt 8))
+                               `snocOL` MTCTR r11
+                               `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 16))                               `appOL`  codeBefore
+                               `snocOL` BCTRL usedRegs
+                               `appOL`  codeAfter)
+ 
+                     _              -> return (         dynCode
+                               `snocOL` MTCTR dynReg
+                               `appOL`  codeBefore
+                               `snocOL` BCTRL usedRegs
+                               `appOL`  codeAfter)
     where
+
         platform = targetPlatform dflags
 
         uses_pic_base_implicitly = do
