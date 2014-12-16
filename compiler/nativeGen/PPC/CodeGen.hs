@@ -561,7 +561,9 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
             -> trivialCode rep True ADD x (CmmLit $ CmmInt (-imm) immrep)
           _ -> trivialCodeNoImm' (intSize rep) SUBF y x
 
-      MO_Mul rep -> trivialCode rep True MULLW x y
+      MO_Mul rep 
+       | arch32    -> trivialCode rep True MULLW x y
+       | otherwise -> trivialCode rep True MULLD x y
 
       MO_S_MulMayOflo W32 -> trivialCodeNoImm' II32 MULLW_MayOflo x y
       MO_S_MulMayOflo W64 -> trivialCodeNoImm' II64 MULLD_MayOflo x y
@@ -591,6 +593,8 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
   where
     triv_float :: Width -> (Size -> Reg -> Reg -> Reg -> Instr) -> NatM Register
     triv_float width instr = trivialCodeNoImm (floatSize width) instr x y
+
+    arch32 = target32Bit $ targetPlatform dflags
 
 getRegister' _ (CmmLit (CmmInt i rep))
   | Just imm <- makeImmediate rep True i
