@@ -725,9 +725,9 @@ getAmode (CmmLit lit)
                  let imm = litToImm lit
                      code =  toOL [
                           LIS tmp (HIGHESTA imm),
-                          ADD tmp tmp (RIImm (HIGHERA imm)),
+                          OR tmp tmp (RIImm (HIGHERA imm)),
                           SL  II64 tmp tmp (RIImm (ImmInt 32)),
-                          ADD tmp tmp (RIImm (HA imm))
+                          ORIS tmp tmp (HA imm)
                           ]
                  return (Amode (AddrRegImm tmp (LO imm)) code)
  
