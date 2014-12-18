@@ -624,16 +624,17 @@ getRegister' dflags (CmmLit lit)
           ]
     in return (Any (cmmTypeSize rep) code)
   | otherwise
-  = let rep = cmmLitType dflags lit
-        imm = litToImm lit
-        code dst = toOL [
-              LIS dst (HIGHESTA imm),
-              OR dst dst (RIImm (HIGHERA imm)),
-              SL  II64 dst dst (RIImm (ImmInt 32)),
-              ORIS dst dst (HA imm),
-              ADD dst dst (RIImm (LO imm))
-          ]
-    in return (Any (cmmTypeSize rep) code)
+  = do lbl <- getNewLabelNat
+       dflags <- getDynFlags
+       dynRef <- cmmMakeDynamicReference dflags DataReference lbl
+       Amode addr addr_code <- getAmode dynRef
+       let rep = cmmLitType dflags lit
+           size = cmmTypeSize rep
+           code dst =
+            LDATA ReadOnlyData (Statics lbl
+                                   [CmmStaticLit lit])
+            `consOL` (addr_code `snocOL` LD size dst addr)
+       return (Any size code)
   
 
 getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
