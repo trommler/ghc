@@ -625,8 +625,7 @@ getRegister' dflags (CmmLit lit)
           ]
     in return (Any (cmmTypeSize rep) code)
   | otherwise
-  = panic "load immediate on ppc64"
-{-  = do lbl <- getNewLabelNat
+  = do lbl <- getNewLabelNat
        dflags <- getDynFlags
        dynRef <- cmmMakeDynamicReference dflags DataReference lbl
        Amode addr addr_code <- getAmode dynRef
@@ -637,7 +636,6 @@ getRegister' dflags (CmmLit lit)
                                    [CmmStaticLit lit])
             `consOL` (addr_code `snocOL` LD size dst addr)
        return (Any size code)
--}  
 
 getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
 
