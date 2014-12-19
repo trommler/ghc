@@ -625,7 +625,8 @@ getRegister' dflags (CmmLit lit)
           ]
     in return (Any (cmmTypeSize rep) code)
   | otherwise
-  = do lbl <- getNewLabelNat
+  = panic "load immediate on ppc64"
+{-  = do lbl <- getNewLabelNat
        dflags <- getDynFlags
        dynRef <- cmmMakeDynamicReference dflags DataReference lbl
        Amode addr addr_code <- getAmode dynRef
@@ -636,7 +637,7 @@ getRegister' dflags (CmmLit lit)
                                    [CmmStaticLit lit])
             `consOL` (addr_code `snocOL` LD size dst addr)
        return (Any size code)
-  
+-}  
 
 getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
 
@@ -1080,10 +1081,10 @@ genCCall' dflags gcp target dest_regs args0
                      GCPLinux64ELF1 -> return ( dynCode
                                `appOL`  codeBefore
                                `snocOL` MR r12 dynReg
-                               `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 16))
                                `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 0))
                                `snocOL` LD II64 toc (AddrRegImm r12 (ImmInt 8))
                                `snocOL` MTCTR r11
+                               `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 16))
                                `snocOL` BCTRL usedRegs
                                `appOL`  codeAfter)
  
