@@ -1085,7 +1085,7 @@ genCCall' dflags gcp target dest_regs args0
                                `snocOL` BCTRL usedRegs
                                `appOL`  codeAfter)
  
-                     _              -> return (         dynCode
+                     _              -> return ( dynCode
                                `snocOL` MTCTR dynReg
                                `appOL`  codeBefore
                                `snocOL` BCTRL usedRegs
