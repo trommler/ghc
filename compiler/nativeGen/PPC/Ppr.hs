@@ -308,18 +308,20 @@ pprSectionHeader seg =
      ppc64    = platformArch platform == ArchPPC_64 in
  case seg of
   Text              -> text ".text\n\t.align 2"
-  Data              -> text ".data\n\t.align 2"
-   | ppc64          -> ptext (sLit ".data\n.align 3")
-   | otherwise      -> ptext (sLit ".data\n.align 2")
+  Data
+   | ppc64          -> text ".data\n.align 3"
+   | otherwise      -> text ".data\n.align 2"
   ReadOnlyData
    | osDarwin       -> text ".const\n\t.align 2"
-   | ppc64          -> ptext (sLit ".section .rodata\n\t.align 3")
+   | ppc64          -> text ".section .rodata\n\t.align 3"
    | otherwise      -> text ".section .rodata\n\t.align 2"
   RelocatableReadOnlyData
    | osDarwin       -> text ".const_data\n\t.align 2"
+   | ppc64          -> text ".data\n\t.align 3"
    | otherwise      -> text ".data\n\t.align 2"
   UninitialisedData
    | osDarwin       -> text ".const_data\n\t.align 2"
+   | ppc64          -> text ".section .bss\n\t.align 3"
    | otherwise      -> text ".section .bss\n\t.align 2"
   ReadOnlyData16
    | osDarwin       -> text ".const\n\t.align 4"
