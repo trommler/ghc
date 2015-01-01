@@ -1687,11 +1687,17 @@ coerceInt2FP' ArchPPC_64 fromRep toRep x = do
 
     return (Any (floatSize toRep) code')
     
-coerceInt2FP' _ _ _ _ = panic $ "PPC.CodeGen.coerceInt2FP: unknown arch"
+coerceInt2FP' _ _ _ _ = panic "PPC.CodeGen.coerceInt2FP: unknown arch"
 
 
 coerceFP2Int :: Width -> Width -> CmmExpr -> NatM Register
-coerceFP2Int _ toRep x = do
+coerceFP2Int fromRep toRep x = do
+    dflags <- getDynFlags
+    let arch =  platformArch $ targetPlatform dflags
+    coerceFP2Int' arch fromRep toRep x
+
+coerceFP2Int' :: Arch -> Width -> Width -> CmmExpr -> NatM Register
+coerceFP2Int' ArchPPC _ toRep x = do
     dflags <- getDynFlags
     -- the reps don't really matter: F*->FF64 and II32->I* are no-ops
     (src, code) <- getSomeReg x
@@ -1705,6 +1711,23 @@ coerceFP2Int _ toRep x = do
                 -- read low word of value (high word is undefined)
             LD II32 dst (spRel dflags 3)]
     return (Any (intSize toRep) code')
+
+coerceFP2Int' ArchPPC_64 _ toRep x = do
+    dflags <- getDynFlags
+    -- the reps don't really matter: F*->FF64 and II64->I* are no-ops
+    (src, code) <- getSomeReg x
+    tmp <- getNewRegNat FF64
+    let
+        code' dst = code `appOL` toOL [
+                -- convert to int in FP reg
+            FCTIDZ tmp src,
+                -- store value (64bit) from FP to stack
+                -- TODO: verify that we can really use 16(r1) as temp
+            ST FF64 tmp (spRel dflags 2),
+            LD II64 dst (spRel dflags 2)]
+    return (Any (intSize toRep) code')
+
+coerceFP2Int' _ _ _ _ = panic "PPC.CodeGen.coerceFP2Int: unknown arch"
 
 -- Note [.LCTOC1 in PPC PIC code]
 -- The .LCTOC1 label is defined to point 32768 bytes into the GOT table
