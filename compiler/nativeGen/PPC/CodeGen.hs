@@ -749,6 +749,12 @@ getAmode (CmmMachOp (MO_Add W32) [x, y])
         (regY, codeY) <- getSomeReg y
         return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
 
+getAmode (CmmMachOp (MO_Add W64) [x, y])
+  = do
+        (regX, codeX) <- getSomeReg x
+        (regY, codeY) <- getSomeReg y
+        return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
+
 getAmode other
   = do
         (reg, code) <- getSomeReg other
