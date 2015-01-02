@@ -719,7 +719,8 @@ getAmode (CmmLit lit)
                  let imm = litToImm lit
                      code = unitOL (LIS tmp (HA imm))
                  return (Amode (AddrRegImm tmp (LO imm)) code)
-             _        -> do
+             _        -> do -- TODO: Load from TOC,
+                            -- see getRegister' _ (CmmLit lit)
                  tmp <- getNewRegNat II64
                  let imm = litToImm lit
                      code =  toOL [
@@ -1439,6 +1440,7 @@ condIntReg, condFltReg :: Cond -> CmmExpr -> CmmExpr -> NatM Register
 condReg :: NatM CondCode -> NatM Register
 condReg getCond = do
     CondCode _ cond cond_code <- getCond
+    dflags <- getDynFlags
     let
 {-        code dst = cond_code `appOL` toOL [
                 BCC cond lbl1,
@@ -1474,7 +1476,8 @@ condReg getCond = do
             GU  -> (1, False)
             _   -> panic "PPC.CodeGen.codeReg: no match"
 
-    return (Any II32 code)
+        size = archWordSize $ target32Bit $ targetPlatform dflags
+    return (Any size code)
 
 condIntReg cond x y = condReg (condIntCode cond x y)
 condFltReg cond x y = condReg (condFltCode cond x y)
