@@ -644,6 +644,9 @@ extendSExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
 extendSExpr dflags W32 x
  | (platformArch $ targetPlatform dflags) == ArchPPC = x
 
+extendSExpr dflags W64 x
+ | (platformArch $ targetPlatform dflags) == ArchPPC_64 = x
+
 extendSExpr dflags rep x = 
     let size = case platformArch $ targetPlatform dflags of
                 ArchPPC -> W32
@@ -653,11 +656,13 @@ extendSExpr dflags rep x =
 extendUExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
 extendUExpr dflags W32 x
  | (platformArch $ targetPlatform dflags) == ArchPPC = x
+extendUExpr dflags W64 x
+ | (platformArch $ targetPlatform dflags) == ArchPPC_64 = x
 extendUExpr dflags rep x =
     let size = case platformArch $ targetPlatform dflags of
                 ArchPPC -> W32
                 _       -> W64
-    in CmmMachOp (MO_SS_Conv rep size) [x]
+    in CmmMachOp (MO_UU_Conv rep size) [x]
 
 -- -----------------------------------------------------------------------------
 --  The 'Amode' type: Memory addressing modes passed up the tree.
