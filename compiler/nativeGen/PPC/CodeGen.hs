@@ -1123,8 +1123,8 @@ genCCall' dflags gcp target dest_regs args0
         uses_pic_base_implicitly = do
             -- See Note [implicit register in PPC PIC code]
             -- on why we claim to use PIC register here
-            when (gopt Opt_PIC dflags) $ do
-                _ <- getPicBaseNat archWordSize
+            when (gopt Opt_PIC dflags && target32Bit platform) $ do
+                _ <- getPicBaseNat $ archWordSize True
                 return ()
 
         initialStackOffset = case gcp of
