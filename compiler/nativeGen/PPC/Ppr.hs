@@ -604,7 +604,9 @@ pprInstr (MULLW reg1 reg2 ri@(RIReg _)) = pprLogic (sLit "mullw") reg1 reg2 ri
 pprInstr (MULLD reg1 reg2 ri@(RIImm _)) = pprLogic (sLit "mull") reg1 reg2 ri
 pprInstr (MULLW reg1 reg2 ri@(RIImm _)) = pprLogic (sLit "mull") reg1 reg2 ri
 pprInstr (DIVW reg1 reg2 reg3) = pprLogic (sLit "divw") reg1 reg2 (RIReg reg3)
+pprInstr (DIVD reg1 reg2 reg3) = pprLogic (sLit "divd") reg1 reg2 (RIReg reg3)
 pprInstr (DIVWU reg1 reg2 reg3) = pprLogic (sLit "divwu") reg1 reg2 (RIReg reg3)
+pprInstr (DIVDU reg1 reg2 reg3) = pprLogic (sLit "divdu") reg1 reg2 (RIReg reg3)
 
 pprInstr (MULLW_MayOflo reg1 reg2 reg3) = vcat [
          hcat [ ptext (sLit "\tmullwo\t"), pprReg reg1, ptext (sLit ", "),
@@ -625,7 +627,7 @@ pprInstr (MULLD_MayOflo reg1 reg2 reg3) = vcat [
                                           ptext (sLit "2, 31, 31") ]
     ]
 
-            -- for some reason, "andi" doesn't exist.
+        -- for some reason, "andi" doesn't exist.
         -- we'll use "andi." instead.
 pprInstr (AND reg1 reg2 (RIImm imm)) = hcat [
         char '\t',
