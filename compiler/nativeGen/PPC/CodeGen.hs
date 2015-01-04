@@ -570,15 +570,27 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_S_MulMayOflo _ -> panic "S_MulMayOflo (rep /= II32): not implemented"
       MO_U_MulMayOflo _ -> panic "U_MulMayOflo: not implemented"
 
-      MO_S_Quot rep -> trivialCodeNoImm' (intSize rep) DIVW
+      MO_S_Quot rep
+       | arch32     -> trivialCodeNoImm' (intSize rep) DIVW
                 (extendSExpr dflags rep x) (extendSExpr dflags rep y)
-      MO_U_Quot rep -> trivialCodeNoImm' (intSize rep) DIVWU
+       | otherwise  -> trivialCodeNoImm' (intSize rep) DIVD
+                (extendSExpr dflags rep x) (extendSExpr dflags rep y)
+      MO_U_Quot rep 
+       | arch32     -> trivialCodeNoImm' (intSize rep) DIVWU
+                (extendUExpr dflags rep x) (extendUExpr dflags rep y)
+       | otherwise  -> trivialCodeNoImm' (intSize rep) DIVDU
                 (extendUExpr dflags rep x) (extendUExpr dflags rep y)
 
-      MO_S_Rem rep -> remainderCode rep DIVW (extendSExpr dflags rep x)
+      MO_S_Rem rep
+       | arch32    -> remainderCode rep DIVW (extendSExpr dflags rep x)
                                              (extendSExpr dflags rep y)
-      MO_U_Rem rep -> remainderCode rep DIVWU (extendUExpr dflags rep x)
-                                              (extendUExpr dflags rep y)
+       | otherwise -> remainderCode rep DIVD (extendSExpr dflags rep x)
+                                             (extendSExpr dflags rep y)
+      MO_U_Rem rep
+       | arch32    -> remainderCode rep DIVWU (extendSExpr dflags rep x)
+                                              (extendSExpr dflags rep y)
+       | otherwise -> remainderCode rep DIVDU (extendSExpr dflags rep x)
+                                              (extendSExpr dflags rep y)
 
       MO_And rep   -> trivialCode rep False AND x y
       MO_Or rep    -> trivialCode rep False OR x y
@@ -639,7 +651,7 @@ getRegister' dflags (CmmLit lit)
 getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
 
     -- extend?Rep: wrap integer expression of type rep
-    -- in a conversion to II32
+    -- in a conversion to II32 or II64 resp.
 extendSExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
 extendSExpr dflags W32 x
  | (platformArch $ targetPlatform dflags) == ArchPPC = x
@@ -766,7 +778,7 @@ data CondCode
 getCondCode :: CmmExpr -> NatM CondCode
 
 -- almost the same as everywhere else - but we need to
--- extend small integers to 32 bit first
+-- extend small integers to 32 bit or 64 bit first
 
 getCondCode (CmmMachOp mop [x, y])
   = do
@@ -821,6 +833,7 @@ getCondCode _ = panic "getCondCode(2)(powerpc)"
 condIntCode, condFltCode :: Cond -> CmmExpr -> CmmExpr -> NatM CondCode
 
 --  ###FIXME: I16 and I8!
+-- TODO: Is this still an issue? All arguments are extend?Expr'd.
 condIntCode cond x (CmmLit (CmmInt y rep))
   | Just src2 <- makeImmediate rep (not $ condUnsigned cond) y
   = do
@@ -1602,11 +1615,14 @@ trivialUCode rep instr x = do
 remainderCode :: Width -> (Reg -> Reg -> Reg -> Instr)
     -> CmmExpr -> CmmExpr -> NatM Register
 remainderCode rep div x y = do
+    dflags <- getDynFlags
+    let mull_instr = if target32Bit $ targetPlatform dflags then MULLW
+                                                            else MULLD
     (src1, code1) <- getSomeReg x
     (src2, code2) <- getSomeReg y
     let code dst = code1 `appOL` code2 `appOL` toOL [
                 div dst src1 src2,
-                MULLW dst dst (RIReg src2),
+                mull_instr dst dst (RIReg src2),
                 SUBF dst dst src1
             ]
     return (Any (intSize rep) code)

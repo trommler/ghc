@@ -217,7 +217,9 @@ data Instr
     | MULLD   Reg Reg RI
     | MULLW   Reg Reg RI
     | DIVW    Reg Reg Reg
+    | DIVD    Reg Reg Reg
     | DIVWU   Reg Reg Reg
+    | DIVDU   Reg Reg Reg
 
     | MULLW_MayOflo Reg Reg Reg
                                     -- dst = 1 if src1 * src2 overflows
@@ -310,7 +312,9 @@ ppc_regUsageOfInstr platform instr
     MULLD   reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
     MULLW   reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
     DIVW    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
+    DIVD    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     DIVWU   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
+    DIVDU   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
 
     MULLW_MayOflo reg1 reg2 reg3
                             -> usage ([reg2,reg3], [reg1])
@@ -393,7 +397,9 @@ ppc_patchRegsOfInstr instr env
     MULLD   reg1 reg2 ri    -> MULLD (env reg1) (env reg2) (fixRI ri)
     MULLW   reg1 reg2 ri    -> MULLW (env reg1) (env reg2) (fixRI ri)
     DIVW    reg1 reg2 reg3  -> DIVW (env reg1) (env reg2) (env reg3)
+    DIVD    reg1 reg2 reg3  -> DIVD (env reg1) (env reg2) (env reg3)
     DIVWU   reg1 reg2 reg3  -> DIVWU (env reg1) (env reg2) (env reg3)
+    DIVDU   reg1 reg2 reg3  -> DIVDU (env reg1) (env reg2) (env reg3)
     MULLW_MayOflo reg1 reg2 reg3
                             -> MULLW_MayOflo (env reg1) (env reg2) (env reg3)
     MULLD_MayOflo reg1 reg2 reg3
