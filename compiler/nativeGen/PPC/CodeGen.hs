@@ -426,6 +426,14 @@ getRegister' dflags (CmmLoad mem pk)
         return (Any size code)
           where size = cmmTypeSize pk
 
+getRegister' dflags (CmmLoad mem pk)
+  | isWord64 pk && not (target32Bit (targetPlatform dflags))
+  = do
+        Amode addr addr_code <- getAmodeDS mem
+        let code dst = addr_code `snocOL` LD size dst addr
+        return (Any size code)
+          where size = cmmTypeSize pk
+
 -- catch simple cases of zero- or sign-extended load
 getRegister' _ (CmmMachOp (MO_UU_Conv W8 W32) [CmmLoad mem _]) = do
     Amode addr addr_code <- getAmode mem
@@ -767,7 +775,66 @@ getAmode other
             off  = ImmInt 0
         return (Amode (AddrRegImm reg off) code)
 
+-- 64 bit load and store operations require offsets be a multiple of 4
 
+getAmodeDS :: CmmExpr -> NatM Amode
+getAmodeDS tree@(CmmRegOff _ _) = do dflags <- getDynFlags
+                                     getAmodeDS (mangleIndexTree 
+                                                dflags tree)
+
+getAmodeDS (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
+  | Just off <- makeImmediate W64 True (-i) , i `mod` 4 == 0
+  = do
+        (reg, code) <- getSomeReg x
+        return (Amode (AddrRegImm reg off) code)
+
+
+getAmodeDS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
+  | Just off <- makeImmediate W64 True i , i `mod` 4 == 0
+  = do
+        (reg, code) <- getSomeReg x
+        return (Amode (AddrRegImm reg off) code)
+
+   -- optimize addition with 32-bit immediate
+   -- (needed for PIC) TODO: is it really needed?
+   -- Then provide a code model medium implementation.
+getAmodeDS (CmmMachOp (MO_Add W32) [x, CmmLit lit])
+  = panic "getAmodeDS 32 bit add not implemented"
+  
+getAmodeDS (CmmLit lit)
+  = do
+        dflags <- getDynFlags
+        case platformArch $ targetPlatform dflags of
+             ArchPPC -> do
+                 tmp <- getNewRegNat II32
+                 let imm = litToImm lit
+                     code = unitOL (LIS tmp (HA imm))
+                 return (Amode (AddrRegImm tmp (LO imm)) code)
+             _        -> do -- TODO: Load from TOC,
+                            -- see getRegister' _ (CmmLit lit)
+                 tmp <- getNewRegNat II64
+                 let imm = litToImm lit
+                     code =  toOL [
+                          LIS tmp (HIGHESTA imm),
+                          OR tmp tmp (RIImm (HIGHERA imm)),
+                          SL  II64 tmp tmp (RIImm (ImmInt 32)),
+                          ORIS tmp tmp (HA imm)
+                          ]
+                 return (Amode (AddrRegImm tmp (LO imm)) code)
+ 
+getAmodeDS (CmmMachOp (MO_Add _) [x, y])
+  = do
+        (regX, codeX) <- getSomeReg x
+        (regY, codeY) <- getSomeReg y
+        return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
+
+getAmodeDS other
+  = do
+        (reg, code) <- getSomeReg other
+        let
+            off  = ImmInt 0
+        return (Amode (AddrRegImm reg off) code)
+  
 
 --  The 'CondCode' type:  Condition codes passed up the tree.
 data CondCode
@@ -895,7 +962,9 @@ assignReg_FltCode :: Size -> CmmReg  -> CmmExpr -> NatM InstrBlock
 
 assignMem_IntCode pk addr src = do
     (srcReg, code) <- getSomeReg src
-    Amode dstAddr addr_code <- getAmode addr
+    Amode dstAddr addr_code <- case pk of
+                                II64 -> getAmodeDS addr
+                                _    -> getAmode addr
     return $ code `appOL` addr_code `snocOL` ST pk srcReg dstAddr
 
 -- dst is a reg, but src could be anything
