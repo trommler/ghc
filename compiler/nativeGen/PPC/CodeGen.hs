@@ -418,7 +418,7 @@ getRegister' dflags (CmmMachOp (MO_SS_Conv W64 W32) [x])
   return $ Fixed II32 rlo code
 
 getRegister' dflags (CmmLoad mem pk)
-  | not (isWord64 pk) || not (target32Bit (targetPlatform dflags))
+  | not (isWord64 pk)
   = do
         let platform = targetPlatform dflags
         Amode addr addr_code <- getAmode mem
@@ -810,10 +810,14 @@ getAmodeDS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
         return (Amode (AddrRegImm reg off) code)
 
    -- optimize addition with 32-bit immediate
-   -- (needed for PIC) TODO: is it really needed?
-   -- Then provide a code model medium implementation.
+   -- (needed for PIC) 
 getAmodeDS (CmmMachOp (MO_Add W32) [x, CmmLit lit])
-  = panic "getAmodeDS 32 bit add not implemented"
+  = do
+        tmp <- getNewRegNat II64
+        (src, srcCode) <- getSomeReg x
+        let imm = litToImm lit
+            code = srcCode `snocOL` ADDIS tmp src (HA imm)
+        return (Amode (AddrRegImm tmp (LO imm)) code)
   
 getAmodeDS (CmmLit lit)
   = do
