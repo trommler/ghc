@@ -440,6 +440,10 @@ getRegister' _ (CmmMachOp (MO_UU_Conv W8 W32) [CmmLoad mem _]) = do
     Amode addr addr_code <- getAmode mem
     return (Any II32 (\dst -> addr_code `snocOL` LD II8 dst addr))
 
+getRegister' _ (CmmMachOp (MO_UU_Conv W8 W64) [CmmLoad mem _]) = do
+    Amode addr addr_code <- getAmode mem
+    return (Any II64 (\dst -> addr_code `snocOL` LD II8 dst addr))
+
 -- Note: there is no Load Byte Arithmetic instruction, so no signed case here
 
 getRegister' _ (CmmMachOp (MO_UU_Conv W16 W32) [CmmLoad mem _]) = do
@@ -449,6 +453,22 @@ getRegister' _ (CmmMachOp (MO_UU_Conv W16 W32) [CmmLoad mem _]) = do
 getRegister' _ (CmmMachOp (MO_SS_Conv W16 W32) [CmmLoad mem _]) = do
     Amode addr addr_code <- getAmode mem
     return (Any II32 (\dst -> addr_code `snocOL` LA II16 dst addr))
+
+getRegister' _ (CmmMachOp (MO_UU_Conv W16 W64) [CmmLoad mem _]) = do
+    Amode addr addr_code <- getAmode mem
+    return (Any II64 (\dst -> addr_code `snocOL` LD II16 dst addr))
+
+getRegister' _ (CmmMachOp (MO_SS_Conv W16 W64) [CmmLoad mem _]) = do
+    Amode addr addr_code <- getAmode mem
+    return (Any II64 (\dst -> addr_code `snocOL` LA II16 dst addr))
+
+getRegister' _ (CmmMachOp (MO_UU_Conv W32 W64) [CmmLoad mem _]) = do
+    Amode addr addr_code <- getAmode mem
+    return (Any II64 (\dst -> addr_code `snocOL` LD II32 dst addr))
+
+getRegister' _ (CmmMachOp (MO_SS_Conv W32 W64) [CmmLoad mem _]) = do
+    Amode addr addr_code <- getAmode mem
+    return (Any II64 (\dst -> addr_code `snocOL` LA II32 dst addr))
 
 getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
   = case mop of
