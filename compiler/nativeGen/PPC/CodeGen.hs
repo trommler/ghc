@@ -649,7 +649,7 @@ getRegister' _ (CmmLit (CmmFloat f frep)) = do
     return (Any size code)
 
 getRegister' dflags (CmmLit lit)
-  | ArchPPC == (platformArch $ targetPlatform dflags)
+  | target32Bit (targetPlatform dflags)
   = let rep = cmmLitType dflags lit
         imm = litToImm lit
         code dst = toOL [
@@ -676,15 +676,15 @@ getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
     -- in a conversion to II32 or II64 resp.
 extendSExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
 extendSExpr dflags W32 x
- | (platformArch $ targetPlatform dflags) == ArchPPC = x
+ | target32Bit (targetPlatform dflags) = x
 
 extendSExpr dflags W64 x
- | (platformArch $ targetPlatform dflags) == ArchPPC_64 = x
+ | not (target32Bit (targetPlatform dflags)) = x
 
 extendSExpr dflags rep x = 
-    let size = case platformArch $ targetPlatform dflags of
-                ArchPPC -> W32
-                _       -> W64
+    let size = if target32Bit $ targetPlatform dflags
+               then W32
+               else W64
     in CmmMachOp (MO_SS_Conv rep size) [x]
 
 extendUExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
