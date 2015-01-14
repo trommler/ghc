@@ -414,21 +414,17 @@ getRegister' dflags (CmmMachOp (MO_SS_Conv W64 W32) [x])
   return $ Fixed II32 rlo code
 
 getRegister' dflags (CmmLoad mem pk)
-  | not (isWord64 pk)
-  = do
+ | not (isWord64 pk) = do
         let platform = targetPlatform dflags
         Amode addr addr_code <- getAmode mem
         let code dst = ASSERT((targetClassOfReg platform dst == RcDouble) == isFloatType pk)
                        addr_code `snocOL` LD size dst addr
         return (Any size code)
-          where size = cmmTypeSize pk
-
-getRegister' dflags (CmmLoad mem pk)
-  | isWord64 pk && not (target32Bit (targetPlatform dflags))
-  = do
+ | not (target32Bit (targetPlatform dflags)) = do
         Amode addr addr_code <- getAmodeDS mem
-        let code dst = addr_code `snocOL` LD size dst addr
-        return (Any size code)
+        let code dst = addr_code `snocOL` LD II64 dst addr
+        return (Any II64 code)
+
           where size = cmmTypeSize pk
 
 -- catch simple cases of zero- or sign-extended load
@@ -504,12 +500,13 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | arch32    -> panic "PPC.CodeGen.getRegister no 64 bit target"
         | otherwise -> conversionNop (intSize to) x
       MO_UU_Conv W32 to
-        | arch32   -> conversionNop (intSize to) x
-        | otherwise -> case to of
-                       W64 -> trivialCode to False AND x (CmmLit (CmmInt 4294967295 W64))
-                       W16 -> conversionNop II16 x
-                       W8  -> conversionNop II8 x
-                       _   -> panic "PPC.CodeGen.getRegister: no match"
+        | arch32    -> conversionNop (intSize to) x
+        | otherwise -> 
+          case to of
+           W64 -> trivialCode to False AND x (CmmLit (CmmInt 4294967295 W64))
+           W16 -> conversionNop II16 x
+           W8  -> conversionNop II8 x
+           _   -> panic "PPC.CodeGen.getRegister: no match"
       MO_UU_Conv W16 W8 -> conversionNop II8 x
       MO_UU_Conv W8 to  -> trivialCode to False AND x (CmmLit (CmmInt 255 W32))
       MO_UU_Conv W16 to -> trivialCode to False AND x (CmmLit (CmmInt 65535 W32))
