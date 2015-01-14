@@ -44,8 +44,6 @@ import DynFlags
 import Data.Word
 import Data.Bits
 
--- temporary import to help debug
-import PprCmm           ( pprLit )
 -- -----------------------------------------------------------------------------
 -- Printing this stuff out
 
@@ -364,8 +362,8 @@ pprDataItem lit
                  ptext (sLit "\t.long\t")
                     <> int (fromIntegral (fromIntegral x :: Word32))]
 
-        ppr_item _ expr _
-                = pprPanic "PPC.Ppr.pprDataItem: no match" (pprLit expr) 
+        ppr_item _ _ _
+                = panic "PPC.Ppr.pprDataItem: no match"
 
 
 pprInstr :: Instr -> SDoc
