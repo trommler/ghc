@@ -1827,10 +1827,9 @@ coerceFP2Int' ArchPPC_64 _ toRep x = do
         code' dst = code `appOL` toOL [
                 -- convert to int in FP reg
             FCTIDZ tmp src,
-                -- store value (64bit) from FP to stack
-                -- TODO: verify that we can really use 16(r1) as temp
-            ST FF64 tmp (spRel dflags 2),
-            LD II64 dst (spRel dflags 2)]
+                -- store value (64bit) from FP to compiler word on stack
+            ST FF64 tmp (spRel dflags 3),
+            LD II64 dst (spRel dflags 3)]
     return (Any (intSize toRep) code')
 
 coerceFP2Int' _ _ _ _ = panic "PPC.CodeGen.coerceFP2Int: unknown arch"
