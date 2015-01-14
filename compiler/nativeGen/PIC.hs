@@ -664,26 +664,6 @@ pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 })
                    ptext (sLit ".section \".toc\", \"aw\""),
                    ptext (sLit ".LC_") <> pprCLabel platform lbl <> char ':',
                    ptext (sLit "\t.quad") <+> pprCLabel platform lbl ]
-            -- generate code stubs for tail calls
-            Just (CodeStub, lbl)
-              -> vcat [ 
-                   ptext (sLit ".section \".toc\", \"aw\""),
-                   ptext (sLit ".LC_") <> pprCLabel platform lbl <> char ':',
-                   ptext (sLit "\t.quad") <+> pprCLabel platform lbl,
-                   ptext (sLit ".text"),
-                   ptext (sLit ".Lstub.") <> ppr lbl <> char ':', 
-                   hcat [ ptext (sLit "\taddis\t12,2,.LC_"),
-                          ppr lbl, ptext(sLit"@toc@ha") ],
-                   hcat [ ptext (sLit "\taddi\t12,12,.LC_"),
-                          ppr lbl, ptext(sLit"@toc@l") ],
-                   ptext (sLit "\tld\t12,0(12)"),
-                   ptext (sLit "\tld\t11,0(12)"),
-                   ptext (sLit "\tld\t2,8(12)"),
-                   ptext (sLit "\tmtctr\t11"),
-                   ptext (sLit "\tld\t11,16(12)"),
-                   ptext (sLit "\tbctr")
-                   ]
-
             _ -> empty
 
 pprImportedSymbol dflags platform importedLbl
