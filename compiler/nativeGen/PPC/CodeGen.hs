@@ -1359,8 +1359,9 @@ genCCall' dflags gcp target dest_regs args0
                                 | otherwise ->
                                    stackOffset
                                GCPLinux64ELF1 ->
-                                   -- everything on the stack is 8-byte aligned
-                                   -- on a 64 bit system (vector status excepted)
+                                   -- everything on the stack is 8-byte
+                                   -- aligned on a 64 bit system
+                                   -- (except vector status, not used now)
                                    stackOffset
                 stackSlot = AddrRegImm sp (ImmInt stackOffset')
                 (nGprs, nFprs, stackBytes, regs)
