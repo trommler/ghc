@@ -1090,14 +1090,14 @@ genCCall target dest_regs argsAndHints
  = do dflags <- getDynFlags
       let platform = targetPlatform dflags
       case platformOS platform of
-          OSLinux    -> case platformArch platform of 
-                        ArchPPC    -> genCCall' dflags GCPLinux 
-                                                target dest_regs argsAndHints
-                        ArchPPC_64 -> genCCall' dflags GCPLinux64ELF1
-                                                target dest_regs argsAndHints
-                        _          -> panic "PPC.CodeGen.genCCall: Unknown Linux"
-          OSDarwin   -> genCCall' dflags GCPDarwin target dest_regs argsAndHints
-          _ -> panic "PPC.CodeGen.genCCall: not defined for this os"
+       OSLinux    -> case platformArch platform of
+                     ArchPPC    -> genCCall' dflags GCPLinux
+                                             target dest_regs argsAndHints
+                     ArchPPC_64 -> genCCall' dflags GCPLinux64ELF1
+                                             target dest_regs argsAndHints
+                     _          -> panic "PPC.CodeGen.genCCall: Unknown Linux"
+       OSDarwin   -> genCCall' dflags GCPDarwin target dest_regs argsAndHints
+       _ -> panic "PPC.CodeGen.genCCall: not defined for this os"
 
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF1
 
