@@ -31,6 +31,11 @@ test('divbyzero',
       # Linux setups, so just ignore it. As long as we get
       # the right exit code we're OK.
       when(opsys('linux'), ignore_output),
+      # PowerPC 64 bit and most likely PowerPC 32 bit processors
+      # do not generate an exception (interrupt) for integer
+      # division by zero but the result is undefined.
+      # C programs compiled with gcc exit normally, so do we.
+      when(platform('powerpc64-unknown-linux'), exit_code(0)),
       when(opsys('mingw32'), exit_code(1))],
      compile_and_run, [''])
 
