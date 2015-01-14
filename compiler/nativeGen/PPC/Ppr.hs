@@ -546,12 +546,12 @@ pprInstr (BCCFAR cond blockid) = vcat [
     where lbl = mkAsmTempLabel (getUnique blockid)
 
 pprInstr (JMP lbl) = hcat [ -- an alias for b that takes a CLabel
-                        char '\t',
-                        ptext (sLit "b"),
-                        char '\t',
-                        ppr lbl
-                        ]
-    
+        char '\t',
+        ptext (sLit "b"),
+        char '\t',
+        ppr lbl
+    ]
+
 pprInstr (MTCTR reg) = hcat [
         char '\t',
         ptext (sLit "mtctr"),
