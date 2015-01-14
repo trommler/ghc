@@ -1193,20 +1193,19 @@ genCCall' dflags gcp target dest_regs args0
                 (dynReg, dynCode) <- getSomeReg dyn
                 case gcp of
                      GCPLinux64ELF1 -> return ( dynCode
-                               `appOL`  codeBefore
-                               `snocOL` MR r12 dynReg
-                               `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 0))
-                               `snocOL` LD II64 toc (AddrRegImm r12 (ImmInt 8))
-                               `snocOL` MTCTR r11
-                               `snocOL` LD II64 r11 (AddrRegImm r12 (ImmInt 16))
-                               `snocOL` BCTRL usedRegs
-                               `appOL`  codeAfter)
+                       `appOL`  codeBefore
+                       `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 0))
+                       `snocOL` LD II64 toc (AddrRegImm dynReg (ImmInt 8))
+                       `snocOL` MTCTR r11
+                       `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 16))
+                       `snocOL` BCTRL usedRegs
+                       `appOL`  codeAfter)
  
                      _              -> return ( dynCode
-                               `snocOL` MTCTR dynReg
-                               `appOL`  codeBefore
-                               `snocOL` BCTRL usedRegs
-                               `appOL`  codeAfter)
+                       `snocOL` MTCTR dynReg
+                       `appOL`  codeBefore
+                       `snocOL` BCTRL usedRegs
+                       `appOL`  codeAfter)
     where
 
         platform = targetPlatform dflags
