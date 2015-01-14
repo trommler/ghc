@@ -690,13 +690,13 @@ extendSExpr dflags rep x =
 
 extendUExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
 extendUExpr dflags W32 x
- | (platformArch $ targetPlatform dflags) == ArchPPC = x
+ | target32Bit (targetPlatform dflags) = x
 extendUExpr dflags W64 x
- | (platformArch $ targetPlatform dflags) == ArchPPC_64 = x
+ | not (target32Bit (targetPlatform dflags)) = x
 extendUExpr dflags rep x =
-    let size = case platformArch $ targetPlatform dflags of
-                ArchPPC -> W32
-                _       -> W64
+    let size = if target32Bit $ targetPlatform dflags
+               then W32
+               else W64
     in CmmMachOp (MO_UU_Conv rep size) [x]
 
 -- -----------------------------------------------------------------------------
@@ -938,25 +938,18 @@ condIntCode cond x (CmmLit (CmmInt y rep))
   = do
         (src1, code) <- getSomeReg x
         dflags <- getDynFlags
-        let size = case platformArch $ targetPlatform dflags of
-                     ArchPPC -> II32
-                     _       -> II64
-        let
+        let size = archWordSize $ target32Bit $ targetPlatform dflags
             code' = code `snocOL`
-                (if condUnsigned cond then CMPL else CMP) size src1 (RIImm src2)
+              (if condUnsigned cond then CMPL else CMP) size src1 (RIImm src2)
         return (CondCode False cond code')
 
 condIntCode cond x y = do
     (src1, code1) <- getSomeReg x
     (src2, code2) <- getSomeReg y
     dflags <- getDynFlags
-    let size = case platformArch $ targetPlatform dflags of
-                ArchPPC -> II32
-                _       -> II64
-    let
+    let size = archWordSize $ target32Bit $ targetPlatform dflags
         code' = code1 `appOL` code2 `snocOL`
-                  (if condUnsigned cond then CMPL else CMP) size src1
-                      (RIReg src2)
+          (if condUnsigned cond then CMPL else CMP) size src1 (RIReg src2)
     return (CondCode False cond code')
 
 condFltCode cond x y = do
