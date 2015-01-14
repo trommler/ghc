@@ -1142,7 +1142,7 @@ genCCall'
     64-bit PowerPC. It is specified in
     "64-bit PowerPC ELF Application Binary Interface Supplement 1.9".
     
-    According to both conventions, the parameter area should be part of the
+    According to all conventions, the parameter area should be part of the
     caller's stack frame, allocated in the caller's prologue code (large enough
     to hold the parameter lists for all called routines). The NCG already
     uses the stack for register spilling, leaving 64 bytes free at the top.
