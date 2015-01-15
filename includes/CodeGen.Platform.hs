@@ -879,9 +879,8 @@ freeReg 0 = fastBool False -- Hack: r0 can't be used in all insns,
                            -- but it's actually free
 freeReg 1 = fastBool False -- The Stack Pointer
 
-# if powerpc64_TARGET_ARCH
+-- TODO: make this conditonal for ppc64 ELF
 freeReg 13 = fastBool False -- reserved for system thread ID
-# endif
 
 # if !MACHREGS_darwin
 -- most non-darwin powerpc OSes use r2 as a TOC pointer or something like that
