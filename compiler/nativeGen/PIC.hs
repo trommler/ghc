@@ -302,7 +302,7 @@ howToAccessLabel dflags arch OSDarwin this_mod _ lbl
 
 howToAccessLabel _ ArchPPC_64 os _ kind _
         | osElfTarget os
-        = case kind of 
+        = case kind of
           -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
           DataReference -> AccessViaSymbolPtr
           -- RTLD does not generate stubs for function descriptors
