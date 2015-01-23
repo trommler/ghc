@@ -89,9 +89,9 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
       case picBaseMb of
            Just picBase -> initializePicBase_ppc arch os picBase tops
            Nothing -> return tops
-    ArchPPC_64 -> return tops -- generating function descriptor handled in 
+    ArchPPC_64 -> return tops -- generating function descriptor handled in
                               -- pretty printer
-    _          -> panic "PPC.cmmTopCodeGen: unknown arch" 
+    _          -> panic "PPC.cmmTopCodeGen: unknown arch"
 
 cmmTopCodeGen (CmmData sec dat) = do
   return [CmmData sec dat]  -- no translation, we just use CmmStatic
@@ -480,16 +480,16 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | from == to    -> conversionNop (intSize to) x
 
         -- narrowing is a nop: we treat the high bits as undefined
-      MO_SS_Conv W64 to 
+      MO_SS_Conv W64 to
         | arch32    -> panic "PPC.CodeGen.getRegister no 64 bit int register"
         | otherwise -> conversionNop (intSize to) x
-      MO_SS_Conv W32 to 
+      MO_SS_Conv W32 to
         | arch32    -> conversionNop (intSize to) x
         | otherwise -> case to of
             W64 -> triv_ucode_int to (EXTS II32)
             W16 -> conversionNop II16 x
             W8  -> conversionNop II8 x
-            _   -> panic "PPC.CodeGen.getRegister: no match" 
+            _   -> panic "PPC.CodeGen.getRegister: no match"
       MO_SS_Conv W16 W8 -> conversionNop II8 x
       MO_SS_Conv W8  to -> triv_ucode_int to (EXTS II8)
       MO_SS_Conv W16 to -> triv_ucode_int to (EXTS II16)
@@ -502,7 +502,7 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | otherwise -> conversionNop (intSize to) x
       MO_UU_Conv W32 to
         | arch32    -> conversionNop (intSize to) x
-        | otherwise -> 
+        | otherwise ->
           case to of
            W64 -> trivialCode to False AND x (CmmLit (CmmInt 4294967295 W64))
            W16 -> conversionNop II16 x
@@ -583,7 +583,7 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
             -> trivialCode rep True ADD x (CmmLit $ CmmInt (-imm) immrep)
           _ -> trivialCodeNoImm' (intSize rep) SUBF y x
 
-      MO_Mul rep 
+      MO_Mul rep
        | arch32    -> trivialCode rep True MULLW x y
        | otherwise -> trivialCode rep True MULLD x y
 
@@ -598,7 +598,7 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
                 (extendSExpr dflags rep x) (extendSExpr dflags rep y)
        | otherwise  -> trivialCodeNoImm' (intSize rep) DIVD
                 (extendSExpr dflags rep x) (extendSExpr dflags rep y)
-      MO_U_Quot rep 
+      MO_U_Quot rep
        | arch32     -> trivialCodeNoImm' (intSize rep) DIVWU
                 (extendUExpr dflags rep x) (extendUExpr dflags rep y)
        | otherwise  -> trivialCodeNoImm' (intSize rep) DIVDU
@@ -682,7 +682,7 @@ extendSExpr dflags W32 x
 extendSExpr dflags W64 x
  | not (target32Bit (targetPlatform dflags)) = x
 
-extendSExpr dflags rep x = 
+extendSExpr dflags rep x =
     let size = if target32Bit $ targetPlatform dflags
                then W32
                else W64
@@ -728,7 +728,7 @@ getAmode tree@(CmmRegOff _ _) = do dflags <- getDynFlags
                                    getAmode (mangleIndexTree dflags tree)
 
 getAmode (CmmMachOp (MO_Sub W32) [x, CmmLit (CmmInt i _)])
-  | Just off <- makeImmediate W32 True (-i) 
+  | Just off <- makeImmediate W32 True (-i)
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
@@ -741,7 +741,7 @@ getAmode (CmmMachOp (MO_Add W32) [x, CmmLit (CmmInt i _)])
         return (Amode (AddrRegImm reg off) code)
 
 getAmode (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
-  | Just off <- makeImmediate W64 True (-i) 
+  | Just off <- makeImmediate W64 True (-i)
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
@@ -783,7 +783,7 @@ getAmode (CmmLit lit)
                           ORIS tmp tmp (HA imm)
                           ]
                  return (Amode (AddrRegImm tmp (LO imm)) code)
- 
+
 getAmode (CmmMachOp (MO_Add W32) [x, y])
   = do
         (regX, codeX) <- getSomeReg x
@@ -807,7 +807,7 @@ getAmode other
 
 getAmodeDS :: CmmExpr -> NatM Amode
 getAmodeDS tree@(CmmRegOff _ _) = do dflags <- getDynFlags
-                                     getAmodeDS (mangleIndexTree 
+                                     getAmodeDS (mangleIndexTree
                                                 dflags tree)
 
 getAmodeDS (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
@@ -824,7 +824,7 @@ getAmodeDS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
         return (Amode (AddrRegImm reg off) code)
 
    -- optimize addition with 32-bit immediate
-   -- (needed for PIC) 
+   -- (needed for PIC)
 getAmodeDS (CmmMachOp (MO_Add W32) [x, CmmLit lit])
   = do
         tmp <- getNewRegNat II64
@@ -832,7 +832,7 @@ getAmodeDS (CmmMachOp (MO_Add W32) [x, CmmLit lit])
         let imm = litToImm lit
             code = srcCode `snocOL` ADDIS tmp src (HA imm)
         return (Amode (AddrRegImm tmp (LO imm)) code)
-  
+
 getAmodeDS (CmmLit lit)
   = do
         dflags <- getDynFlags
@@ -853,7 +853,7 @@ getAmodeDS (CmmLit lit)
                           ORIS tmp tmp (HA imm)
                           ]
                  return (Amode (AddrRegImm tmp (LO imm)) code)
- 
+
 getAmodeDS (CmmMachOp (MO_Add _) [x, y])
   = do
         (regX, codeX) <- getSomeReg x
@@ -866,7 +866,7 @@ getAmodeDS other
         let
             off  = ImmInt 0
         return (Amode (AddrRegImm reg off) code)
-  
+
 
 --  The 'CondCode' type:  Condition codes passed up the tree.
 data CondCode
@@ -1020,13 +1020,13 @@ genJump tree
         dflags <- getDynFlags
         let platform = targetPlatform dflags
         case platformOS platform of
-          OSLinux    -> case platformArch platform of 
-                        ArchPPC    -> genJump' tree GCPLinux 
+          OSLinux    -> case platformArch platform of
+                        ArchPPC    -> genJump' tree GCPLinux
                         ArchPPC_64 -> genJump' tree GCPLinux64ELF1
                         _          -> panic "PPC.CodeGen.genJump: Unknown Linux"
           OSDarwin   -> genJump' tree GCPDarwin
           _ -> panic "PPC.CodeGen.genJump: not defined for this os"
-        
+
 
 genJump' :: CmmExpr -> GenCCallPlatform -> NatM InstrBlock
 
@@ -1037,7 +1037,7 @@ genJump' tree GCPLinux64ELF1
                `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 0))
                `snocOL` LD II64 toc (AddrRegImm target (ImmInt 8))
                `snocOL` MTCTR r11
-               `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 16)) 
+               `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 16))
                `snocOL` BCTR [] Nothing)
 
 genJump' tree _
@@ -1141,7 +1141,7 @@ genCCall'
     PowerPC 64 Linux uses the System V Release 4 Calling Convention for
     64-bit PowerPC. It is specified in
     "64-bit PowerPC ELF Application Binary Interface Supplement 1.9".
-    
+
     According to all conventions, the parameter area should be part of the
     caller's stack frame, allocated in the caller's prologue code (large enough
     to hold the parameter lists for all called routines). The NCG already
@@ -1201,7 +1201,7 @@ genCCall' dflags gcp target dest_regs args0
                        `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 16))
                        `snocOL` BCTRL usedRegs
                        `appOL`  codeAfter)
- 
+
                      _              -> return ( dynCode
                        `snocOL` MTCTR dynReg
                        `appOL`  codeBefore
@@ -1228,7 +1228,7 @@ genCCall' dflags gcp target dest_regs args0
                                     roundTo 16 $ (24 +) $ max 32 $ sum $
                                     map (widthInBytes . typeWidth) argReps
                                 GCPLinux -> roundTo 16 finalStack
-                                GCPLinux64ELF1 -> 
+                                GCPLinux64ELF1 ->
                                     roundTo 16 $ (48 +) $ max 64 $ sum $
                                     map (widthInBytes . typeWidth) argReps
 
@@ -1248,7 +1248,7 @@ genCCall' dflags gcp target dest_regs args0
                     | otherwise = x + a - (x `mod` a)
 
         spSize = if target32Bit platform then II32 else II64
-        
+
         move_sp_down finalStack
                | delta > 64 =
                         toOL [STU spSize sp (AddrRegImm sp (ImmInt (-delta))),
@@ -1794,7 +1794,7 @@ coerceInt2FP' ArchPPC_64 fromRep toRep x = do
                         _       -> panic "PPC.CodeGen.coerceInt2FP: no match"
 
     return (Any (floatSize toRep) code')
-    
+
 coerceInt2FP' _ _ _ _ = panic "PPC.CodeGen.coerceInt2FP: unknown arch"
 
 
