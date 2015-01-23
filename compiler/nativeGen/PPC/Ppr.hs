@@ -62,7 +62,8 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
            pprSectionHeader Text $$
            (if platformArch platform == ArchPPC_64
                then pprFunctionDescriptor lbl
-               else pprLabel lbl) $$ -- blocks guaranteed not null, so label needed
+               else pprLabel lbl) $$ -- blocks guaranteed not null,
+                                     -- so label needed
            vcat (map (pprBasicBlock top_info) blocks)
 
     Just (Statics info_lbl _) ->
@@ -89,7 +90,7 @@ pprFunctionDescriptor lab = pprGloblDecl lab
                         $$  text ".section \".opd\",\"aw\""
                         $$  text ".align 3"
                         $$  ppr lab <> char ':'
-                        $$  text ".quad ."  
+                        $$  text ".quad ."
                         <> ppr lab
                         <> text ",.TOC.@tocbase,0"
                         $$  text ".previous"
@@ -677,10 +678,10 @@ pprInstr (EXTS sz reg1 reg2) = hcat [
 pprInstr (NEG reg1 reg2) = pprUnary (sLit "neg") reg1 reg2
 pprInstr (NOT reg1 reg2) = pprUnary (sLit "not") reg1 reg2
 
-pprInstr (SL sz reg1 reg2 ri) = 
+pprInstr (SL sz reg1 reg2 ri) =
          let op = case sz of
                        II32 -> "slw"
-                       II64 -> "sld" 
+                       II64 -> "sld"
                        _    -> panic "PPC.Ppr.pprInstr: shift illegal size"
          in pprLogic (sLit op) reg1 reg2 (limitShiftRI sz ri)
 
@@ -690,7 +691,7 @@ pprInstr (SR II32 reg1 reg2 (RIImm (ImmInt i))) | i > 31 || i < 0 =
     -- of the destination register.
     -- Fixes ticket http://ghc.haskell.org/trac/ghc/ticket/5900
     pprInstr (XOR reg1 reg2 (RIReg reg2))
-pprInstr (SR sz reg1 reg2 ri) = 
+pprInstr (SR sz reg1 reg2 ri) =
          let op = case sz of
                        II32 -> "srw"
                        II64 -> "srd"
