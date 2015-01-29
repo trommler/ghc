@@ -1501,9 +1501,6 @@ generateJumpTableForInstr _ _ = Nothing
 
 -- Turn those condition codes into integers now (when they appear on
 -- the right hand side of an assignment).
---
--- (If applicable) Do not fill the delay slots here; you will confuse the
--- register allocator.
 
 condIntReg, condFltReg :: Cond -> CmmExpr -> CmmExpr -> NatM Register
 
