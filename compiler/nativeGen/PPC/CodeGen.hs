@@ -1510,15 +1510,6 @@ condReg getCond = do
     CondCode _ cond cond_code <- getCond
     dflags <- getDynFlags
     let
-{-        code dst = cond_code `appOL` toOL [
-                BCC cond lbl1,
-                LI dst (ImmInt 0),
-                BCC ALWAYS lbl2,
-                NEWBLOCK lbl1,
-                LI dst (ImmInt 1),
-                BCC ALWAYS lbl2,
-                NEWBLOCK lbl2
-            ]-}
         code dst = cond_code
             `appOL` negate_code
             `appOL` toOL [
