@@ -757,17 +757,23 @@ getAmode D (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
         return (Amode (AddrRegImm reg off) code)
 
 getAmode DS (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
-  | Just off <- makeImmediate W64 True (-i) , i `mod` 4 == 0
+  | Just off <- makeImmediate W64 True (-i)
   = do
         (reg, code) <- getSomeReg x
-        return (Amode (AddrRegImm reg off) code)
+        let (o, c)  = if i `mod` 4 == 0
+                      then (off, code)
+                      else (ImmInt 0, code `snocOL` ADD reg reg (RIImm off))   
+        return (Amode (AddrRegImm reg o) c)
 
 
 getAmode DS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
-  | Just off <- makeImmediate W64 True i , i `mod` 4 == 0
+  | Just off <- makeImmediate W64 True i
   = do
         (reg, code) <- getSomeReg x
-        return (Amode (AddrRegImm reg off) code)
+        let (o, c)  = if i `mod` 4 == 0
+                      then (off, code)
+                      else (ImmInt 0, code `snocOL` ADD reg reg (RIImm off))   
+        return (Amode (AddrRegImm reg o) c)
 
    -- optimize addition with 32-bit immediate
    -- (needed for PIC)
