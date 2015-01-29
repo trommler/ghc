@@ -264,7 +264,7 @@ getSomeReg expr = do
 
 getI64Amodes :: CmmExpr -> NatM (AddrMode, AddrMode, InstrBlock)
 getI64Amodes addrTree = do
-    Amode hi_addr addr_code <- getAmode addrTree
+    Amode hi_addr addr_code <- getAmode D addrTree
     case addrOffset hi_addr 4 of
         Just lo_addr -> return (hi_addr, lo_addr, addr_code)
         Nothing      -> do (hi_ptr, code) <- getSomeReg addrTree
@@ -417,12 +417,12 @@ getRegister' dflags (CmmMachOp (MO_SS_Conv W64 W32) [x])
 getRegister' dflags (CmmLoad mem pk)
  | not (isWord64 pk) = do
         let platform = targetPlatform dflags
-        Amode addr addr_code <- getAmode mem
+        Amode addr addr_code <- getAmode D mem
         let code dst = ASSERT((targetClassOfReg platform dst == RcDouble) == isFloatType pk)
                        addr_code `snocOL` LD size dst addr
         return (Any size code)
  | not (target32Bit (targetPlatform dflags)) = do
-        Amode addr addr_code <- getAmodeDS mem
+        Amode addr addr_code <- getAmode DS mem
         let code dst = addr_code `snocOL` LD II64 dst addr
         return (Any II64 code)
 
@@ -430,37 +430,37 @@ getRegister' dflags (CmmLoad mem pk)
 
 -- catch simple cases of zero- or sign-extended load
 getRegister' _ (CmmMachOp (MO_UU_Conv W8 W32) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II32 (\dst -> addr_code `snocOL` LD II8 dst addr))
 
 getRegister' _ (CmmMachOp (MO_UU_Conv W8 W64) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II64 (\dst -> addr_code `snocOL` LD II8 dst addr))
 
 -- Note: there is no Load Byte Arithmetic instruction, so no signed case here
 
 getRegister' _ (CmmMachOp (MO_UU_Conv W16 W32) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II32 (\dst -> addr_code `snocOL` LD II16 dst addr))
 
 getRegister' _ (CmmMachOp (MO_SS_Conv W16 W32) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II32 (\dst -> addr_code `snocOL` LA II16 dst addr))
 
 getRegister' _ (CmmMachOp (MO_UU_Conv W16 W64) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II64 (\dst -> addr_code `snocOL` LD II16 dst addr))
 
 getRegister' _ (CmmMachOp (MO_SS_Conv W16 W64) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II64 (\dst -> addr_code `snocOL` LA II16 dst addr))
 
 getRegister' _ (CmmMachOp (MO_UU_Conv W32 W64) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II64 (\dst -> addr_code `snocOL` LD II32 dst addr))
 
 getRegister' _ (CmmMachOp (MO_SS_Conv W32 W64) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode mem
+    Amode addr addr_code <- getAmode D mem
     return (Any II64 (\dst -> addr_code `snocOL` LA II32 dst addr))
 
 getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
@@ -641,7 +641,7 @@ getRegister' _ (CmmLit (CmmFloat f frep)) = do
     lbl <- getNewLabelNat
     dflags <- getDynFlags
     dynRef <- cmmMakeDynamicReference dflags DataReference lbl
-    Amode addr addr_code <- getAmode dynRef
+    Amode addr addr_code <- getAmode D dynRef
     let size = floatSize frep
         code dst =
             LDATA ReadOnlyData (Statics lbl
@@ -662,7 +662,7 @@ getRegister' dflags (CmmLit lit)
   = do lbl <- getNewLabelNat
        dflags <- getDynFlags
        dynRef <- cmmMakeDynamicReference dflags DataReference lbl
-       Amode addr addr_code <- getAmode dynRef
+       Amode addr addr_code <- getAmode D dynRef
        let rep = cmmLitType dflags lit
            size = cmmTypeSize rep
            code dst =
@@ -723,101 +723,47 @@ temporary, then do the other computation, and then use the temporary:
     ... (tmp) ...
 -}
 
-getAmode :: CmmExpr -> NatM Amode
-getAmode tree@(CmmRegOff _ _) = do dflags <- getDynFlags
-                                   getAmode (mangleIndexTree dflags tree)
+data InstrForm = D | DS
 
-getAmode (CmmMachOp (MO_Sub W32) [x, CmmLit (CmmInt i _)])
+getAmode :: InstrForm -> CmmExpr -> NatM Amode
+getAmode inf tree@(CmmRegOff _ _)
+  = do dflags <- getDynFlags
+       getAmode inf (mangleIndexTree dflags tree)
+
+getAmode _ (CmmMachOp (MO_Sub W32) [x, CmmLit (CmmInt i _)])
   | Just off <- makeImmediate W32 True (-i)
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
 
 
-getAmode (CmmMachOp (MO_Add W32) [x, CmmLit (CmmInt i _)])
+getAmode _ (CmmMachOp (MO_Add W32) [x, CmmLit (CmmInt i _)])
   | Just off <- makeImmediate W32 True i
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
 
-getAmode (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
+getAmode D (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
   | Just off <- makeImmediate W64 True (-i)
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
 
 
-getAmode (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
+getAmode D (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
   | Just off <- makeImmediate W64 True i
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
 
-   -- optimize addition with 32-bit immediate
-   -- (needed for PIC)
-getAmode (CmmMachOp (MO_Add W32) [x, CmmLit lit])
-  = do
-        tmp <- getNewRegNat II32
-        (src, srcCode) <- getSomeReg x
-        let imm = litToImm lit
-            code = srcCode `snocOL` ADDIS tmp src (HA imm)
-        return (Amode (AddrRegImm tmp (LO imm)) code)
-
-getAmode (CmmLit lit)
-  = do
-        dflags <- getDynFlags
-        case platformArch $ targetPlatform dflags of
-             ArchPPC -> do
-                 tmp <- getNewRegNat II32
-                 let imm = litToImm lit
-                     code = unitOL (LIS tmp (HA imm))
-                 return (Amode (AddrRegImm tmp (LO imm)) code)
-             _        -> do -- TODO: Load from TOC,
-                            -- see getRegister' _ (CmmLit lit)
-                 tmp <- getNewRegNat II64
-                 let imm = litToImm lit
-                     code =  toOL [
-                          LIS tmp (HIGHESTA imm),
-                          OR tmp tmp (RIImm (HIGHERA imm)),
-                          SL  II64 tmp tmp (RIImm (ImmInt 32)),
-                          ORIS tmp tmp (HA imm)
-                          ]
-                 return (Amode (AddrRegImm tmp (LO imm)) code)
-
-getAmode (CmmMachOp (MO_Add W32) [x, y])
-  = do
-        (regX, codeX) <- getSomeReg x
-        (regY, codeY) <- getSomeReg y
-        return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
-
-getAmode (CmmMachOp (MO_Add W64) [x, y])
-  = do
-        (regX, codeX) <- getSomeReg x
-        (regY, codeY) <- getSomeReg y
-        return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
-
-getAmode other
-  = do
-        (reg, code) <- getSomeReg other
-        let
-            off  = ImmInt 0
-        return (Amode (AddrRegImm reg off) code)
-
--- 64 bit load and store operations require offsets be a multiple of 4
-
-getAmodeDS :: CmmExpr -> NatM Amode
-getAmodeDS tree@(CmmRegOff _ _) = do dflags <- getDynFlags
-                                     getAmodeDS (mangleIndexTree
-                                                dflags tree)
-
-getAmodeDS (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
+getAmode DS (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
   | Just off <- makeImmediate W64 True (-i) , i `mod` 4 == 0
   = do
         (reg, code) <- getSomeReg x
         return (Amode (AddrRegImm reg off) code)
 
 
-getAmodeDS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
+getAmode DS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
   | Just off <- makeImmediate W64 True i , i `mod` 4 == 0
   = do
         (reg, code) <- getSomeReg x
@@ -825,15 +771,15 @@ getAmodeDS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
 
    -- optimize addition with 32-bit immediate
    -- (needed for PIC)
-getAmodeDS (CmmMachOp (MO_Add W32) [x, CmmLit lit])
+getAmode _ (CmmMachOp (MO_Add W32) [x, CmmLit lit])
   = do
-        tmp <- getNewRegNat II64
+        tmp <- getNewRegNat II32
         (src, srcCode) <- getSomeReg x
         let imm = litToImm lit
             code = srcCode `snocOL` ADDIS tmp src (HA imm)
         return (Amode (AddrRegImm tmp (LO imm)) code)
 
-getAmodeDS (CmmLit lit)
+getAmode _ (CmmLit lit)
   = do
         dflags <- getDynFlags
         case platformArch $ targetPlatform dflags of
@@ -854,13 +800,19 @@ getAmodeDS (CmmLit lit)
                           ]
                  return (Amode (AddrRegImm tmp (LO imm)) code)
 
-getAmodeDS (CmmMachOp (MO_Add _) [x, y])
+getAmode _ (CmmMachOp (MO_Add W32) [x, y])
   = do
         (regX, codeX) <- getSomeReg x
         (regY, codeY) <- getSomeReg y
         return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
 
-getAmodeDS other
+getAmode _ (CmmMachOp (MO_Add W64) [x, y])
+  = do
+        (regX, codeX) <- getSomeReg x
+        (regY, codeY) <- getSomeReg y
+        return (Amode (AddrRegReg regX regY) (codeX `appOL` codeY))
+
+getAmode _ other
   = do
         (reg, code) <- getSomeReg other
         let
@@ -988,8 +940,8 @@ assignReg_FltCode :: Size -> CmmReg  -> CmmExpr -> NatM InstrBlock
 assignMem_IntCode pk addr src = do
     (srcReg, code) <- getSomeReg src
     Amode dstAddr addr_code <- case pk of
-                                II64 -> getAmodeDS addr
-                                _    -> getAmode addr
+                                II64 -> getAmode DS addr
+                                _    -> getAmode D  addr
     return $ code `appOL` addr_code `snocOL` ST pk srcReg dstAddr
 
 -- dst is a reg, but src could be anything
@@ -1739,7 +1691,7 @@ coerceInt2FP' ArchPPC fromRep toRep x = do
     ftmp <- getNewRegNat FF64
     dflags <- getDynFlags
     dynRef <- cmmMakeDynamicReference dflags DataReference lbl
-    Amode addr addr_code <- getAmode dynRef
+    Amode addr addr_code <- getAmode D dynRef
     let
         code' dst = code `appOL` maybe_exts `appOL` toOL [
                 LDATA ReadOnlyData $ Statics lbl
