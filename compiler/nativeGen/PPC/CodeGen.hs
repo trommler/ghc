@@ -584,8 +584,8 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
           _ -> trivialCodeNoImm' (intSize rep) SUBF y x
 
       MO_Mul rep
-       | arch32    -> trivialCode rep True MULLW x y
-       | otherwise -> trivialCode rep True MULLD x y
+       | arch32    -> multiplyCode rep True MULLW x y
+       | otherwise -> multiplyCode rep True MULLD x y
 
       MO_S_MulMayOflo W32 -> trivialCodeNoImm' II32 MULLW_MayOflo x y
       MO_S_MulMayOflo W64 -> trivialCodeNoImm' II64 MULLD_MayOflo x y
@@ -599,10 +599,8 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
        | otherwise  -> trivialCodeNoImm' (intSize rep) DIVD
                 (extendSExpr dflags rep x) (extendSExpr dflags rep y)
       MO_U_Quot rep
-       | arch32     -> trivialCodeNoImm' (intSize rep) DIVWU
-                (extendUExpr dflags rep x) (extendUExpr dflags rep y)
-       | otherwise  -> trivialCodeNoImm' (intSize rep) DIVDU
-                (extendUExpr dflags rep x) (extendUExpr dflags rep y)
+       | arch32     -> divideCode rep DIVWU x y
+       | otherwise  -> divideCode rep DIVDU x y
 
       MO_S_Rem rep
        | arch32    -> remainderCode rep DIVW (extendSExpr dflags rep x)
@@ -1677,6 +1675,52 @@ remainderCode rep div x y = do
                 SUBF dst dst src1
             ]
     return (Any (intSize rep) code)
+
+-- optimise multiplication and (perhaps) division by powers of two
+-- using shift operations
+multiplyCode 
+        :: Width
+        -> Bool
+        -> (Reg -> Reg -> RI -> Instr)
+        -> CmmExpr
+        -> CmmExpr
+        -> NatM Register
+multiplyCode rep _ _ x (CmmLit (CmmInt y _))
+    | Just imm <- makeIntLogImm y
+    = do
+        (src1, code1) <- getSomeReg x
+        let code dst = code1 `snocOL` SL (intSize rep) dst src1 (RIImm imm)
+        return (Any (intSize rep) code)
+
+multiplyCode rep signed instr x y
+    = trivialCode rep signed instr x y
+
+divideCode :: Width -> (Reg -> Reg -> Reg -> Instr)
+              -> CmmExpr -> CmmExpr -> NatM Register
+divideCode rep _ x (CmmLit (CmmInt y _))
+    | Just imm <- makeIntLogImm y
+    = do
+        dflags <-getDynFlags
+        let x' = extendUExpr dflags rep x
+        (src1, code1) <- getSomeReg x'
+        let code dst = code1 `snocOL` SR (intSize rep) dst src1 (RIImm imm)
+        return (Any (intSize rep) code)
+
+divideCode rep instr x y
+    = do
+        dflags <- getDynFlags
+        trivialCodeNoImm' (intSize rep) instr (extendUExpr dflags rep x)
+                                              (extendUExpr dflags rep y)
+
+makeIntLogImm :: Integral a => a -> Maybe Imm
+makeIntLogImm x = fmap ImmInt (intLog x)
+    where
+        intLog 2  = Just 1
+        intLog 4  = Just 2
+        intLog 8  = Just 3
+        intLog 16 = Just 4
+        intLog 32 = Just 5
+        intLog _  = Nothing
 
 coerceInt2FP :: Width -> Width -> CmmExpr -> NatM Register
 coerceInt2FP fromRep toRep x = do
