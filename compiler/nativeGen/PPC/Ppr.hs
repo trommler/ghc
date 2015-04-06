@@ -572,16 +572,6 @@ pprInstr (BCTRL _) = hcat [
         ptext (sLit "bctrl")
     ]
 pprInstr (ADD reg1 reg2 ri) = pprLogic (sLit "add") reg1 reg2 ri
-pprInstr (ADDI reg1 reg2 imm) = hcat [
-        char '\t',
-        ptext (sLit "addi"),
-        char '\t',
-        pprReg reg1,
-        ptext (sLit ", "),
-        pprReg reg2,
-        ptext (sLit ", "),
-        pprImm imm
-    ]
 pprInstr (ADDIS reg1 reg2 imm) = hcat [
         char '\t',
         ptext (sLit "addis"),

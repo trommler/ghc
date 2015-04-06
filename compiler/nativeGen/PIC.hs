@@ -749,7 +749,8 @@ initializePicBase_ppc ArchPPC os picReg
             fetchPC (BasicBlock bID insns) =
               BasicBlock bID (PPC.FETCHPC picReg
                               : PPC.ADDIS picReg picReg (PPC.HA gotOffset)
-                              : PPC.ADDI picReg picReg (PPC.LO gotOffset)
+                              : PPC.ADD picReg picReg
+                                        (PPC.RIImm (PPC.LO gotOffset))
                               : PPC.MR PPC.r30 picReg
                               : insns)
 
