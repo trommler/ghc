@@ -1521,12 +1521,18 @@ condReg getCond = do
         code dst = cond_code
             `appOL` negate_code
             `appOL` toOL [
-                MFCR dst,
+                cr2gpr_code dst,
                 RLWINM dst dst (bit + 1) 31 31
             ]
 
         negate_code | do_negate = unitOL (CRNOR bit bit bit)
                     | otherwise = nilOL
+
+        crf0 = 128
+        cr2gpr_code dst = case platformArch $ targetPlatform dflags of
+                    ArchPPC    -> MFCR dst
+                    ArchPPC_64 -> MFOCRF dst crf0
+                    _          -> panic "PPC.CodeGen: cr2gpr unknown arch"
 
         (bit, do_negate) = case cond of
             LTT -> (0, False)

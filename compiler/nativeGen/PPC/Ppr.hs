@@ -746,6 +746,15 @@ pprInstr (MFCR reg) = hcat [
         pprReg reg
     ]
 
+pprInstr (MFOCRF reg mask) = hcat [
+        char '\t',
+        ptext (sLit "mfocrf"),
+        char '\t',
+        pprReg reg,
+        char ',',
+        int mask
+    ]
+
 pprInstr (MFLR reg) = hcat [
         char '\t',
         ptext (sLit "mflr"),

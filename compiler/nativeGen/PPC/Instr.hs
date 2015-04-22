@@ -266,6 +266,9 @@ data Instr
 
     | CRNOR   Int Int Int       -- condition register nor
     | MFCR    Reg               -- move from condition register
+    | MFOCRF  Reg Int           -- move from one condition register field
+                                -- new form, more efficient than mfcr
+                                -- on POWER4 and later
 
     | MFLR    Reg               -- move from link register
     | FETCHPC Reg               -- pseudo-instruction:
@@ -342,6 +345,7 @@ ppc_regUsageOfInstr platform instr
     FCFID   r1 r2           -> usage ([r2], [r1])
     FRSP    r1 r2           -> usage ([r2], [r1])
     MFCR    reg             -> usage ([], [reg])
+    MFOCRF  reg _           -> usage ([], [reg])
     MFLR    reg             -> usage ([], [reg])
     FETCHPC reg             -> usage ([], [reg])
     _                       -> noUsage
@@ -425,6 +429,7 @@ ppc_patchRegsOfInstr instr env
     FCFID   r1 r2           -> FCFID (env r1) (env r2)
     FRSP    r1 r2           -> FRSP (env r1) (env r2)
     MFCR    reg             -> MFCR (env reg)
+    MFOCRF  reg m           -> MFOCRF (env reg) m
     MFLR    reg             -> MFLR (env reg)
     FETCHPC reg             -> FETCHPC (env reg)
     _                       -> instr
