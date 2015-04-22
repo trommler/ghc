@@ -764,10 +764,10 @@ getAmode DS (CmmMachOp (MO_Sub W64) [x, CmmLit (CmmInt i _)])
         (reg', off', code')  <-
                      if i `mod` 4 == 0
                       then do return (reg, off, code)
-                      else do 
+                      else do
                            tmp <- getNewRegNat II64
                            return (tmp, ImmInt 0,
-                                  code `snocOL` ADD tmp reg (RIImm off))   
+                                  code `snocOL` ADD tmp reg (RIImm off))
         return (Amode (AddrRegImm reg' off') code')
 
 getAmode DS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
@@ -777,10 +777,10 @@ getAmode DS (CmmMachOp (MO_Add W64) [x, CmmLit (CmmInt i _)])
         (reg', off', code')  <-
                      if i `mod` 4 == 0
                       then do return (reg, off, code)
-                      else do 
+                      else do
                            tmp <- getNewRegNat II64
                            return (tmp, ImmInt 0,
-                                  code `snocOL` ADD tmp reg (RIImm off))   
+                                  code `snocOL` ADD tmp reg (RIImm off))
         return (Amode (AddrRegImm reg' off') code')
 
    -- optimize addition with 32-bit immediate
