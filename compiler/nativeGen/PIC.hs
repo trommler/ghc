@@ -159,7 +159,7 @@ cmmMakePicReference dflags lbl
         | OSMinGW32 <- platformOS $ targetPlatform dflags
         = CmmLit $ CmmLabel lbl
 
-        | ArchPPC_64 <- platformArch $ targetPlatform dflags
+        | ArchPPC_64 _ _ <- platformArch $ targetPlatform dflags
         = CmmMachOp (MO_Add W32) -- code model medium
                 [ CmmReg (CmmGlobal PicBaseReg)
                 , CmmLit $ picRelative
@@ -300,7 +300,7 @@ howToAccessLabel dflags arch OSDarwin this_mod _ lbl
 -- from position independent code. It is also required from the main program
 -- when dynamic libraries containing Haskell code are used.
 
-howToAccessLabel _ ArchPPC_64 os _ kind _
+howToAccessLabel _ (ArchPPC_64 _ _) os _ kind _
         | osElfTarget os
         = case kind of
           -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
@@ -441,14 +441,14 @@ needImportedSymbols dflags arch os
         , arch  == ArchPPC
         = gopt Opt_PIC dflags || not (gopt Opt_Static dflags)
 
-        -- PowerPC 64 Linux: always
+        -- PowerPC 64 Linux: always 
         | osElfTarget os
-        , arch == ArchPPC_64
+        , arch == ArchPPC_64 ELF_V1 PPC_BE || arch == ArchPPC_64 ELF_V2 PPC_LE 
+               || arch == ArchPPC_64 ELF_V2 PPC_BE    
         = True
 
         -- i386 (and others?): -dynamic but not -fPIC
         | osElfTarget os
-        , arch  /= ArchPPC_64
         = not (gopt Opt_Static dflags) && not (gopt Opt_PIC dflags)
 
         | otherwise
@@ -483,20 +483,20 @@ pprGotDeclaration dflags ArchX86 OSDarwin
 pprGotDeclaration _ _ OSDarwin
         = empty
 
--- PPC 64 needs a Table Of Contents (TOC)
-pprGotDeclaration _ ArchPPC_64 OSLinux
+-- PPC 64 needs a Table Of Contents (TOC) on Linux
+pprGotDeclaration _ (ArchPPC_64 _ _) OSLinux
         = ptext (sLit ".section \".toc\",\"aw\"")
-
+pprGotDeclaration _ (ArchPPC_64 _ _) _
+        = panic "pprGotDeclaration: ArchPPC_64 only Linux supported"
+        
 -- Emit GOT declaration
 -- Output whatever needs to be output once per .s file.
-pprGotDeclaration dflags arch os
+pprGotDeclaration dflags _ os
         | osElfTarget os
-        , arch  /= ArchPPC_64
         , not (gopt Opt_PIC dflags)
         = empty
 
         | osElfTarget os
-        , arch  /= ArchPPC_64
         = vcat [
                 -- See Note [.LCTOC1 in PPC PIC code]
                 ptext (sLit ".section \".got2\",\"aw\""),
@@ -655,7 +655,7 @@ pprImportedSymbol _ (Platform { platformOS = OSDarwin }) _
 -- the NCG will keep track of all DynamicLinkerLabels it uses
 -- and output each of them using pprImportedSymbol.
 
-pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 })
+pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 _ _ })
                   importedLbl
         | osElfTarget (platformOS platform)
         = case dynamicLinkerLabelInfo importedLbl of

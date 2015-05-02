@@ -78,7 +78,7 @@ ppc_mkStackAllocInstr platform amount
   = case platformArch platform of
       ArchPPC    -> -- SUB II32 (OpImm (ImmInt amount)) (OpReg esp)
                     ADD sp sp (RIImm (ImmInt (-amount)))
-      ArchPPC_64 -> STU II64 sp (AddrRegImm sp (ImmInt (-amount)))
+      ArchPPC_64 ELF_V1 _ -> STU II64 sp (AddrRegImm sp (ImmInt (-amount)))
       arch       -> panic $ "ppc_mkStackAllocInstr " ++ show arch
 
 ppc_mkStackDeallocInstr :: Platform -> Int -> Instr
@@ -86,7 +86,7 @@ ppc_mkStackDeallocInstr platform amount
   = case platformArch platform of
       ArchPPC    -> -- ADD II32 (OpImm (ImmInt amount)) (OpReg esp)
                     ADD sp sp (RIImm (ImmInt amount))
-      ArchPPC_64 -> ADD sp sp (RIImm (ImmInt amount))
+      ArchPPC_64 ELF_V1 _ -> ADD sp sp (RIImm (ImmInt amount))
       arch       -> panic $ "ppc_mkStackDeallocInstr " ++ show arch
 
 --

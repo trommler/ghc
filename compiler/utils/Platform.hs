@@ -8,6 +8,8 @@ module Platform (
         ArmISA(..),
         ArmISAExt(..),
         ArmABI(..),
+        PPC_64ABI(..),
+        PPC_64Endian(..),
 
         target32Bit,
         isARM,
@@ -47,6 +49,9 @@ data Arch
         | ArchX86_64
         | ArchPPC
         | ArchPPC_64
+          { ppc_64ABI    :: PPC_64ABI
+          , ppc_64Endian :: PPC_64Endian
+          }
         | ArchSPARC
         | ArchARM
           { armISA    :: ArmISA
@@ -107,10 +112,23 @@ data ArmABI
     | HARD
     deriving (Read, Show, Eq)
 
+-- | PowerPC 64-bit ABI and endianness
+--
+data PPC_64ABI
+    = ELF_V1
+    | ELF_V2
+    deriving (Read, Show, Eq)
+
+data PPC_64Endian
+    = PPC_BE
+    | PPC_LE
+    deriving (Read, Show, Eq)
+
+-- | This predicate tells us whether tha platform is 32-bit.
 target32Bit :: Platform -> Bool
 target32Bit p = platformWordSize p == 4
 
--- | This predicates tells us whether the OS supports ELF-like shared libraries.
+-- | This predicate tells us whether the OS supports ELF-like shared libraries.
 osElfTarget :: OS -> Bool
 osElfTarget OSLinux     = True
 osElfTarget OSFreeBSD   = True

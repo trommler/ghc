@@ -89,8 +89,9 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
       case picBaseMb of
            Just picBase -> initializePicBase_ppc arch os picBase tops
            Nothing -> return tops
-    ArchPPC_64 -> return tops -- generating function descriptor handled in
-                              -- pretty printer
+    ArchPPC_64 ELF_V1 _ -> return tops 
+                      -- generating function descriptor handled in
+                      -- pretty printer
     _          -> panic "PPC.cmmTopCodeGen: unknown arch"
 
 cmmTopCodeGen (CmmData sec dat) = do
@@ -988,8 +989,8 @@ genJump tree
         case platformOS platform of
           OSLinux    -> case platformArch platform of
                         ArchPPC    -> genJump' tree GCPLinux
-                        ArchPPC_64 -> genJump' tree GCPLinux64ELF1
-                        _          -> panic "PPC.CodeGen.genJump: Unknown Linux"
+                        ArchPPC_64 ELF_V1 _ -> genJump' tree GCPLinux64ELF1
+                        _   -> panic "PPC.CodeGen.genJump: Unknown Linux"
           OSDarwin   -> genJump' tree GCPDarwin
           _ -> panic "PPC.CodeGen.genJump: not defined for this os"
 
@@ -1059,7 +1060,7 @@ genCCall target dest_regs argsAndHints
        OSLinux    -> case platformArch platform of
                      ArchPPC    -> genCCall' dflags GCPLinux
                                              target dest_regs argsAndHints
-                     ArchPPC_64 -> genCCall' dflags GCPLinux64ELF1
+                     ArchPPC_64 ELF_V1 _ -> genCCall' dflags GCPLinux64ELF1
                                              target dest_regs argsAndHints
                      _          -> panic "PPC.CodeGen.genCCall: Unknown Linux"
        OSDarwin   -> genCCall' dflags GCPDarwin target dest_regs argsAndHints
@@ -1724,7 +1725,7 @@ coerceInt2FP' ArchPPC fromRep toRep x = do
 
     return (Any (floatSize toRep) code')
 
-coerceInt2FP' ArchPPC_64 fromRep toRep x = do
+coerceInt2FP' (ArchPPC_64 ELF_V1 _) fromRep toRep x = do
     (src, code) <- getSomeReg x
     dflags <- getDynFlags
     let
@@ -1774,7 +1775,7 @@ coerceFP2Int' ArchPPC _ toRep x = do
             LD II32 dst (spRel dflags 3)]
     return (Any (intSize toRep) code')
 
-coerceFP2Int' ArchPPC_64 _ toRep x = do
+coerceFP2Int' (ArchPPC_64 ELF_V1 _) _ toRep x = do
     dflags <- getDynFlags
     -- the reps don't really matter: F*->FF64 and II64->I* are no-ops
     (src, code) <- getSomeReg x

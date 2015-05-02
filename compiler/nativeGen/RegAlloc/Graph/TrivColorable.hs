@@ -107,18 +107,18 @@ trivColorable
 trivColorable platform virtualRegSqueeze realRegSqueeze RcInteger conflicts exclusions
         | let !cALLOCATABLE_REGS_INTEGER
                   = iUnbox (case platformArch platform of
-                            ArchX86       -> 3
-                            ArchX86_64    -> 5
-                            ArchPPC       -> 16
-                            ArchSPARC     -> 14
-                            ArchPPC_64    -> panic "trivColorable ArchPPC_64"
-                            ArchARM _ _ _ -> panic "trivColorable ArchARM"
-                            ArchARM64     -> panic "trivColorable ArchARM64"
-                            ArchAlpha     -> panic "trivColorable ArchAlpha"
-                            ArchMipseb    -> panic "trivColorable ArchMipseb"
-                            ArchMipsel    -> panic "trivColorable ArchMipsel"
-                            ArchJavaScript-> panic "trivColorable ArchJavaScript"
-                            ArchUnknown   -> panic "trivColorable ArchUnknown")
+                          ArchX86        -> 3
+                          ArchX86_64     -> 5
+                          ArchPPC        -> 16
+                          ArchSPARC      -> 14
+                          ArchPPC_64 _ _ -> panic "trivColorable ArchPPC_64"
+                          ArchARM _ _ _  -> panic "trivColorable ArchARM"
+                          ArchARM64      -> panic "trivColorable ArchARM64"
+                          ArchAlpha      -> panic "trivColorable ArchAlpha"
+                          ArchMipseb     -> panic "trivColorable ArchMipseb"
+                          ArchMipsel     -> panic "trivColorable ArchMipsel"
+                          ArchJavaScript -> panic "trivColorable ArchJavaScript"
+                          ArchUnknown    -> panic "trivColorable ArchUnknown")
         , count2        <- accSqueeze (_ILIT(0)) cALLOCATABLE_REGS_INTEGER
                                 (virtualRegSqueeze RcInteger)
                                 conflicts
@@ -132,18 +132,18 @@ trivColorable platform virtualRegSqueeze realRegSqueeze RcInteger conflicts excl
 trivColorable platform virtualRegSqueeze realRegSqueeze RcFloat conflicts exclusions
         | let !cALLOCATABLE_REGS_FLOAT
                   = iUnbox (case platformArch platform of
-                            ArchX86       -> 0
-                            ArchX86_64    -> 0
-                            ArchPPC       -> 0
-                            ArchSPARC     -> 22
-                            ArchPPC_64    -> panic "trivColorable ArchPPC_64"
-                            ArchARM _ _ _ -> panic "trivColorable ArchARM"
-                            ArchARM64     -> panic "trivColorable ArchARM64"
-                            ArchAlpha     -> panic "trivColorable ArchAlpha"
-                            ArchMipseb    -> panic "trivColorable ArchMipseb"
-                            ArchMipsel    -> panic "trivColorable ArchMipsel"
-                            ArchJavaScript-> panic "trivColorable ArchJavaScript"
-                            ArchUnknown   -> panic "trivColorable ArchUnknown")
+                         ArchX86        -> 0
+                         ArchX86_64     -> 0
+                         ArchPPC        -> 0
+                         ArchSPARC      -> 22
+                         ArchPPC_64 _ _ -> panic "trivColorable ArchPPC_64"
+                         ArchARM _ _ _  -> panic "trivColorable ArchARM"
+                         ArchARM64      -> panic "trivColorable ArchARM64"
+                         ArchAlpha      -> panic "trivColorable ArchAlpha"
+                         ArchMipseb     -> panic "trivColorable ArchMipseb"
+                         ArchMipsel     -> panic "trivColorable ArchMipsel"
+                         ArchJavaScript -> panic "trivColorable ArchJavaScript"
+                         ArchUnknown    -> panic "trivColorable ArchUnknown")
         , count2        <- accSqueeze (_ILIT(0)) cALLOCATABLE_REGS_FLOAT
                                 (virtualRegSqueeze RcFloat)
                                 conflicts
@@ -157,18 +157,18 @@ trivColorable platform virtualRegSqueeze realRegSqueeze RcFloat conflicts exclus
 trivColorable platform virtualRegSqueeze realRegSqueeze RcDouble conflicts exclusions
         | let !cALLOCATABLE_REGS_DOUBLE
                   = iUnbox (case platformArch platform of
-                            ArchX86       -> 6
-                            ArchX86_64    -> 0
-                            ArchPPC       -> 26
-                            ArchSPARC     -> 11
-                            ArchPPC_64    -> panic "trivColorable ArchPPC_64"
-                            ArchARM _ _ _ -> panic "trivColorable ArchARM"
-                            ArchARM64     -> panic "trivColorable ArchARM64"
-                            ArchAlpha     -> panic "trivColorable ArchAlpha"
-                            ArchMipseb    -> panic "trivColorable ArchMipseb"
-                            ArchMipsel    -> panic "trivColorable ArchMipsel"
-                            ArchJavaScript-> panic "trivColorable ArchJavaScript"
-                            ArchUnknown   -> panic "trivColorable ArchUnknown")
+                        ArchX86        -> 6
+                        ArchX86_64     -> 0
+                        ArchPPC        -> 26
+                        ArchSPARC      -> 11
+                        ArchPPC_64 _ _ -> panic "trivColorable ArchPPC_64"
+                        ArchARM _ _ _  -> panic "trivColorable ArchARM"
+                        ArchARM64      -> panic "trivColorable ArchARM64"
+                        ArchAlpha      -> panic "trivColorable ArchAlpha"
+                        ArchMipseb     -> panic "trivColorable ArchMipseb"
+                        ArchMipsel     -> panic "trivColorable ArchMipsel"
+                        ArchJavaScript -> panic "trivColorable ArchJavaScript"
+                        ArchUnknown    -> panic "trivColorable ArchUnknown")
         , count2        <- accSqueeze (_ILIT(0)) cALLOCATABLE_REGS_DOUBLE
                                 (virtualRegSqueeze RcDouble)
                                 conflicts
@@ -182,18 +182,18 @@ trivColorable platform virtualRegSqueeze realRegSqueeze RcDouble conflicts exclu
 trivColorable platform virtualRegSqueeze realRegSqueeze RcDoubleSSE conflicts exclusions
         | let !cALLOCATABLE_REGS_SSE
                   = iUnbox (case platformArch platform of
-                            ArchX86       -> 8
-                            ArchX86_64    -> 10
-                            ArchPPC       -> 0
-                            ArchSPARC     -> 0
-                            ArchPPC_64    -> panic "trivColorable ArchPPC_64"
-                            ArchARM _ _ _ -> panic "trivColorable ArchARM"
-                            ArchARM64     -> panic "trivColorable ArchARM64"
-                            ArchAlpha     -> panic "trivColorable ArchAlpha"
-                            ArchMipseb    -> panic "trivColorable ArchMipseb"
-                            ArchMipsel    -> panic "trivColorable ArchMipsel"
-                            ArchJavaScript-> panic "trivColorable ArchJavaScript"
-                            ArchUnknown   -> panic "trivColorable ArchUnknown")
+                        ArchX86        -> 8
+                        ArchX86_64     -> 10
+                        ArchPPC        -> 0
+                        ArchSPARC      -> 0
+                        ArchPPC_64 _ _ -> panic "trivColorable ArchPPC_64"
+                        ArchARM _ _ _ -> panic "trivColorable ArchARM"
+                        ArchARM64      -> panic "trivColorable ArchARM64"
+                        ArchAlpha      -> panic "trivColorable ArchAlpha"
+                        ArchMipseb     -> panic "trivColorable ArchMipseb"
+                        ArchMipsel     -> panic "trivColorable ArchMipsel"
+                        ArchJavaScript -> panic "trivColorable ArchJavaScript"
+                        ArchUnknown    -> panic "trivColorable ArchUnknown")
         , count2        <- accSqueeze (_ILIT(0)) cALLOCATABLE_REGS_SSE
                                 (virtualRegSqueeze RcDoubleSSE)
                                 conflicts

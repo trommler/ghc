@@ -60,7 +60,7 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
            pprLabel lbl
          blocks -> -- special case for code without info table:
            pprSectionHeader Text $$
-           (if platformArch platform == ArchPPC_64
+           (if platformArch platform == ArchPPC_64 ELF_V1 PPC_BE
                then pprFunctionDescriptor lbl
                else pprLabel lbl) $$ -- blocks guaranteed not null,
                                      -- so label needed
@@ -304,7 +304,8 @@ pprSectionHeader :: Section -> SDoc
 pprSectionHeader seg =
  sdocWithPlatform $ \platform ->
  let osDarwin = platformOS platform == OSDarwin
-     ppc64    = platformArch platform == ArchPPC_64 in
+     ppc64    = not $ target32Bit platform
+ in
  case seg of
   Text              -> text ".text\n\t.align 2"
   Data
@@ -335,7 +336,7 @@ pprDataItem lit
     vcat (ppr_item (cmmTypeSize $ cmmLitType dflags lit) lit dflags)
     where
         imm = litToImm lit
-        archPPC_64 dflags = (platformArch $ targetPlatform dflags) == ArchPPC_64
+        archPPC_64 dflags = not $ target32Bit $ targetPlatform dflags
 
         ppr_item II8   _ _ = [ptext (sLit "\t.byte\t") <> pprImm imm]
 
