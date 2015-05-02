@@ -769,6 +769,18 @@ pprInstr (FETCHPC reg) = vcat [
         hcat [ ptext (sLit "1:\tmflr\t"), pprReg reg ]
     ]
 
+pprInstr (FETCHTOC reg lab) = vcat [
+        hcat [ ptext (sLit "0:\taddis\t"), pprReg reg,
+               ptext (sLit ",12,.TOC.-0b@ha") ],
+        hcat [ ptext (sLit "\taddi\t"), pprReg reg,
+               char ',', pprReg reg,
+               ptext (sLit ",.TOC.-0b@l") ],
+        hcat [ ptext (sLit "\t.localentry\t"),
+               ppr lab,
+               ptext (sLit ",.-"),
+               ppr lab]
+    ]
+
 pprInstr LWSYNC = ptext (sLit "\tlwsync")
 
 pprInstr NOP = ptext (sLit "\tnop")

@@ -271,6 +271,9 @@ data Instr
     | MFLR    Reg               -- move from link register
     | FETCHPC Reg               -- pseudo-instruction:
                                 -- bcl to next insn, mflr reg
+    | FETCHTOC Reg CLabel       -- pseudo-instruction
+                                -- add TOC offset to address in r12
+                                -- print .localentry for label
     | LWSYNC                    -- memory barrier
     | NOP                       -- no operation, PowerPC 64 bit
                                 -- needs this as place holder to
@@ -346,6 +349,7 @@ ppc_regUsageOfInstr platform instr
     MFCR    reg             -> usage ([], [reg])
     MFLR    reg             -> usage ([], [reg])
     FETCHPC reg             -> usage ([], [reg])
+    FETCHTOC reg _          -> usage ([], [reg])
     _                       -> noUsage
   where
     usage (src, dst) = RU (filter (interesting platform) src)
@@ -430,6 +434,7 @@ ppc_patchRegsOfInstr instr env
     MFCR    reg             -> MFCR (env reg)
     MFLR    reg             -> MFLR (env reg)
     FETCHPC reg             -> FETCHPC (env reg)
+    FETCHTOC reg lab        -> FETCHTOC (env reg) lab
     _                       -> instr
   where
     fixAddr (AddrRegReg r1 r2) = AddrRegReg (env r1) (env r2)
