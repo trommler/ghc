@@ -188,10 +188,10 @@ AC_DEFUN([FPTOOLS_SET_HASKELL_PLATFORM_VARS],
             test -z "[$]2" || eval "[$]2=ArchPPC"
             ;;
         powerpc64)
-            test -z "[$]2" || eval "[$]2=\"ArchPPC_64 {ppc_64ABI = ELF_V1, ppc_Endian = PPC_BE}\""
+            test -z "[$]2" || eval "[$]2=\"ArchPPC_64 {ppc_64ABI = ELF_V1, ppc_64Endian = PPC_BE}\""
             ;;
         powerpc64le)
-            test -z "[$]2" || eval "[$]2=\"ArchPPC_64 {ppc_64ABI = ELF_V2, ppc_Endian = PPC_LE}\""
+            test -z "[$]2" || eval "[$]2=\"ArchPPC_64 {ppc_64ABI = ELF_V2, ppc_64Endian = PPC_LE}\""
             ;;
         sparc)
             test -z "[$]2" || eval "[$]2=ArchSPARC"
