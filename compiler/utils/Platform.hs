@@ -124,7 +124,7 @@ data PPC_64Endian
     | PPC_LE
     deriving (Read, Show, Eq)
 
--- | This predicate tells us whether tha platform is 32-bit.
+-- | This predicate tells us whether the platform is 32-bit.
 target32Bit :: Platform -> Bool
 target32Bit p = platformWordSize p == 4
 
