@@ -990,7 +990,7 @@ genJump tree
         case platformOS platform of
           OSLinux  -> case platformArch platform of
                       ArchPPC           -> genJump' tree GCPLinux
-                      ArchPPC_64 ELF_V1 -> genJump' tree GCPLinux64ELF1
+                      ArchPPC_64 ELF_V1 -> genJump' tree (GCPLinux64ELF 1)
                       _   -> panic "PPC.CodeGen.genJump: Unknown Linux"
           OSDarwin -> genJump' tree GCPDarwin
           _ -> panic "PPC.CodeGen.genJump: not defined for this os"
@@ -998,7 +998,7 @@ genJump tree
 
 genJump' :: CmmExpr -> GenCCallPlatform -> NatM InstrBlock
 
-genJump' tree GCPLinux64ELF1
+genJump' tree (GCPLinux64ELF 1)
   = do
         (target,code) <- getSomeReg tree
         return (code
@@ -1006,6 +1006,14 @@ genJump' tree GCPLinux64ELF1
                `snocOL` LD II64 toc (AddrRegImm target (ImmInt 8))
                `snocOL` MTCTR r11
                `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 16))
+               `snocOL` BCTR [] Nothing)
+
+genJump' tree (GCPLinux64ELF 2)
+  = do
+        (target,code) <- getSomeReg tree
+        return (code
+               `snocOL` MR r12 target
+               `snocOL` MTCTR r12
                `snocOL` BCTR [] Nothing)
 
 genJump' tree _
@@ -1061,13 +1069,15 @@ genCCall target dest_regs argsAndHints
        OSLinux  -> case platformArch platform of
                    ArchPPC           -> genCCall' dflags GCPLinux
                                            target dest_regs argsAndHints
-                   ArchPPC_64 ELF_V1 -> genCCall' dflags GCPLinux64ELF1
+                   ArchPPC_64 ELF_V1 -> genCCall' dflags (GCPLinux64ELF 1)
+                                           target dest_regs argsAndHints
+                   ArchPPC_64 ELF_V2 -> genCCall' dflags (GCPLinux64ELF 2)
                                            target dest_regs argsAndHints
                    _  -> panic "PPC.CodeGen.genCCall: Unknown Linux"
        OSDarwin -> genCCall' dflags GCPDarwin target dest_regs argsAndHints
        _ -> panic "PPC.CodeGen.genCCall: not defined for this os"
 
-data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF1
+data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF Int
 
 genCCall'
     :: DynFlags
@@ -1154,19 +1164,25 @@ genCCall' dflags gcp target dest_regs args0
                         `appOL` moveResult reduceToFF32
 
         case labelOrExpr of
-            Left lbl -> do
+            Left lbl -> do -- the linker does all the work for us
                 return (         codeBefore
                         `snocOL` BL lbl usedRegs
                         `appOL`  codeAfter)
-            Right dyn -> do
+            Right dyn -> do -- implement call through function pointer
                 (dynReg, dynCode) <- getSomeReg dyn
                 case gcp of
-                     GCPLinux64ELF1 -> return ( dynCode
+                     GCPLinux64ELF 1 -> return ( dynCode
                        `appOL`  codeBefore
                        `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 0))
                        `snocOL` LD II64 toc (AddrRegImm dynReg (ImmInt 8))
                        `snocOL` MTCTR r11
                        `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 16))
+                       `snocOL` BCTRL usedRegs
+                       `appOL`  codeAfter)
+                     GCPLinux64ELF 2 -> return ( dynCode
+                       `appOL`  codeBefore
+                       `snocOL` MR r12 dynReg
+                       `snocOL` MTCTR r12
                        `snocOL` BCTRL usedRegs
                        `appOL`  codeAfter)
 
@@ -1187,18 +1203,24 @@ genCCall' dflags gcp target dest_regs args0
                 return ()
 
         initialStackOffset = case gcp of
-                             GCPDarwin      -> 24
-                             GCPLinux       -> 8
-                             GCPLinux64ELF1 -> 48
+                             GCPDarwin       -> 24
+                             GCPLinux        -> 8
+                             GCPLinux64ELF 1 -> 48
+                             GCPLinux64ELF 2 -> 32
+                             _ -> panic "genCall': unknown calling convention"
             -- size of linkage area + size of arguments, in bytes
         stackDelta finalStack = case gcp of
                                 GCPDarwin ->
                                     roundTo 16 $ (24 +) $ max 32 $ sum $
                                     map (widthInBytes . typeWidth) argReps
                                 GCPLinux -> roundTo 16 finalStack
-                                GCPLinux64ELF1 ->
+                                GCPLinux64ELF 1 ->
                                     roundTo 16 $ (48 +) $ max 64 $ sum $
                                     map (widthInBytes . typeWidth) argReps
+                                GCPLinux64ELF 2 ->
+                                    roundTo 16 $ (32 +) $ max 64 $ sum $
+                                    map (widthInBytes . typeWidth) argReps
+                                _ -> panic "genCall': unknown calling conv."
 
         -- need to remove alignment information
         args | PrimTarget mop <- target,
@@ -1224,10 +1246,11 @@ genCCall' dflags gcp target dest_regs args0
                | otherwise = nilOL
                where delta = stackDelta finalStack
         toc_before = case gcp of
-           GCPLinux64ELF1 -> unitOL $ ST spSize toc (AddrRegImm sp (ImmInt 40))
-           _              -> nilOL
+           GCPLinux64ELF 1 -> unitOL $ ST spSize toc (AddrRegImm sp (ImmInt 40))
+           GCPLinux64ELF 2 -> unitOL $ ST spSize toc (AddrRegImm sp (ImmInt 24))
+           _               -> nilOL
         toc_after labelOrExpr = case gcp of
-                  GCPLinux64ELF1 -> case labelOrExpr of
+                  GCPLinux64ELF _ -> case labelOrExpr of
                                       Left _  -> toOL [ NOP ]
                                       Right _ -> toOL [ LD spSize toc
                                                          (AddrRegImm sp
@@ -1235,7 +1258,7 @@ genCCall' dflags gcp target dest_regs args0
                                                       ]
                   _              -> nilOL
         move_sp_up finalStack
-               | delta > 64 =
+               | delta > 64 =  -- TODO: fix-up stack back-chain
                         toOL [ADD sp sp (RIImm (ImmInt delta)),
                               DELTA 0]
                | otherwise = nilOL
@@ -1283,7 +1306,7 @@ genCCall' dflags gcp target dest_regs args0
                                _ -> -- only one or no regs left
                                    passArguments args [] fprs (stackOffset'+8)
                                                  stackCode accumUsed
-                    GCPLinux64ELF1 -> panic "passArguments: 32 bit code"
+                    GCPLinux64ELF _ -> panic "passArguments: 32 bit code"
 
         passArguments ((arg,rep):args) gprs fprs stackOffset accumCode accumUsed
             | reg : _ <- regs = do
@@ -1295,10 +1318,10 @@ genCCall' dflags gcp target dest_regs args0
                                      -- The Darwin ABI requires that we reserve
                                      -- stack slots for register parameters
                                      GCPDarwin -> stackOffset + stackBytes
-                                     -- ... the SysV ABI doesn't.
+                                     -- ... the SysV ABI 32-bit doesn't.
                                      GCPLinux -> stackOffset
-                                     -- ... but ELFv1 does.
-                                     GCPLinux64ELF1 -> stackOffset + stackBytes
+                                     -- ... but SysV ABI 64-bit does.
+                                     GCPLinux64ELF _ -> stackOffset + stackBytes
                 passArguments args
                               (drop nGprs gprs)
                               (drop nFprs fprs)
@@ -1326,7 +1349,7 @@ genCCall' dflags gcp target dest_regs args0
                                    roundTo 8 stackOffset
                                 | otherwise ->
                                    stackOffset
-                               GCPLinux64ELF1 ->
+                               GCPLinux64ELF _ ->
                                    -- everything on the stack is 8-byte
                                    -- aligned on a 64 bit system
                                    -- (except vector status, not used now)
@@ -1356,7 +1379,7 @@ genCCall' dflags gcp target dest_regs args0
                           FF64 -> (0, 1, 8, fprs)
                           II64 -> panic "genCCall' passArguments II64"
                           FF80 -> panic "genCCall' passArguments FF80"
-                      GCPLinux64ELF1 ->
+                      GCPLinux64ELF _ ->
                           case cmmTypeSize rep of
                           II8  -> (1, 0, 8, gprs)
                           II16 -> (1, 0, 8, gprs)
@@ -1726,13 +1749,17 @@ coerceInt2FP' ArchPPC fromRep toRep x = do
 
     return (Any (floatSize toRep) code')
 
-coerceInt2FP' (ArchPPC_64 ELF_V1) fromRep toRep x = do
+-- On an ELF v1 Linux we use the compiler doubleword in the stack frame
+-- this is the TOC pointer doubleword on ELF v2 Linux. The latter is only
+-- set right before a call and restored right after return from the call.
+-- So it is fine. 
+coerceInt2FP' (ArchPPC_64 _) fromRep toRep x = do
     (src, code) <- getSomeReg x
     dflags <- getDynFlags
     let
         code' dst = code `appOL` maybe_exts `appOL` toOL [
-                ST II64 src (spRel dflags 2),
-                LD FF64 dst (spRel dflags 2),
+                ST II64 src (spRel dflags 3),
+                LD FF64 dst (spRel dflags 3),
                 FCFID dst dst
             ] `appOL` maybe_frsp dst
 
@@ -1776,7 +1803,7 @@ coerceFP2Int' ArchPPC _ toRep x = do
             LD II32 dst (spRel dflags 3)]
     return (Any (intSize toRep) code')
 
-coerceFP2Int' (ArchPPC_64 ELF_V1) _ toRep x = do
+coerceFP2Int' (ArchPPC_64 _) _ toRep x = do
     dflags <- getDynFlags
     -- the reps don't really matter: F*->FF64 and II64->I* are no-ops
     (src, code) <- getSomeReg x
