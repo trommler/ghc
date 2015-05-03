@@ -171,7 +171,7 @@ nativeCodeGen dflags this_mod modLoc h us cmms
       ArchSPARC     -> nCG' (sparcNcgImpl  dflags)
       ArchARM {}    -> panic "nativeCodeGen: No NCG for ARM"
       ArchARM64     -> panic "nativeCodeGen: No NCG for ARM64"
-      ArchPPC_64 {} -> nCG' (ppcNcgImpl    dflags)
+      ArchPPC_64 _  -> nCG' (ppcNcgImpl    dflags)
       ArchAlpha     -> panic "nativeCodeGen: No NCG for Alpha"
       ArchMipseb    -> panic "nativeCodeGen: No NCG for mipseb"
       ArchMipsel    -> panic "nativeCodeGen: No NCG for mipsel"

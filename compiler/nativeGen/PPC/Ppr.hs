@@ -60,7 +60,7 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
            pprLabel lbl
          blocks -> -- special case for code without info table:
            pprSectionHeader Text $$
-           (if platformArch platform == ArchPPC_64 ELF_V1 PPC_BE
+           (if platformArch platform == ArchPPC_64 ELF_V1
                then pprFunctionDescriptor lbl
                else pprLabel lbl) $$ -- blocks guaranteed not null,
                                      -- so label needed

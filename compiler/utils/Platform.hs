@@ -9,7 +9,6 @@ module Platform (
         ArmISAExt(..),
         ArmABI(..),
         PPC_64ABI(..),
-        PPC_64Endian(..),
 
         target32Bit,
         isARM,
@@ -49,8 +48,7 @@ data Arch
         | ArchX86_64
         | ArchPPC
         | ArchPPC_64
-          { ppc_64ABI    :: PPC_64ABI
-          , ppc_64Endian :: PPC_64Endian
+          { ppc_64ABI :: PPC_64ABI
           }
         | ArchSPARC
         | ArchARM
@@ -117,11 +115,6 @@ data ArmABI
 data PPC_64ABI
     = ELF_V1
     | ELF_V2
-    deriving (Read, Show, Eq)
-
-data PPC_64Endian
-    = PPC_BE
-    | PPC_LE
     deriving (Read, Show, Eq)
 
 -- | This predicate tells us whether the platform is 32-bit.

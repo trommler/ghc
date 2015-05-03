@@ -70,16 +70,16 @@ instance FR SPARC.FreeRegs where
 maxSpillSlots :: DynFlags -> Int
 maxSpillSlots dflags
               = case platformArch (targetPlatform dflags) of
-                ArchX86        -> X86.Instr.maxSpillSlots dflags
-                ArchX86_64     -> X86.Instr.maxSpillSlots dflags
-                ArchPPC        -> PPC.Instr.maxSpillSlots dflags
-                ArchSPARC      -> SPARC.Instr.maxSpillSlots dflags
-                ArchARM _ _ _  -> panic "maxSpillSlots ArchARM"
-                ArchARM64      -> panic "maxSpillSlots ArchARM64"
-                ArchPPC_64 _ _ -> PPC.Instr.maxSpillSlots dflags
-                ArchAlpha      -> panic "maxSpillSlots ArchAlpha"
-                ArchMipseb     -> panic "maxSpillSlots ArchMipseb"
-                ArchMipsel     -> panic "maxSpillSlots ArchMipsel"
-                ArchJavaScript -> panic "maxSpillSlots ArchJavaScript"
-                ArchUnknown    -> panic "maxSpillSlots ArchUnknown"
+                ArchX86       -> X86.Instr.maxSpillSlots dflags
+                ArchX86_64    -> X86.Instr.maxSpillSlots dflags
+                ArchPPC       -> PPC.Instr.maxSpillSlots dflags
+                ArchSPARC     -> SPARC.Instr.maxSpillSlots dflags
+                ArchARM _ _ _ -> panic "maxSpillSlots ArchARM"
+                ArchARM64     -> panic "maxSpillSlots ArchARM64"
+                ArchPPC_64 _  -> PPC.Instr.maxSpillSlots dflags
+                ArchAlpha     -> panic "maxSpillSlots ArchAlpha"
+                ArchMipseb    -> panic "maxSpillSlots ArchMipseb"
+                ArchMipsel    -> panic "maxSpillSlots ArchMipsel"
+                ArchJavaScript-> panic "maxSpillSlots ArchJavaScript"
+                ArchUnknown   -> panic "maxSpillSlots ArchUnknown"
 
