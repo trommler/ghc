@@ -1250,13 +1250,19 @@ genCCall' dflags gcp target dest_regs args0
            GCPLinux64ELF 2 -> unitOL $ ST spSize toc (AddrRegImm sp (ImmInt 24))
            _               -> nilOL
         toc_after labelOrExpr = case gcp of
-                  GCPLinux64ELF _ -> case labelOrExpr of
-                                      Left _  -> toOL [ NOP ]
-                                      Right _ -> toOL [ LD spSize toc
-                                                         (AddrRegImm sp
-                                                          (ImmInt 40))
-                                                      ]
-                  _              -> nilOL
+           GCPLinux64ELF 1 -> case labelOrExpr of
+                                Left _  -> toOL [ NOP ]
+                                Right _ -> toOL [ LD spSize toc
+                                                     (AddrRegImm sp
+                                                      (ImmInt 40))
+                                                ]
+           GCPLinux64ELF 2 -> case labelOrExpr of
+                                Left _  -> toOL [ NOP ]
+                                Right _ -> toOL [ LD spSize toc
+                                                     (AddrRegImm sp
+                                                      (ImmInt 24))
+                                                ]
+           _               -> nilOL
         move_sp_up finalStack
                | delta > 64 =  -- TODO: fix-up stack back-chain
                         toOL [ADD sp sp (RIImm (ImmInt delta)),
