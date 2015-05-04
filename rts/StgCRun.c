@@ -662,7 +662,7 @@ StgRunIsImplementedInAssembler(void)
 }
 
 #else // linux_HOST_OS
-#error Only linux support for power64 right now.
+#error Only Linux support for power64 right now.
 #endif
 
 #endif
@@ -673,17 +673,18 @@ StgRunIsImplementedInAssembler(void)
    Everything is in assembler, so we don't have to deal with GCC...
    -------------------------------------------------------------------------- */
 
-#ifdef powerpc64_HOST_ARCH
+#ifdef powerpc64le_HOST_ARCH
 
 #ifdef linux_HOST_OS
 static void GNUC3_ATTRIBUTE(used)
 StgRunIsImplementedInAssembler(void)
 {
-        // r0 volatile
+        // r0 volatile, used in function prologue
         // r1 stack pointer
         // r2 toc - needs to be saved
         // r3-r10 argument passing, volatile
-        // r11, r12 very volatile (not saved across cross-module calls)
+        // r11 environment pointer (optional)
+        // r12 is used for function entry address at global entry point
         // r13 thread local state (never modified, don't need to save)
         // r14-r31 callee-save
         __asm__ volatile (
@@ -789,7 +790,7 @@ StgRunIsImplementedInAssembler(void)
 }
 
 #else // linux_HOST_OS
-#error Only linux support for power64 little endian right now.
+#error Only Linux support for power64 little endian right now.
 #endif
 
 #endif
