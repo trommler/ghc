@@ -991,7 +991,7 @@ genJump tree
           OSLinux  -> case platformArch platform of
                       ArchPPC           -> genJump' tree GCPLinux
                       ArchPPC_64 ELF_V1 -> genJump' tree (GCPLinux64ELF 1)
-                      ArchPPC_64 ELV_V2 -> genJump' tree (GCPLinux64ELF 2)
+                      ArchPPC_64 ELF_V2 -> genJump' tree (GCPLinux64ELF 2)
                       _   -> panic "PPC.CodeGen.genJump: Unknown Linux"
           OSDarwin -> genJump' tree GCPDarwin
           _ -> panic "PPC.CodeGen.genJump: not defined for this os"
