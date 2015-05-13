@@ -665,7 +665,7 @@ pprImportedSymbol _ (Platform { platformOS = OSDarwin }) _
 -- the NCG will keep track of all DynamicLinkerLabels it uses
 -- and output each of them using pprImportedSymbol.
 
-pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 ELF_V1 })
+pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 _ })
                   importedLbl
         | osElfTarget (platformOS platform)
         = case dynamicLinkerLabelInfo importedLbl of
