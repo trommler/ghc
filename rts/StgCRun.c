@@ -736,8 +736,6 @@ StgRunIsImplementedInAssembler(void)
                 "\tstfd 30, -16(5)\n"
                 "\tstfd 31, -8(5)\n"
                 "\tmr 27, 4\n"  // BaseReg == r27
-                "\tld 2, 8(3)\n"
-                "\tld 3, 0(3)\n"
                 "\tmtctr 3\n"
                 "\tbctr\n"
                 ".globl StgReturn\n"
