@@ -772,18 +772,29 @@ initializePicBase_ppc ArchPPC OSDarwin picReg
 
         where   BasicBlock bID insns = entry
                 b' = BasicBlock bID (PPC.FETCHPC picReg : insns)
+
 -------------------------------------------------------------------------
 -- Load TOC into register 2
 -- PowerPC 64-bit ELF ABI 2.0 requires the address of the callee
 -- in register 12.
 -- We pass the label to FETCHTOC and create a .localentry too.
 -- TODO: Explain this better and refer to ABI spec!
+{-
+We would like to do approximately this, but spill slot allocation
+might be added before the first BasicBlock. That violates the ABI.
 
+For now we will emit the prologue code in the pretty printer,
+which is also what we do for ELF v1.
 initializePicBase_ppc (ArchPPC_64 ELF_V2) OSLinux picReg
         (CmmProc info lab live (ListGraph (entry:blocks)) : statics)
-        = return (CmmProc info lab live (ListGraph (b':blocks)) : statics)
-        where   BasicBlock bID insns = entry
-                b' = BasicBlock bID (PPC.FETCHTOC picReg lab : insns)
+        = do 
+           bID <-getUniqueM
+           return (CmmProc info lab live (ListGraph (b':entry:blocks)) 
+                                         : statics)
+        where   BasicBlock entryID _ = entry 
+                b' = BasicBlock bID [PPC.FETCHTOC picReg lab,
+                                     PPC.BCC PPC.ALWAYS entryID]
+-}
 
 initializePicBase_ppc _ _ _ _
         = panic "initializePicBase_ppc: not needed"

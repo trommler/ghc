@@ -60,9 +60,10 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
            pprLabel lbl
          blocks -> -- special case for code without info table:
            pprSectionHeader Text $$
-           (if platformArch platform == ArchPPC_64 ELF_V1
-               then pprFunctionDescriptor lbl
-               else pprLabel lbl) $$ -- blocks guaranteed not null,
+           (case platformArch platform of
+              ArchPPC_64 ELF_V1 -> pprFunctionDescriptor lbl
+              ArchPPC_64 ELF_V2 -> pprFunctionPrologue lbl
+              _ -> pprLabel lbl) $$ -- blocks guaranteed not null,
                                      -- so label needed
            vcat (map (pprBasicBlock top_info) blocks)
 
@@ -100,6 +101,16 @@ pprFunctionDescriptor lab = pprGloblDecl lab
                         $$  char '.'
                         <> ppr lab
                         <> char ':'
+
+pprFunctionPrologue :: CLabel ->SDoc
+pprFunctionPrologue lab =  pprGloblDecl lab
+                        $$ ppr lab <> char ':'
+                        $$ text "0:\taddis\t" <> pprReg toc
+                        <> text "12,.TOC.-0b@ha"
+                        $$ text "\taddi\t" <> pprReg toc
+                        <> char ',' <> pprReg toc <> text ",.TOC.-0b@l"
+                        $$ text "\t.localentry\t" <> ppr lab
+                        <> text ",.-" <> ppr lab
 
 pprBasicBlock :: BlockEnv CmmStatics -> NatBasicBlock Instr -> SDoc
 pprBasicBlock info_env (BasicBlock blockid instrs)
