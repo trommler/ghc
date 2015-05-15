@@ -106,7 +106,7 @@ pprFunctionPrologue :: CLabel ->SDoc
 pprFunctionPrologue lab =  pprGloblDecl lab
                         $$ ppr lab <> char ':'
                         $$ text "0:\taddis\t" <> pprReg toc
-                        <> text "12,.TOC.-0b@ha"
+                        <> text ",12,.TOC.-0b@ha"
                         $$ text "\taddi\t" <> pprReg toc
                         <> char ',' <> pprReg toc <> text ",.TOC.-0b@l"
                         $$ text "\t.localentry\t" <> ppr lab
