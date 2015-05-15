@@ -104,6 +104,9 @@ pprFunctionDescriptor lab = pprGloblDecl lab
 
 pprFunctionPrologue :: CLabel ->SDoc
 pprFunctionPrologue lab =  pprGloblDecl lab
+                        $$  text ".type "
+                        <> ppr lab
+                        <> text ", @function"
                         $$ ppr lab <> char ':'
                         $$ text "0:\taddis\t" <> pprReg toc
                         <> text ",12,.TOC.-0b@ha"
