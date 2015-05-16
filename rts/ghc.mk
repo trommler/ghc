@@ -416,9 +416,9 @@ rts/sm/Compact_CC_OPTS += -Wno-inline
 
 # emits warnings about call-clobbered registers on x86_64
 rts/StgCRun_CC_OPTS += -w
-# Don't generate Call Frame Information, it confuses the assembler
-# The assembler cannot determine the size of the unused function
-# and fails. So don't emit a .size directive.
+# Don't generate Call Frame Information, it confuses the assembler.
+# Also the assembler cannot determine the size of the unused
+# function and fails. So don't emit a .size directive.
 ifeq "$(TargetArch_CPP)" "powerpc64le"
 rts/StgCRun_CC_OPTS += -g0 -finhibit-size-directive
 endif
