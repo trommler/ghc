@@ -693,7 +693,6 @@ pprImportedSymbol dflags platform importedLbl
             -- PLT code stubs are generated automatically by the dynamic linker.
             _ -> empty
 
-
 pprImportedSymbol _ _ _
         = panic "PIC.pprImportedSymbol: no match"
 

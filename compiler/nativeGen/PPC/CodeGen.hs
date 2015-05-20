@@ -1188,14 +1188,12 @@ genCCall' dflags gcp target dest_regs args0
                        `snocOL` MTCTR r12
                        `snocOL` BCTRL usedRegs
                        `appOL`  codeAfter)
-
                      _              -> return ( dynCode
                        `snocOL` MTCTR dynReg
                        `appOL`  codeBefore
                        `snocOL` BCTRL usedRegs
                        `appOL`  codeAfter)
     where
-
         platform = targetPlatform dflags
 
         uses_pic_base_implicitly = do

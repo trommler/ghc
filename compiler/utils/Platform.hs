@@ -110,7 +110,7 @@ data ArmABI
     | HARD
     deriving (Read, Show, Eq)
 
--- | PowerPC 64-bit ABI and endianness
+-- | PowerPC 64-bit ABI
 --
 data PPC_64ABI
     = ELF_V1

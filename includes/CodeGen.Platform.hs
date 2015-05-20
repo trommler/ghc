@@ -878,7 +878,6 @@ freeRegBase _ = fastBool True
 freeReg 0 = fastBool False -- Hack: r0 can't be used in all insns,
                            -- but it's actually free
 freeReg 1 = fastBool False -- The Stack Pointer
-
 # if !MACHREGS_darwin
 -- most non-darwin powerpc OSes use r2 as a TOC pointer or something like that
 freeReg 2 = fastBool False

@@ -1175,7 +1175,7 @@ pprDynamicLinkerAsmLabel platform dllInfo lbl
              _         -> panic "pprDynamicLinkerAsmLabel"
 
    else if osElfTarget (platformOS platform)
-        then if platformArch platform == ArchPPC 
+        then if platformArch platform == ArchPPC
              then case dllInfo of
                        CodeStub  -> -- See Note [.LCTOC1 in PPC PIC code]
                                     ppr lbl <> text "+32768@plt"
