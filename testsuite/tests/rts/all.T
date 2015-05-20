@@ -38,6 +38,7 @@ test('divbyzero',
       # division by zero but the result is undefined.
       # C programs compiled with gcc exit normally, so do we.
       when(platform('powerpc64-unknown-linux'), exit_code(0)),
+      when(platform('powerpc64le-unknown-linux'), exit_code(0)),
       when(opsys('mingw32'), exit_code(1)),
       # since these test are supposed to crash the
       # profile report will be empty always.
