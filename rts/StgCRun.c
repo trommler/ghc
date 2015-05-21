@@ -737,7 +737,7 @@ StgRunIsImplementedInAssembler(void)
                 "\tstfd 31, -8(5)\n"
                 "\tmr 27, 4\n"  // BaseReg == r27
                 "\tmtctr 3\n"
-                "\mr 12,3\n" // required by global entry point
+                "\tmr 12, 3\n" // required by global entry point
                 "\tbctr\n"
                 ".globl StgReturn\n"
                 ".type StgReturn,@function\n"
