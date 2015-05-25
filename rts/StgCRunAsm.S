@@ -16,7 +16,7 @@ StgRun:
 	mflr 0
 	mr 5, 1
 	std 0, 16(1)
-	stdu 1, STACK_FRAME_SIZE(1)
+	stdu 1, -STACK_FRAME_SIZE(1)
 	std 2, -296(5)
 	std 14, -288(5)
 	std 15, -280(5)
