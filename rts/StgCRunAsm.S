@@ -1,5 +1,5 @@
 #include "ghcconfig.h"
-#include "Constants.h"
+#include "rts/Constants.h"
 #ifdef powerpc64le_HOST_ARCH
 #ifdef linux_HOST_OS
 #define STACK_FRAME_SIZE RESERVED_C_STACK_BYTES+304
