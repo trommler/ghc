@@ -89,7 +89,7 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
       case picBaseMb of
            Just picBase -> initializePicBase_ppc arch os picBase tops
            Nothing -> return tops
-    ArchPPC_64 ELF_V1 -> return tops 
+    ArchPPC_64 ELF_V1 -> return tops
                       -- generating function descriptor is handled in
                       -- pretty printer
     ArchPPC_64 ELF_V2 -> return tops
@@ -1759,7 +1759,7 @@ coerceInt2FP' ArchPPC fromRep toRep x = do
 -- On an ELF v1 Linux we use the compiler doubleword in the stack frame
 -- this is the TOC pointer doubleword on ELF v2 Linux. The latter is only
 -- set right before a call and restored right after return from the call.
--- So it is fine. 
+-- So it is fine.
 coerceInt2FP' (ArchPPC_64 _) fromRep toRep x = do
     (src, code) <- getSomeReg x
     dflags <- getDynFlags

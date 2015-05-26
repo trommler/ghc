@@ -496,7 +496,7 @@ pprGotDeclaration _ (ArchPPC_64 ELF_V2) OSLinux
                ]
 pprGotDeclaration _ (ArchPPC_64 _) _
         = panic "pprGotDeclaration: ArchPPC_64 only Linux supported"
-        
+
 -- Emit GOT declaration
 -- Output whatever needs to be output once per .s file.
 pprGotDeclaration dflags arch os
@@ -786,11 +786,11 @@ For now we will emit the prologue code in the pretty printer,
 which is also what we do for ELF v1.
 initializePicBase_ppc (ArchPPC_64 ELF_V2) OSLinux picReg
         (CmmProc info lab live (ListGraph (entry:blocks)) : statics)
-        = do 
+        = do
            bID <-getUniqueM
-           return (CmmProc info lab live (ListGraph (b':entry:blocks)) 
+           return (CmmProc info lab live (ListGraph (b':entry:blocks))
                                          : statics)
-        where   BasicBlock entryID _ = entry 
+        where   BasicBlock entryID _ = entry
                 b' = BasicBlock bID [PPC.FETCHTOC picReg lab,
                                      PPC.BCC PPC.ALWAYS entryID]
 -}
