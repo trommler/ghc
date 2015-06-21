@@ -130,7 +130,8 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
            pprSectionHeader Text $$
            text ".p2align 3,," $$
            vcat (map (pprMangleInfoLabel info_lbl) info) $$
-           pprFunctionDescriptor info_lbl
+           pprFunctionDescriptor info_lbl $$
+           text "mr 27,12"
          _                 ->
            pprSectionHeader Text $$
            vcat (map pprData info) $$

@@ -1005,9 +1005,9 @@ genJump' tree (GCPLinux64ELF 1)
   = do
         (target,code) <- getSomeReg tree
         return (code
-               `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 0))
+               `snocOL` LD II64 r12 (AddrRegImm target (ImmInt 0))
                `snocOL` LD II64 toc (AddrRegImm target (ImmInt 8))
-               `snocOL` MTCTR r11
+               `snocOL` MTCTR r12
                `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 16))
                `snocOL` BCTR [] Nothing)
 
@@ -1176,9 +1176,9 @@ genCCall' dflags gcp target dest_regs args0
                 case gcp of
                      GCPLinux64ELF 1 -> return ( dynCode
                        `appOL`  codeBefore
-                       `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 0))
+                       `snocOL` LD II64 r12 (AddrRegImm dynReg (ImmInt 0))
                        `snocOL` LD II64 toc (AddrRegImm dynReg (ImmInt 8))
-                       `snocOL` MTCTR r11
+                       `snocOL` MTCTR r12
                        `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 16))
                        `snocOL` BCTRL usedRegs
                        `appOL`  codeAfter)
