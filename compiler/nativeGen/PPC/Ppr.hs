@@ -102,25 +102,6 @@ pprFunctionDescriptor lab = pprGloblDecl lab
                         <> ppr lab
                         <> char ':'
 
-pprFunctionDescriptor' :: CLabel -> SDoc
-pprFunctionDescriptor' lab = char '.' <> ppr lab <> text "_data:"
-                        $$  text ".previous"
-                        $$  pprGloblDecl lab
-                        $$  text ".section \".opd\",\"aw\""
-                        $$  text ".align 3"
-                        $$  ppr lab <> char ':'
-                        $$  text ".quad ."
-                        <> ppr lab
-                        <> text ",.TOC.@tocbase,"
-                        <> char '.' <> ppr lab <> text "_data"
-                        $$  text ".previous"
-                        $$  text ".type "
-                        <> ppr lab
-                        <> text ", @function"
-                        $$  char '.'
-                        <> ppr lab
-                        <> char ':'
-
 pprFunctionPrologue :: CLabel ->SDoc
 pprFunctionPrologue lab =  pprGloblDecl lab
                         $$  text ".type "
@@ -147,10 +128,9 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
          case platformArch platform of
          ArchPPC_64 ELF_V1 -> 
            pprSectionHeader Text $$
-           pprSectionHeader Data $$
+           text ".p2align2 3,," $$
            vcat (map pprData info) $$
-           pprFunctionDescriptor' info_lbl $$
-           text "\t mr 27,11" 
+           pprFunctionDescriptor info_lbl
          _                 ->
            pprSectionHeader Text $$
            vcat (map pprData info) $$
