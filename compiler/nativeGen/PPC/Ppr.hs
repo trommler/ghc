@@ -102,6 +102,24 @@ pprFunctionDescriptor lab = pprGloblDecl lab
                         <> ppr lab
                         <> char ':'
 
+pprFunctionDescriptor' :: CLabel -> SDoc
+pprFunctionDescriptor' lab = char '.' <> ppr lab <> text "_data:"
+                        $$  pprGloblDecl lab
+                        $$  text ".section \".opd\",\"aw\""
+                        $$  text ".align 3"
+                        $$  ppr lab <> char ':'
+                        $$  text ".quad ."
+                        <> ppr lab
+                        <> text ",.TOC.@tocbase,"
+                        <> char '.' <> ppr lab <> text "_data"
+                        $$  text ".text"
+                        $$  text ".type "
+                        <> ppr lab
+                        <> text ", @function"
+                        $$  char '.'
+                        <> ppr lab
+                        <> char ':'
+
 pprFunctionPrologue :: CLabel ->SDoc
 pprFunctionPrologue lab =  pprGloblDecl lab
                         $$  text ".type "
@@ -121,9 +139,17 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
     pprLabel (mkAsmTempLabel (getUnique blockid)) $$
     vcat (map pprInstr instrs)
   where
-    maybe_infotable = case mapLookup blockid info_env of
+    maybe_infotable = sdocWithPlatform $ \platform ->
+       case mapLookup blockid info_env of
        Nothing   -> empty
        Just (Statics info_lbl info) ->
+         case platformArch platform of
+         ArchPPC_64 ELF_V1 -> 
+           pprSectionHeader Data $$
+           vcat (map pprData info) $$
+           pprFunctionDescriptor' info_lbl $$
+           text "\t mr 27,11" 
+         _                 ->
            pprSectionHeader Text $$
            vcat (map pprData info) $$
            pprLabel info_lbl
