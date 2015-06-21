@@ -128,7 +128,7 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
          case platformArch platform of
          ArchPPC_64 ELF_V1 -> 
            pprSectionHeader Text $$
-           text ".p2align2 3,," $$
+           text ".p2align 3,," $$
            vcat (map pprData info) $$
            pprFunctionDescriptor info_lbl
          _                 ->
