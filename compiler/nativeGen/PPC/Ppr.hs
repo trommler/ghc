@@ -359,7 +359,7 @@ pprSectionHeader seg =
 
 pprDataItemMangleInfoLabel :: CmmLit -> CLabel -> SDoc
 pprDataItemMangleInfoLabel lit@(CmmLabelDiffOff _ _ _) info_lbl =
-   text ".quad" <> pprImm' imm info_lbl
+   text ".quad " <> pprImm' imm info_lbl
    where
      imm = litToImm lit
      pprImm' (ImmCLbl l) info   = mangle l info  
