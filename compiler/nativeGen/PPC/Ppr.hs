@@ -129,7 +129,7 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
          ArchPPC_64 ELF_V1 -> 
            pprSectionHeader Text $$
            text ".p2align 3,," $$
-           vcat (map pprData info) $$
+           vcat (map (pprMangleInfoLabel info_lbl) info) $$
            pprFunctionDescriptor info_lbl
          _                 ->
            pprSectionHeader Text $$
@@ -140,6 +140,11 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
 
 pprDatas :: CmmStatics -> SDoc
 pprDatas (Statics lbl dats) = vcat (pprLabel lbl : map pprData dats)
+
+pprMangleInfoLabel :: CLabel -> CmmStatic -> SDoc
+pprMangleInfoLabel info_lbl (CmmStaticLit lit) = 
+                   pprDataItemMangleInfoLabel lit info_lbl
+pprMangleInfoLabel _ static = pprData static
 
 pprData :: CmmStatic -> SDoc
 pprData (CmmString str)          = pprASCII str
@@ -351,6 +356,23 @@ pprSectionHeader seg =
   OtherSection _ ->
       panic "PprMach.pprSectionHeader: unknown section"
 
+
+pprDataItemMangleInfoLabel :: CmmLit -> CLabel -> SDoc
+pprDataItemMangleInfoLabel lit@(CmmLabelDiffOff _ _ _) info_lbl =
+   text ".quad" <> pprImm' imm info_lbl
+   where
+     imm = litToImm lit
+     pprImm' (ImmCLbl l) info   = mangle l info  
+     pprImm' (ImmConstantSum a b) info = pprImm' a info <> char '+'
+                   <> pprImm' b info
+     pprImm' (ImmConstantDiff a b) info = pprImm' a info <> char '-'
+                   <> lparen <> pprImm' b info <> rparen
+     pprImm' imm _ = pprImm imm
+     mangle lbl info = if lbl == info
+                       then char '.' <> ppr lbl
+                       else ppr lbl
+
+pprDataItemMangleInfoLabel lit _ = pprDataItem lit 
 
 pprDataItem :: CmmLit -> SDoc
 pprDataItem lit
