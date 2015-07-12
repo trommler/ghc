@@ -121,12 +121,21 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
     pprLabel (mkAsmTempLabel (getUnique blockid)) $$
     vcat (map pprInstr instrs)
   where
-    maybe_infotable = case mapLookup blockid info_env of
-       Nothing   -> empty
-       Just (Statics info_lbl info) ->
-           pprSectionHeader Text $$
-           vcat (map pprData info) $$
-           pprLabel info_lbl
+    maybe_infotable = sdocWithPlatform $ \platform ->
+       case mapLookup blockid info_env of
+         Nothing   -> empty
+         Just (Statics info_lbl info) ->
+           case platformArch platform of
+             ArchPPC_64 ELF_V2 ->
+               pprSectionHeader Text $$
+               text ".p2align 3,," $$  -- data needs 8 byte alignment
+                                       -- code has 4 byte alignment
+               vcat (map pprData info) $$
+               pprLabel info_lbl
+             _                 ->
+               pprSectionHeader Text $$
+               vcat (map pprData info) $$
+               pprLabel info_lbl
 
 
 
