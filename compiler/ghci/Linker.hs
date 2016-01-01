@@ -845,36 +845,14 @@ dynLoadObjs _       pls []   = return pls
 dynLoadObjs hsc_env pls objs = do
     let dflags = hsc_dflags hsc_env
     let platform = targetPlatform dflags
-    let minus_ls = [ lib | Option ('-':'l':lib) <- ldInputs dflags ]
-    let minus_big_ls = [ lib | Option ('-':'L':lib) <- ldInputs dflags ]
     (soFile, libPath , libName) <- newTempLibName dflags (soExt platform)
     let
         dflags2 = dflags {
-                      -- We don't want the original ldInputs in
-                      -- (they're already linked in), but we do want
-                      -- to link against previous dynLoadObjs
-                      -- libraries if there were any, so that the linker
-                      -- can resolve dependencies when it loads this
-                      -- library.
-                      ldInputs =
-                        concatMap
-                            (\(lp, l) ->
-                                 [ Option ("-L" ++ lp)
-                                 , Option ("-Wl,-rpath")
-                                 , Option ("-Wl," ++ lp)
-                                 , Option ("-l" ++  l)
-                                 ])
-                            (temp_sos pls)
-                        ++ concatMap
-                             (\lp ->
-                                 [ Option ("-L" ++ lp)
-                                 , Option ("-Wl,-rpath")
-                                 , Option ("-Wl," ++ lp)
-                                 ])
-                             minus_big_ls
-                        ++ map (\l -> Option ("-l" ++ l)) minus_ls,
-                      -- Add -l options and -L options from dflags.
-                      --
+                      -- We use the link editor to turn out .dyn_o into
+                      -- a shared object (ELF) or dynamic library (Mach-O).
+                      -- No additional files need to be linked.
+                      ldInputs = [],
+                      libraryPaths = [],
                       -- When running TH for a non-dynamic way, we still
                       -- need to make -l flags to link against the dynamic
                       -- libraries, so we need to add WayDyn to ways.
@@ -886,14 +864,48 @@ dynLoadObjs hsc_env pls objs = do
                       buildTag = mkBuildTag [WayDyn],
                       outputFile = Just soFile
                   }
-    -- link all "loaded packages" so symbols in those can be resolved
-    -- Note: We are loading packages with local scope, so to see the
-    -- symbols in this link we must link all loaded packages again.
-    linkDynLib dflags2 objs (pkgs_loaded pls)
+    linkDynLib dflags2 objs []
     consIORef (filesToNotIntermediateClean dflags) soFile
-    m <- loadDLL hsc_env soFile
+    let pls' = pls { temp_sos = (libPath, libName) : (temp_sos pls) }  
+    dynLinkAndLoadDummySO hsc_env pls' 
+
+dynLinkAndLoadDummySO :: HscEnv -> PersistentLinkerState
+                      -> IO PersistentLinkerState
+dynLinkAndLoadDummySO hsc_env pls = do
+    let dflags = hsc_dflags hsc_env
+    let platform = targetPlatform dflags
+    (dummySO, _, _) <- newTempLibName dflags (soExt platform)
+    let minus_ls = [ lib | Option ('-':'l':lib) <- ldInputs dflags ]
+    let minus_big_ls = libraryPaths dflags
+    let dflags3 = dflags {
+                    ldInputs =
+                      concatMap
+                          (\(lp, l) ->
+                               [ Option ("-L" ++ lp)
+                               , Option ("-Wl,-rpath")
+                               , Option ("-Wl," ++ lp)
+                               , Option ("-l" ++  l)
+                               ])
+                          (temp_sos pls)
+                      ++ concatMap
+                           (\lp ->
+                               [ Option ("-L" ++ lp)
+                               , Option ("-Wl,-rpath")
+                               , Option ("-Wl," ++ lp)
+                               ])
+                           minus_big_ls
+                      ++ map (\l -> Option ("-l" ++ l)) minus_ls,
+                    -- Add -l options and -L options from dflags.
+                    ways = [WayDyn],
+                    buildTag = mkBuildTag [WayDyn],
+                    outputFile = Just dummySO
+                  }
+    linkDynLib dflags3 [] (pkgs_loaded pls)
+
+    consIORef (filesToNotIntermediateClean dflags) dummySO
+    m <- loadDLL hsc_env dummySO
     case m of
-        Nothing -> return pls { temp_sos = (libPath, libName) : temp_sos pls }
+        Nothing -> return pls 
         Just err -> panic ("Loading temp shared object failed: " ++ err)
 
 rmDupLinkables :: [Linkable]    -- Already loaded
@@ -1152,6 +1164,15 @@ linkPackages hsc_env new_pkgs = do
 
 linkPackages' :: HscEnv -> [LinkerUnitId] -> PersistentLinkerState
              -> IO PersistentLinkerState
+
+-- The dynamic linker takes care of all dependencies, so all we need to do
+-- is prepend the new packages to the list of already loaded packages and
+-- link and load the dummy SO.
+linkPackages' hsc_env new_pkgs pls
+    | interpreterDynamic (hsc_dflags hsc_env)
+    = dynLinkAndLoadDummySO hsc_env pls { pkgs_loaded = new_pkgs
+                                                      ++ (pkgs_loaded pls) }
+
 linkPackages' hsc_env new_pks pls = do
     pkgs' <- link (pkgs_loaded pls) new_pks
     return $! pls { pkgs_loaded = pkgs' }
