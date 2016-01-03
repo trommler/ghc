@@ -204,7 +204,11 @@ linkDependencies hsc_env pls span needed_mods = do
                                maybe_normal_osuf span needed_mods
 
    -- Link the packages and modules required
-   pls1 <- linkPackages' hsc_env pkgs pls
+   pls1 <- if (interpreterDynamic dflags)
+           then case lnks of 
+                [] -> linkPackages' hsc_env pkgs pls
+                _  -> return pls {pkgs_loaded = pkgs ++ (pkgs_loaded pls)}
+           else linkPackages' hsc_env pkgs pls
    linkModules hsc_env pls1 lnks
 
 
