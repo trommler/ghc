@@ -302,6 +302,16 @@ linkCmdLineLibs hsc_env = do
     linkCmdLineLibs' hsc_env pls
 
 linkCmdLineLibs' :: HscEnv -> PersistentLinkerState -> IO PersistentLinkerState
+linkCmdLineLibs' hsc_env pls
+  | interpreterDynamic (hsc_dflags hsc_env) =
+    do
+        let dflags@(DynFlags { ldInputs = cmdline_ld_inputs })
+                             = hsc_dflags hsc_env
+        classified_ld_inputs <- mapM (classifyLdInput dflags)
+                                     [ f | FileOption _ f <- cmdline_ld_inputs ]
+        let dotOs = [ o | (Just (Object o)) <- classified_ld_inputs ]
+        dynLoadObjs hsc_env pls dotOs
+            
 linkCmdLineLibs' hsc_env pls =
   do
       let dflags@(DynFlags { ldInputs = cmdline_ld_inputs
