@@ -892,9 +892,22 @@ dynLinkAndLoadDummySO hsc_env pls = do
     let dflags = hsc_dflags hsc_env
     let platform = targetPlatform dflags
     (dummySO, _, _) <- newTempLibName dflags (soExt platform)
-    let minus_ls = [ lib | Option ('-':'l':lib) <- ldInputs dflags ]
-    let minus_big_ls = libraryPaths dflags
-    let dflags3 = dflags {
+    let minus_ls = [ x | x@(Option ('-':'l':_)) <- ldInputs dflags ]
+    let minus_big_ls = concatMap (\lp ->
+                                      [ Option ("-L" ++ lp)
+                                      , Option ("-Wl,-rpath")
+                                      , Option ("-Wl," ++ lp)
+                                      ])
+                                 (libraryPaths dflags)
+        (framework_paths, frameworks) =
+            if platformUsesFrameworks platform
+            then (frameworkPaths dflags, cmdlineFrameworks dflags)
+            else ([],[])
+
+        fw_paths_opts = map (\fp -> Option ("-F" ++ fp)) framework_paths
+        fw_opts       = map (\fw -> Option ("-framework" ++ fw)) frameworks
+                  
+    let dflags2 = dflags {
                     ldInputs =
                       concatMap
                           (\(lp, l) ->
@@ -904,20 +917,16 @@ dynLinkAndLoadDummySO hsc_env pls = do
                                , Option ("-l" ++  l)
                                ])
                           (temp_sos pls)
-                      ++ concatMap
-                           (\lp ->
-                               [ Option ("-L" ++ lp)
-                               , Option ("-Wl,-rpath")
-                               , Option ("-Wl," ++ lp)
-                               ])
-                           minus_big_ls
-                      ++ map (\l -> Option ("-l" ++ l)) minus_ls,
-                    -- Add -l options and -L options from dflags.
+                      ++ minus_big_ls
+                      ++ fw_paths_opts
+                      ++ minus_ls
+                      ++ fw_opts,
+                    -- Add -l options and -L options and frameworks from dflags.
                     ways = [WayDyn],
                     buildTag = mkBuildTag [WayDyn],
                     outputFile = Just dummySO
                   }
-    linkDynLib dflags3 [] (pkgs_loaded pls)
+    linkDynLib dflags2 [] (pkgs_loaded pls)
 
     consIORef (filesToNotIntermediateClean dflags) dummySO
     m <- loadDLL hsc_env dummySO
