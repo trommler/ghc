@@ -286,7 +286,10 @@ reallyInitDynLinker hsc_env = do
   initObjLinker hsc_env
 
   -- (b) Load packages from the command-line (Note [preload packages])
-  pls <- linkPackages' hsc_env (preloadPackages (pkgState dflags)) pls0
+  pls <- if interpreterDynamic dflags
+         then return pls0 { pkgs_loaded = (preloadPackages (pkgState dflags))
+                                        ++ pkgs_loaded pls0 }
+         else linkPackages' hsc_env (preloadPackages (pkgState dflags)) pls0
 
   -- steps (c), (d) and (e)
   linkCmdLineLibs' hsc_env pls
@@ -1170,12 +1173,13 @@ linkPackages' :: HscEnv -> [LinkerUnitId] -> PersistentLinkerState
              -> IO PersistentLinkerState
 
 -- The dynamic linker takes care of all dependencies, so all we need to do
--- is prepend the new packages to the list of already loaded packages and
--- link and load the dummy SO.
+-- is prepend the new packages that are not already loaded to the list of
+-- already loaded packages and link and load the dummy SO.
 linkPackages' hsc_env new_pkgs pls
     | interpreterDynamic (hsc_dflags hsc_env)
-    = dynLinkAndLoadDummySO hsc_env pls { pkgs_loaded = new_pkgs
+    = dynLinkAndLoadDummySO hsc_env pls { pkgs_loaded = pkgs_needed
                                                       ++ (pkgs_loaded pls) }
+      where pkgs_needed = new_pkgs `minusList` pkgs_loaded pls 
 
 linkPackages' hsc_env new_pks pls = do
     pkgs' <- link (pkgs_loaded pls) new_pks
