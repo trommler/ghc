@@ -100,12 +100,20 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
 cmmTopCodeGen (CmmData sec dat) = do
   return [CmmData sec dat]  -- no translation, we just use CmmStatic
 
-basicBlockCodeGen
+basicBlockCodeGen :: Block CmmNode C C
+                  -> NatM ( [NatBasicBlock Instr]
+                          , [NatCmmDecl CmmStatics Instr])
+basicBlockCodeGen block = do
+  ( blocks, statics) <- basicBlockCodeGen' block
+  return ((map optimize blocks), statics) 
+
+
+basicBlockCodeGen'
         :: Block CmmNode C C
         -> NatM ( [NatBasicBlock Instr]
                 , [NatCmmDecl CmmStatics Instr])
 
-basicBlockCodeGen block = do
+basicBlockCodeGen' block = do
   let (_, nodes, tail)  = blockSplit block
       id = entryLabel block
       stmts = blockToList nodes
@@ -126,6 +134,19 @@ basicBlockCodeGen block = do
         mkBlocks instr (instrs,blocks,statics)
           = (instr:instrs, blocks, statics)
   return (BasicBlock id top : other_blocks, statics)
+
+optimize :: NatBasicBlock Instr -> NatBasicBlock Instr
+optimize (BasicBlock id instrs) = BasicBlock id (peephole instrs)
+
+peephole :: [Instr] -> [Instr]
+peephole [] = []
+peephole ((LD II32 t1 s1@(AddrRegImm _ (ImmInt off))) : (EXTS II32 t2 s2) :xs)
+  | off `mod` 4 == 0, t1 == s2, t2 == t1
+  = (LA II32 t1 s1) : (peephole xs)
+peephole ((LD f1 t1 s1) : (EXTS f2 t2 s2) : xs)
+  | f1 /= II8, f1 == f2, t1 == s2, t2 == t1
+  = (LA f1 t1 s1) : (peephole xs)  
+peephole (x:xs) = x : (peephole xs)
 
 stmtsToInstrs :: [CmmNode e x] -> NatM InstrBlock
 stmtsToInstrs stmts
