@@ -339,4 +339,4 @@ tmpReg platform =
        case platformArch platform of
        ArchPPC      -> regSingle 13
        ArchPPC_64 _ -> regSingle 30
-       _            -> panic "PPC.Regs.tmpReg: unknowm arch"
+       _            -> panic "PPC.Regs.tmpReg: unknown arch"
