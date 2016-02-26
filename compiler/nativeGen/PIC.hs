@@ -267,7 +267,7 @@ howToAccessLabel dflags arch OSDarwin this_mod DataReference lbl
         -- when generating PIC code, all cross-module data references must
         -- must go via a symbol pointer, too, because the assembler
         -- cannot generate code for a label difference where one
-        -- label is undefined. Doesn't apply t x86_64.
+        -- label is undefined. Doesn't apply to x86_64.
         -- Unfortunately, we don't know whether it's cross-module,
         -- so we do it for all externally visible labels.
         -- This is a slight waste of time and space, but otherwise
