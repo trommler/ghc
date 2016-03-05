@@ -1422,8 +1422,7 @@ pprDynamicLinkerAsmLabel platform dllInfo lbl =
       | platformArch platform == ArchPPC_64 ELF_V1
         || platformArch platform == ArchPPC_64 ELF_V2
       = case dllInfo of
-          GotSymbolPtr    -> text ".LC_"  <> ppr lbl
-                                  <> text "@toc"
+          GotSymbolPtr    -> ppr lbl <> text "@toc"
           GotSymbolOffset -> ppr lbl
           SymbolPtr       -> text ".LC_" <> ppr lbl
           _               -> panic "pprDynamicLinkerAsmLabel"

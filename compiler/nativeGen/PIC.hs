@@ -143,6 +143,14 @@ cmmMakeDynamicReference dflags referenceKind lbl
                 -- all currently supported processors support
                 -- PC-relative branch and call instructions,
                 -- so just jump there if it's a call or a jump
+              JumpReference -> if ppc64ELF1
+                   -- on powerpc64 the linker rewrites jumps to exported
+                   -- symbols (symbols in the opd section), so load the
+                   -- target address into a register and jump 
+                   then do
+                        let symbolPtr = mkDynamicLinkerLabel GotSymbolPtr lbl
+                        return $ cmmMakePicReference dflags symbolPtr
+                   else return $ CmmLit $ CmmLabel lbl
               _ -> return $ CmmLit $ CmmLabel lbl
 
 
@@ -434,6 +442,16 @@ picRelative dflags ArchPPC os lbl
         | osElfTarget os
         = CmmLabelDiffOff lbl gotLabel 0 (wordWidth dflags)
 
+picRelative (ArchPPC_64 _) os lbl
+        | osElfTarget os
+        = let   result
+                        | Just (SymbolPtr, _) <- dynamicLinkerLabelInfo lbl
+                        = CmmLabel $ mkDynamicLinkerLabel GotSymbolPtr lbl
+
+                        | otherwise
+                        = CmmLabel $ mkDynamicLinkerLabel GotSymbolOffset lbl
+
+          in    result
 
 -- Most Linux versions:
 -- The PIC base register points to the GOT. Use foo@got for symbol
