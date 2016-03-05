@@ -138,6 +138,7 @@ pprGloblDecl :: CLabel -> SDoc
 pprGloblDecl lbl
   | not (externallyVisibleCLabel lbl) = empty
   | otherwise = text ".globl " <> ppr lbl
+              $$  text "\t.protected " <> ppr lbl
 
 pprTypeAndSizeDecl :: CLabel -> SDoc
 pprTypeAndSizeDecl lbl
