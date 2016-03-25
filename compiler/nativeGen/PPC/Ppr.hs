@@ -55,7 +55,8 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
               ArchPPC_64 ELF_V2 -> pprFunctionPrologue lbl
               _ -> pprLabel lbl) $$ -- blocks guaranteed not null,
                                      -- so label needed
-           vcat (map (pprBasicBlock top_info) blocks)
+           vcat (map (pprBasicBlock top_info) blocks) $$
+           pprSizeDecl lbl
 
     Just (Statics info_lbl _) ->
       sdocWithPlatform $ \platform ->
@@ -73,7 +74,8 @@ pprNatCmmDecl proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
             <+> ppr info_lbl
             <+> char '-'
             <+> ppr (mkDeadStripPreventer info_lbl)
-       else empty)
+       else empty) $$
+      pprSizeDecl info_lbl
 
 pprFunctionDescriptor :: CLabel -> SDoc
 pprFunctionDescriptor lab = pprGloblDecl lab
@@ -103,6 +105,15 @@ pprFunctionPrologue lab =  pprGloblDecl lab
                         <> char ',' <> pprReg toc <> text ",.TOC.-0b@l"
                         $$ text "\t.localentry\t" <> ppr lab
                         <> text ",.-" <> ppr lab
+
+-- | Output the ELF .size directive.
+pprSizeDecl :: CLabel -> SDoc
+pprSizeDecl lbl
+ = sdocWithPlatform $ \platform ->
+   case platformArch platform of
+   ArchPPC_64 ELF_V1 -> text "\t.size" <+> ppr lbl <> text ", .-"
+                                        <> char '.' <> ppr lbl
+   _                 ->  empty
 
 pprBasicBlock :: BlockEnv CmmStatics -> NatBasicBlock Instr -> SDoc
 pprBasicBlock info_env (BasicBlock blockid instrs)
