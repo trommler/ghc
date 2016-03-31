@@ -1174,41 +1174,46 @@ genCCall' dflags gcp target dest_regs args
             PrimTarget mop -> outOfLineMachOp mop
 
         let codeBefore = move_sp_down finalStack `appOL` passArgumentsCode
-                         `appOL` toc_before labelOrExpr
-            codeAfter = toc_after labelOrExpr `appOL` move_sp_up finalStack
-                        `appOL` moveResult reduceToFF32
+            codeAfter  = move_sp_up finalStack   `appOL` moveResult reduceToFF32
 
         case labelOrExpr of
             Left lbl -> do -- the linker does all the work for us
                 return (         codeBefore
                         `snocOL` BL lbl usedRegs
+                        `appOL`  maybe_NOP -- some ABIs require a NOP after BL
                         `appOL`  codeAfter)
             Right dyn -> do -- implement call through function pointer
                 (dynReg, dynCode) <- getSomeReg dyn
                 case gcp of
                      GCPLinux64ELF 1 -> return ( dynCode
                        `appOL`  codeBefore
+                       `snocOL` ST spFormat toc (AddrRegImm sp (ImmInt 40))
                        `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 0))
                        `snocOL` LD II64 toc (AddrRegImm dynReg (ImmInt 8))
                        `snocOL` MTCTR r11
                        `snocOL` LD II64 r11 (AddrRegImm dynReg (ImmInt 16))
                        `snocOL` BCTRL usedRegs
+                       `snocOL` LD spFormat toc (AddrRegImm sp (ImmInt 40))
                        `appOL`  codeAfter)
                      GCPLinux64ELF 2 -> return ( dynCode
                        `appOL`  codeBefore
+                       `snocOL` ST spFormat toc (AddrRegImm sp (ImmInt 24))
                        `snocOL` MR r12 dynReg
                        `snocOL` MTCTR r12
                        `snocOL` BCTRL usedRegs
+                       `snocOL` LD spFormat toc (AddrRegImm sp (ImmInt 24))
                        `appOL`  codeAfter)
                      GCPAIX          -> return ( dynCode
                        -- AIX/XCOFF follows the PowerOPEN ABI
                        -- which is quite similiar to LinuxPPC64/ELFv1
                        `appOL`  codeBefore
+                       `snocOL` ST spFormat toc (AddrRegImm sp (ImmInt 20))
                        `snocOL` LD II32 r11 (AddrRegImm dynReg (ImmInt 0))
                        `snocOL` LD II32 toc (AddrRegImm dynReg (ImmInt 4))
                        `snocOL` MTCTR r11
                        `snocOL` LD II32 r11 (AddrRegImm dynReg (ImmInt 8))
                        `snocOL` BCTRL usedRegs
+                       `snocOL` LD spFormat toc (AddrRegImm sp (ImmInt 20))
                        `appOL`  codeAfter)
                      _              -> return ( dynCode
                        `snocOL` MTCTR dynReg
@@ -1262,31 +1267,10 @@ genCCall' dflags gcp target dest_regs args
                               DELTA (-delta)]
                | otherwise = nilOL
                where delta = stackDelta finalStack
-        toc_before labelOrExpr = case labelOrExpr of
-           Left _  -> nilOL
-           Right _ -> case gcp of
-             GCPLinux64ELF 1 -> unitOL $ ST spFormat toc (AddrRegImm sp (ImmInt 40))
-             GCPLinux64ELF 2 -> unitOL $ ST spFormat toc (AddrRegImm sp (ImmInt 24))
-             GCPAIX          -> unitOL $ ST spFormat toc (AddrRegImm sp (ImmInt 20))
-             _               -> nilOL
-        toc_after labelOrExpr = case gcp of
-           GCPLinux64ELF 1 -> case labelOrExpr of
-                                Left _  -> toOL [ NOP ]
-                                Right _ -> toOL [ LD spFormat toc
-                                                     (AddrRegImm sp
-                                                      (ImmInt 40))
-                                                ]
-           GCPLinux64ELF 2 -> case labelOrExpr of
-                                Left _  -> toOL [ NOP ]
-                                Right _ -> toOL [ LD spFormat toc
-                                                     (AddrRegImm sp
-                                                      (ImmInt 24))
-                                                ]
-           GCPAIX          -> case labelOrExpr of
-                                Left _  -> unitOL NOP
-                                Right _ -> unitOL (LD spFormat toc
-                                                      (AddrRegImm sp
-                                                       (ImmInt 20)))
+        maybe_NOP = case gcp of
+           GCPLinux64ELF 1 -> unitOL NOP
+           GCPLinux64ELF 2 -> unitOL NOP
+           GCPAIX          -> unitOL NOP
            _               -> nilOL
         move_sp_up finalStack
                | delta > 64 =  -- TODO: fix-up stack back-chain
