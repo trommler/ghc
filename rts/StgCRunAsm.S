@@ -3,36 +3,35 @@
 
 #if defined(powerpc64le_HOST_ARCH)
 # ifdef linux_HOST_OS
-# define STACK_FRAME_SIZE RESERVED_C_STACK_BYTES+304
+# define STACK_FRAME_SIZE (RESERVED_C_STACK_BYTES+288+15) & ~15
 	.file	"StgCRun.c"
 	.abiversion 2
 	.section	".toc","aw"
 	.section	".text"
 	.align 2
-.globl StgRun
-.hidden StgRun
-.type StgRun,@function
+        .globl StgRun
+        .hidden StgRun
+        .type StgRun,@function
 StgRun:
-.localentry StgRun,.-StgRun
+        .localentry StgRun,.-StgRun
 	mflr 0
-	mr 5, 1
         addi 12,1,-(8*18)
         bl _savegpr1_14
         bl _savefpr_14
 	stdu 1, -(STACK_FRAME_SIZE)(1)
-	std 2, -296(5)
 	mr 27, 4
 	mtctr 3
 	mr 12, 3
 	bctr
-.globl StgReturn
-.type StgReturn,@function
+
+        .globl StgReturn
+        .type StgReturn,@function
 StgReturn:
-.localentry StgReturn,.-StgReturn
+        addis 2,12,.TOC.-StgReturn@ha
+        addi 12,12,.TOC.-StgReturn@l
+        .localentry StgReturn,.-StgReturn
 	mr 3,14
-	la 5, STACK_FRAME_SIZE(1)
-	ld 2, -296(5)
-        mr 1,5
+	la 1, STACK_FRAME_SIZE(1)
         addi 12,1,-(8*18)
         bl _restgpr1_14
         b _restfpr_14
