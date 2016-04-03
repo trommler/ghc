@@ -28,7 +28,7 @@ StgRun:
         .type StgReturn,@function
 StgReturn:
         addis 2,12,.TOC.-StgReturn@ha
-        addi 12,12,.TOC.-StgReturn@l
+        addi 2,2,.TOC.-StgReturn@l
         .localentry StgReturn,.-StgReturn
 	mr 3,14
 	la 1, STACK_FRAME_SIZE(1)
