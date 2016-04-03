@@ -113,6 +113,8 @@ pprSizeDecl lbl
    case platformArch platform of
    ArchPPC_64 ELF_V1 -> text "\t.size" <+> ppr lbl <> text ", .-"
                                         <> char '.' <> ppr lbl
+   ArchPPC_64 ELF_V2 -> text "\t.size" <+> ppr lbl <> text ", .-"
+                                        <> ppr lbl
    _                 -> empty
 
 pprBasicBlock :: BlockEnv CmmStatics -> NatBasicBlock Instr -> SDoc
