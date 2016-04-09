@@ -322,7 +322,7 @@ pprImm (HIGHESTA i)
 
 pprAddr :: AddrMode -> SDoc
 pprAddr (AddrRegReg r1 r2)
-  = pprReg r1 <+> text ", " <+> pprReg r2
+  = pprReg r1 <> char ',' <+> pprReg r2
 
 pprAddr (AddrRegImm r1 (ImmInt i)) = hcat [ int i, char '(', pprReg r1, char ')' ]
 pprAddr (AddrRegImm r1 (ImmInteger i)) = hcat [ integer i, char '(', pprReg r1, char ')' ]
