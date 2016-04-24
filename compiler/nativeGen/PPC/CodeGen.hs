@@ -9,9 +9,8 @@
 -----------------------------------------------------------------------------
 
 -- This is a big module, but, if you pay attention to
--- (a) the sectioning, (b) the type signatures, and
--- (c) the #if blah_TARGET_ARCH} things, the
--- structure should not be too overwhelming.
+-- (a) the sectioning, and (b) the type signatures,
+-- the structure should not be too overwhelming.
 
 module PPC.CodeGen (
         cmmTopCodeGen,
