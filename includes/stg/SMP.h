@@ -169,6 +169,19 @@ busy_wait_nop(void)
     // hyperthread.  In any case, Intel recommends putting one
     // of these in a spin lock loop.
     __asm__ __volatile__ ("rep; nop");
+#elif defined(powerpc_HOST_ARCH) || defined(powerpc64_HOST_ARCH) \
+   || defined(powerpc64le_HOST_ARCH)
+    // On PowerPC, the busy-wait-nop is called "yield",
+    // which is an extended mnemonic for "or 27, 27, 27".
+    // On processors with SMT support (since POWER5) this
+    // operation has the following effect:
+    // "This form of or provides a hint that performance will
+    // probably be improved if shared resources dedicated to
+    // the executing processor are released for use by other
+    // processors." See Power ISA TM Version 2.07, Book II,
+    // Section 3.2 "or" Instruction.
+    // On other PowerPC processors this is just a nop.
+    __asm__ __volatile__ ("or 27, 27, 27");
 #else
     // nothing
 #endif
