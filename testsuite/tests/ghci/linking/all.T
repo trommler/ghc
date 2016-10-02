@@ -21,7 +21,7 @@ test('ghcilink003',
 test('ghcilink004',
      [when(ghc_dynamic(), expect_fail), # dynamic ghci can't load '.a's
                                         # in static packages
-     [unless(doing_ghci, skip),
+      unless(doing_ghci, skip),
       when(arch('powerpc64') or arch('powerpc64le'), expect_broken(11259)),
       extra_clean(['dir004/local.package.conf/*', 'dir004/*', 'dir004'])
      ],
