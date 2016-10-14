@@ -289,7 +289,7 @@ reallyInitDynLinker hsc_env = do
   initObjLinker hsc_env
 
   -- (b) Load packages from the command-line (Note [preload packages])
-  pls <- if interpreterDynamic dflags
+  pls <- if dynamicELF dflags
          then return pls0 { pkgs_loaded = (preloadPackages (pkgState dflags))
                                         ++ pkgs_loaded pls0 }
          else linkPackages' hsc_env (preloadPackages (pkgState dflags)) pls0
@@ -306,7 +306,7 @@ linkCmdLineLibs hsc_env = do
 
 linkCmdLineLibs' :: HscEnv -> PersistentLinkerState -> IO PersistentLinkerState
 linkCmdLineLibs' hsc_env pls
-  | interpreterDynamic (hsc_dflags hsc_env) =
+  | dynamicELF (hsc_dflags hsc_env) =
     do
         let dflags@(DynFlags { ldInputs = cmdline_ld_inputs })
                              = hsc_dflags hsc_env
@@ -1262,8 +1262,7 @@ linkPackages' :: HscEnv -> [LinkerUnitId] -> PersistentLinkerState
 -- is prepend the new packages that are not already loaded to the list of
 -- already loaded packages and link and load the dummy SO.
 linkPackages' hsc_env new_pkgs pls
-    | interpreterDynamic (hsc_dflags hsc_env)
-    , osElfTarget $ platformOS $ targetPlatform $ hsc_dflags hsc_env
+    | dynamicELF (hsc_dflags hsc_env)
     = dynLinkAndLoadDummySO hsc_env pls { pkgs_loaded = pkgs_needed
                                                       ++ (pkgs_loaded pls) }
       where pkgs_needed = new_pkgs `minusList` pkgs_loaded pls 
