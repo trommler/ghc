@@ -78,6 +78,9 @@
 #  include <regex.h>    // regex is already used by dlopen() so this is OK
                         // to use here without requiring an additional lib
 #endif /* !DYNAMIC */
+#ifdef DYNAMIC
+#  define DYNAMIC_ELF
+#endif
 #elif defined (mingw32_HOST_OS)
 #  define OBJFORMAT_PEi386
 #  include <windows.h>
@@ -677,7 +680,7 @@ static int linker_init_done = 0 ;
 
 #if defined(OBJFORMAT_ELF) || defined(OBJFORMAT_MACHO)
 static void *dl_prog_handle;
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
 static regex_t re_invalid;
 static regex_t re_realso;
 #endif /* !DYNAMIC */
@@ -701,9 +704,9 @@ initLinker_ (int retain_cafs)
 {
     RtsSymbolVal *sym;
 #if defined(OBJFORMAT_ELF) || defined(OBJFORMAT_MACHO)
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
     int compileResult;
-#endif /* !DYNAMIC */
+#endif /* !DYNAMIC_ELF */
 #endif
 
     IF_DEBUG(linker, debugBelch("initLinker: start\n"));
@@ -775,7 +778,7 @@ initLinker_ (int retain_cafs)
     dl_prog_handle = dlopen(NULL, RTLD_LAZY);
 #   endif /* RTLD_DEFAULT */
 
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
     compileResult = regcomp(&re_invalid,
            "(([^ \t()])+\\.so([^ \t:()])*):([ \t])*(invalid ELF header|file too short)",
            REG_EXTENDED);
@@ -788,7 +791,7 @@ initLinker_ (int retain_cafs)
     if (compileResult != 0) {
         barf("Compiling re_realso failed");
     }
-#endif /* !DYNAMIC */
+#endif /* !DYNAMIC_ELF */
 #   endif
 
 #if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
@@ -820,10 +823,10 @@ void
 exitLinker( void ) {
 #if defined(OBJFORMAT_ELF) || defined(OBJFORMAT_MACHO)
    if (linker_init_done == 1) {
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
       regfree(&re_invalid);
       regfree(&re_realso);
-#endif /* !DYNAMIC */
+#endif /* !DYNAMIC_ELF */
 #ifdef THREADED_RTS
       closeMutex(&dl_mutex);
 #endif
@@ -908,12 +911,12 @@ void addDLLHandle(pathchar* dll_name, HINSTANCE instance) {
    symbol. We therefore need to keep our own SO handle list, and
    try SOs in the right order. */
 
-#ifdef DYNAMIC
-/* In the dynamic case the link editor takes care of the order of 
+#ifdef DYNAMIC_ELF
+/* On ELF systems the link editor takes care of the order of 
    libraries. We save the handle to tha last opened shared object
    so we can close it when the new one was succesfully loaded. */
 static void *soHandle = NULL;
-#else /* DYNAMIC */
+#else /* DYNAMIC_ELF */
 typedef
    struct _OpenedSO {
       struct _OpenedSO* next;
@@ -923,14 +926,14 @@ typedef
 
 /* A list thereof. */
 static OpenedSO* openedSOs = NULL;
-#endif /* DYNAMIC */
+#endif /* DYNAMIC_ELF */
 
 static const char *
 internal_dlopen(const char *dll_name)
 {
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
    OpenedSO* o_so;
-#endif /* !DYNAMIC */
+#endif /* !DYNAMIC_ELF */
    void *hdl;
    const char *errmsg;
    char *errmsg_copy;
@@ -958,16 +961,16 @@ internal_dlopen(const char *dll_name)
       strcpy(errmsg_copy, errmsg);
       errmsg = errmsg_copy;
    } else {
-#ifdef DYNAMIC
+#ifdef DYNAMIC_ELF
       if (soHandle != NULL)
           dlclose(soHandle); /* ignore errors */
       soHandle = hdl;
-#else /* DYNAMIC */
+#else /* DYNAMIC_ELF */
       o_so = stgMallocBytes(sizeof(OpenedSO), "addDLL");
       o_so->handle = hdl;
       o_so->next   = openedSOs;
       openedSOs    = o_so;
-#endif /* DYNAMIC */
+#endif /* DYNAMIC_ELF */
    }
 
    RELEASE_LOCK(&dl_mutex);
@@ -996,9 +999,9 @@ internal_dlopen(const char *dll_name)
 
 static void *
 internal_dlsym(const char *symbol) {
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
     OpenedSO* o_so;
-#endif /* DYNAMIC */
+#endif /* DYNAMIC_ELF */
     void *v;
 
     // We acquire dl_mutex as concurrent dl* calls may alter dlerror
@@ -1011,7 +1014,7 @@ internal_dlsym(const char *symbol) {
         return v;
     }
 
-#ifdef DYNAMIC
+#ifdef DYNAMIC_ELF
     if (soHandle != NULL) {
         v = dlsym(soHandle, symbol);
         if (dlerror() == NULL) {
@@ -1019,7 +1022,7 @@ internal_dlsym(const char *symbol) {
             return v;
         }
     }
-#else /*DYNAMIC */
+#else /*DYNAMIC_ELF */
     for (o_so = openedSOs; o_so != NULL; o_so = o_so->next) {
         v = dlsym(o_so->handle, symbol);
         if (dlerror() == NULL) {
@@ -1027,7 +1030,7 @@ internal_dlsym(const char *symbol) {
             return v;
         }
     }
-#endif /* DYNAMIC */
+#endif /* DYNAMIC_ELF */
     RELEASE_LOCK(&dl_mutex);
     return v;
 }
@@ -1040,7 +1043,7 @@ addDLL( pathchar *dll_name )
    /* ------------------- ELF DLL loader ------------------- */
 
    const char *errmsg;
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
 #define NMATCH 5
    regmatch_t match[NMATCH];
    FILE* fp;
@@ -1048,12 +1051,12 @@ addDLL( pathchar *dll_name )
 #define MAXLINE 1000
    char line[MAXLINE];
    int result;
-#endif /* !DYNAMIC */
+#endif /* !DYNAMIC_ELF */
 
    IF_DEBUG(linker, debugBelch("addDLL: dll_name = '%s'\n", dll_name));
    errmsg = internal_dlopen(dll_name);
 
-#ifndef DYNAMIC
+#ifndef DYNAMIC_ELF
    if (errmsg == NULL) {
       return NULL;
    }
@@ -1103,7 +1106,7 @@ addDLL( pathchar *dll_name )
       }
       fclose(fp);
    }
-#endif /* !DYNAMIC */
+#endif /* !DYNAMIC_ELF */
    return errmsg;
 
 #  elif defined(OBJFORMAT_PEi386)
