@@ -118,7 +118,7 @@ data PersistentLinkerState
         -- that is really important
         pkgs_loaded :: ![LinkerUnitId],
 
-        -- we need to remember the name of previous temporary DLL/.so
+        -- we need to remember the names of previous temporary DLL/.so
         -- libraries so we can link them (see #10322)
         temp_sos :: ![(FilePath, String)] }
 
@@ -207,8 +207,12 @@ linkDependencies hsc_env pls span needed_mods = do
    pls1 <- if (dynamicELF dflags)
            then case lnks of 
                 [] -> linkPackages' hsc_env pkgs pls
-                _  -> return pls {pkgs_loaded = pkgs ++ (pkgs_loaded pls)}
+                _  -> return pls {pkgs_loaded = pkgs_needed
+                                              ++ (pkgs_loaded pls)}
+                  where pkgs_needed = pkgs `minusList` pkgs_loaded pls 
+
            else linkPackages' hsc_env pkgs pls
+
    linkModules hsc_env pls1 lnks
 
 dynamicELF :: DynFlags -> Bool
