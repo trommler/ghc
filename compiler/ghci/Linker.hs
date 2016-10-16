@@ -910,7 +910,7 @@ dynLoadObjs' os hsc_env pls objs
     let minus_big_ls = [ lib | Option ('-':'L':lib) <- ldInputs dflags ]
     (soFile, libPath , libName) <- newTempLibName dflags (soExt platform)
     let
-        dflags2 =  dflags {
+        dflags2 = dflags {
                       -- We don't want the original ldInputs in
                       -- (they're already linked in), but we do want
                       -- to link against previous dynLoadObjs
@@ -935,7 +935,7 @@ dynLoadObjs' os hsc_env pls objs
                              minus_big_ls
                         ++ map (\l -> Option ("-l" ++ l)) minus_ls,
                       -- Add -l options and -L options from dflags.
-                      --          
+                      --
                       -- When running TH for a non-dynamic way, we still
                       -- need to make -l flags to link against the dynamic
                       -- libraries, so we need to add WayDyn to ways.
