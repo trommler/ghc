@@ -351,6 +351,9 @@ the stack. See Note [Overlapping global registers] for implications.
 
 #define REG_Base        r27
 
+#define MAX_REAL_FLOAT_REG   6
+#define MAX_REAL_DOUBLE_REG  6
+
 /* -----------------------------------------------------------------------------
    The Sun SPARC register mapping
 
