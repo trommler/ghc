@@ -621,10 +621,10 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
        | otherwise -> remainderCode rep DIVD (extendSExpr dflags rep x)
                                              (extendSExpr dflags rep y)
       MO_U_Rem rep
-       | arch32    -> remainderCode rep DIVWU (extendSExpr dflags rep x)
-                                              (extendSExpr dflags rep y)
-       | otherwise -> remainderCode rep DIVDU (extendSExpr dflags rep x)
-                                              (extendSExpr dflags rep y)
+       | arch32    -> remainderCode rep DIVWU (extendUExpr dflags rep x)
+                                              (extendUExpr dflags rep y)
+       | otherwise -> remainderCode rep DIVDU (extendUExpr dflags rep x)
+                                              (extendUExpr dflags rep y)
 
       MO_And rep   -> case y of
         (CmmLit (CmmInt imm _)) | imm == -8 || imm == -4
