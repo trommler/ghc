@@ -1100,8 +1100,26 @@ genCCall :: ForeignTarget            -- function to call
          -> NatM InstrBlock
 genCCall target dest_regs argsAndHints
  = do dflags <- getDynFlags
-      genCCall' dflags (platformToGCP (targetPlatform dflags))
-                target dest_regs argsAndHints
+      let platform = targetPlatform dflags
+      case target of 
+        PrimTarget (MO_S_QuotRem  width) -> divOp1 platform True  width dest_regs argsAndHints
+        PrimTarget (MO_U_QuotRem  width) -> divOp1 platform False width dest_regs argsAndHints
+        _ -> genCCall' dflags (platformToGCP platform)
+                       target dest_regs argsAndHints
+        where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
+                = do let reg_q = getRegisterReg platform (CmmLocal res_q)
+                         reg_r = getRegisterReg platform (CmmLocal res_r)
+                         fmt   = intFormat width
+                     (x_reg, x_code) <- getSomeReg arg_x
+                     (y_reg, y_code) <- getSomeReg arg_y
+                     return $       y_code `appOL` x_code
+                            `appOL` toOL [ DIV fmt signed reg_q x_reg y_reg
+                                         , MULL fmt reg_r reg_q (RIReg y_reg)
+                                         , SUBF reg_r reg_r x_reg
+                                         ]
+                              
+              divOp1 _ _ _ _ _
+                = panic "genCCall: Wrong number of arguments for divOp1"
 
 -- TODO: replace 'Int' by an enum such as 'PPC_64ABI'
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF !Int | GCPAIX

@@ -815,10 +815,12 @@ type GenericOp = [CmmFormal] -> [CmmActual] -> FCode ()
 callishPrimOpSupported :: DynFlags -> PrimOp -> Either CallishMachOp GenericOp
 callishPrimOpSupported dflags op
   = case op of
-      IntQuotRemOp   | ncg && x86ish  -> Left (MO_S_QuotRem  (wordWidth dflags))
+      IntQuotRemOp   | ncg && (x86ish
+                              || ppc) -> Left (MO_S_QuotRem  (wordWidth dflags))
                      | otherwise      -> Right (genericIntQuotRemOp dflags)
 
-      WordQuotRemOp  | ncg && x86ish  -> Left (MO_U_QuotRem  (wordWidth dflags))
+      WordQuotRemOp  | ncg && (x86ish
+                              || ppc) -> Left (MO_U_QuotRem  (wordWidth dflags))
                      | otherwise      -> Right (genericWordQuotRemOp dflags)
 
       WordQuotRem2Op | (ncg && x86ish)
@@ -857,6 +859,10 @@ callishPrimOpSupported dflags op
              ArchX86    -> True
              ArchX86_64 -> True
              _          -> False
+  ppc = case platformArch (targetPlatform dflags) of
+          ArchPPC      -> True
+          ArchPPC_64 _ -> True
+          _            -> False
 
 genericIntQuotRemOp :: DynFlags -> GenericOp
 genericIntQuotRemOp dflags [res_q, res_r] [arg_x, arg_y]

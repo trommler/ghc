@@ -673,6 +673,9 @@ pprInstr (DIVD reg1 reg2 reg3) = pprLogic (sLit "divd") reg1 reg2 (RIReg reg3)
 pprInstr (DIVWU reg1 reg2 reg3) = pprLogic (sLit "divwu") reg1 reg2 (RIReg reg3)
 pprInstr (DIVDU reg1 reg2 reg3) = pprLogic (sLit "divdu") reg1 reg2 (RIReg reg3)
 
+pprInstr (MULL fmt reg1 reg2 ri) = pprMul fmt reg1 reg2 ri
+pprInstr (DIV fmt sgn reg1 reg2 reg3) = pprDiv fmt sgn reg1 reg2 reg3
+
 pprInstr (MULLW_MayOflo reg1 reg2 reg3) = vcat [
          hcat [ text "\tmullwo\t", pprReg reg1, ptext (sLit ", "),
                                           pprReg reg2, text ", ",
@@ -911,6 +914,43 @@ pprLogic op reg1 reg2 ri = hcat [
         pprReg reg2,
         text ", ",
         pprRI ri
+    ]
+
+
+pprMul :: Format -> Reg -> Reg -> RI -> SDoc
+pprMul fmt reg1 reg2 ri = hcat [
+        char '\t',
+        text "mull",
+        case ri of
+            RIReg _ -> case fmt of
+              II32 -> char 'w'
+              II64 -> char 'd'
+              _    -> panic "PPC: illegal format"
+            RIImm _ -> char 'i',
+        char '\t',
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprRI ri
+    ]
+
+
+pprDiv :: Format -> Bool -> Reg -> Reg -> Reg -> SDoc
+pprDiv fmt sgn reg1 reg2 reg3 = hcat [
+        char '\t',
+        text "div",
+        case fmt of
+          II32 -> char 'w'
+          II64 -> char 'd'
+          _    -> panic "PPC: illegal format",
+        if sgn then empty else char 'u',
+        char '\t',
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprReg reg3
     ]
 
 
