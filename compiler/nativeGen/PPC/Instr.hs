@@ -218,6 +218,7 @@ data Instr
     | SUBFC   Reg Reg Reg           -- (carrying) dst, src1, src2 ; dst = src2 - src1
     | SUBFE   Reg Reg Reg           -- (extend) dst, src1, src2 ; dst = src2 - src1
     | MULL    Format Reg Reg RI
+    | MULHU   Format Reg Reg Reg
     | MULLD   Reg Reg RI
     | MULLW   Reg Reg RI
     | DIV     Format Bool Reg Reg Reg
@@ -323,6 +324,7 @@ ppc_regUsageOfInstr platform instr
     SUBFC   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     SUBFE   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     MULL    _ reg1 reg2 ri   -> usage (reg2 : regRI ri, [reg1])
+    MULHU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
     MULLD   reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
     MULLW   reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
     DIV     _ _ reg1 reg2 reg3
@@ -415,6 +417,8 @@ ppc_patchRegsOfInstr instr env
     SUBFE   reg1 reg2 reg3  -> SUBFE (env reg1) (env reg2) (env reg3)
     MULL    fmt reg1 reg2 ri
                             -> MULL fmt (env reg1) (env reg2) (fixRI ri)
+    MULHU  fmt reg1 reg2 reg3
+                            -> MULHU fmt (env reg1) (env reg2) (env reg3)
     MULLD   reg1 reg2 ri    -> MULLD (env reg1) (env reg2) (fixRI ri)
     MULLW   reg1 reg2 ri    -> MULLW (env reg1) (env reg2) (fixRI ri)
     DIV     fmt sgn reg1 reg2 reg3

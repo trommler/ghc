@@ -674,6 +674,22 @@ pprInstr (DIVWU reg1 reg2 reg3) = pprLogic (sLit "divwu") reg1 reg2 (RIReg reg3)
 pprInstr (DIVDU reg1 reg2 reg3) = pprLogic (sLit "divdu") reg1 reg2 (RIReg reg3)
 
 pprInstr (MULL fmt reg1 reg2 ri) = pprMul fmt reg1 reg2 ri
+pprInstr (MULHU fmt reg1 reg2 reg3) = hcat [
+        char '\t',
+        text "mulh",
+        case fmt of
+          II32 -> char 'w'
+          II64 -> char 'd'
+          _    -> panic "PPC: illegal format",
+        char 'u',
+        char '\t',
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprReg reg3
+    ]
+
 pprInstr (DIV fmt sgn reg1 reg2 reg3) = pprDiv fmt sgn reg1 reg2 reg3
 
 pprInstr (MULLW_MayOflo reg1 reg2 reg3) = vcat [

@@ -1104,6 +1104,7 @@ genCCall target dest_regs argsAndHints
       case target of 
         PrimTarget (MO_S_QuotRem  width) -> divOp1 platform True  width dest_regs argsAndHints
         PrimTarget (MO_U_QuotRem  width) -> divOp1 platform False width dest_regs argsAndHints
+        PrimTarget (MO_U_Mul2 width) -> multOp2 platform width dest_regs argsAndHints
         _ -> genCCall' dflags (platformToGCP platform)
                        target dest_regs argsAndHints
         where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
@@ -1120,6 +1121,18 @@ genCCall target dest_regs argsAndHints
                               
               divOp1 _ _ _ _ _
                 = panic "genCCall: Wrong number of arguments for divOp1"
+              multOp2 platform width [res_h, res_l] [arg_x, arg_y]
+                = do let reg_h = getRegisterReg platform (CmmLocal res_h)
+                         reg_l = getRegisterReg platform (CmmLocal res_l)
+                         fmt = intFormat width
+                     (x_reg, x_code) <- getSomeReg arg_x
+                     (y_reg, y_code) <- getSomeReg arg_y
+                     return $ y_code `appOL` x_code
+                            `appOL` toOL [ MULL fmt reg_l x_reg (RIReg y_reg)
+                                         , MULHU fmt reg_h x_reg y_reg
+                                         ]
+              multOp2 _ _ _ _
+                = panic "genCall: Wrong number of arguments for multOp2"
 
 -- TODO: replace 'Int' by an enum such as 'PPC_64ABI'
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF !Int | GCPAIX
