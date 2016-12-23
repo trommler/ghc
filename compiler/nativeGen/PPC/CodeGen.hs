@@ -594,9 +594,7 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
             -> trivialCode rep True ADD x (CmmLit $ CmmInt (-imm) immrep)
           _ -> trivialCodeNoImm' (intFormat rep) SUBF y x
 
-      MO_Mul rep
-       | arch32    -> trivialCode rep True MULLW x y
-       | otherwise -> trivialCode rep True MULLD x y
+      MO_Mul rep -> shiftCode rep MULL x y
 
       MO_S_MulMayOflo W32 -> trivialCodeNoImm' II32 MULLW_MayOflo x y
       MO_S_MulMayOflo W64 -> trivialCodeNoImm' II64 MULLD_MayOflo x y
@@ -604,26 +602,14 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_S_MulMayOflo _ -> panic "S_MulMayOflo: (II8/16) not implemented"
       MO_U_MulMayOflo _ -> panic "U_MulMayOflo: not implemented"
 
-      MO_S_Quot rep
-       | arch32     -> trivialCodeNoImm' (intFormat rep) DIVW
+      MO_S_Quot rep -> trivialCodeNoImmSign (intFormat rep) True DIV
                 (extendSExpr dflags rep x) (extendSExpr dflags rep y)
-       | otherwise  -> trivialCodeNoImm' (intFormat rep) DIVD
-                (extendSExpr dflags rep x) (extendSExpr dflags rep y)
-      MO_U_Quot rep
-       | arch32     -> trivialCodeNoImm' (intFormat rep) DIVWU
-                (extendUExpr dflags rep x) (extendUExpr dflags rep y)
-       | otherwise  -> trivialCodeNoImm' (intFormat rep) DIVDU
+      MO_U_Quot rep -> trivialCodeNoImmSign (intFormat rep) False DIV
                 (extendUExpr dflags rep x) (extendUExpr dflags rep y)
 
-      MO_S_Rem rep
-       | arch32    -> remainderCode rep DIVW (extendSExpr dflags rep x)
+      MO_S_Rem rep -> remainderCode rep True (extendSExpr dflags rep x)
                                              (extendSExpr dflags rep y)
-       | otherwise -> remainderCode rep DIVD (extendSExpr dflags rep x)
-                                             (extendSExpr dflags rep y)
-      MO_U_Rem rep
-       | arch32    -> remainderCode rep DIVWU (extendUExpr dflags rep x)
-                                              (extendUExpr dflags rep y)
-       | otherwise -> remainderCode rep DIVDU (extendUExpr dflags rep x)
+      MO_U_Rem rep -> remainderCode rep False (extendUExpr dflags rep x)
                                               (extendUExpr dflags rep y)
 
       MO_And rep   -> case y of
@@ -647,8 +633,6 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
   where
     triv_float :: Width -> (Format -> Reg -> Reg -> Reg -> Instr) -> NatM Register
     triv_float width instr = trivialCodeNoImm (floatFormat width) instr x y
-
-    arch32 = target32Bit $ targetPlatform dflags
 
 getRegister' _ (CmmLit (CmmInt i rep))
   | Just imm <- makeImmediate rep True i
@@ -1829,6 +1813,12 @@ trivialCodeNoImm :: Format -> (Format -> Reg -> Reg -> Reg -> Instr)
                  -> CmmExpr -> CmmExpr -> NatM Register
 trivialCodeNoImm format instr x y = trivialCodeNoImm' format (instr format) x y
 
+trivialCodeNoImmSign :: Format -> Bool
+                     -> (Format -> Bool -> Reg -> Reg -> Reg -> Instr)
+                     -> CmmExpr -> CmmExpr -> NatM Register
+trivialCodeNoImmSign  format sgn instr x y
+  = trivialCodeNoImm' format (instr format sgn) x y
+
 
 trivialUCode
         :: Format
@@ -1842,19 +1832,16 @@ trivialUCode rep instr x = do
 
 -- There is no "remainder" instruction on the PPC, so we have to do
 -- it the hard way.
--- The "div" parameter is the division instruction to use (DIVW or DIVWU)
+-- The "sgn" parameter is the signedness for the division instruction
 
-remainderCode :: Width -> (Reg -> Reg -> Reg -> Instr)
-    -> CmmExpr -> CmmExpr -> NatM Register
-remainderCode rep div x y = do
-    dflags <- getDynFlags
-    let mull_instr = if target32Bit $ targetPlatform dflags then MULLW
-                                                            else MULLD
+remainderCode :: Width -> Bool -> CmmExpr -> CmmExpr -> NatM Register
+remainderCode rep sgn x y = do
+    let fmt = intFormat rep
     (src1, code1) <- getSomeReg x
     (src2, code2) <- getSomeReg y
     let code dst = code1 `appOL` code2 `appOL` toOL [
-                div dst src1 src2,
-                mull_instr dst dst (RIReg src2),
+                DIV fmt sgn dst src1 src2,
+                MULL fmt dst dst (RIReg src2),
                 SUBF dst dst src1
             ]
     return (Any (intFormat rep) code)

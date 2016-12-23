@@ -219,13 +219,7 @@ data Instr
     | SUBFE   Reg Reg Reg           -- (extend) dst, src1, src2 ; dst = src2 - src1
     | MULL    Format Reg Reg RI
     | MULHU   Format Reg Reg Reg
-    | MULLD   Reg Reg RI
-    | MULLW   Reg Reg RI
     | DIV     Format Bool Reg Reg Reg
-    | DIVW    Reg Reg Reg
-    | DIVD    Reg Reg Reg
-    | DIVWU   Reg Reg Reg
-    | DIVDU   Reg Reg Reg
 
     | MULLW_MayOflo Reg Reg Reg
                                     -- dst = 1 if src1 * src2 overflows
@@ -325,14 +319,8 @@ ppc_regUsageOfInstr platform instr
     SUBFE   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     MULL    _ reg1 reg2 ri   -> usage (reg2 : regRI ri, [reg1])
     MULHU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
-    MULLD   reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
-    MULLW   reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
     DIV     _ _ reg1 reg2 reg3
                              -> usage ([reg2,reg3], [reg1])
-    DIVW    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
-    DIVD    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
-    DIVWU   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
-    DIVDU   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
 
     MULLW_MayOflo reg1 reg2 reg3
                             -> usage ([reg2,reg3], [reg1])
@@ -419,14 +407,8 @@ ppc_patchRegsOfInstr instr env
                             -> MULL fmt (env reg1) (env reg2) (fixRI ri)
     MULHU  fmt reg1 reg2 reg3
                             -> MULHU fmt (env reg1) (env reg2) (env reg3)
-    MULLD   reg1 reg2 ri    -> MULLD (env reg1) (env reg2) (fixRI ri)
-    MULLW   reg1 reg2 ri    -> MULLW (env reg1) (env reg2) (fixRI ri)
     DIV     fmt sgn reg1 reg2 reg3
                             -> DIV fmt sgn (env reg1) (env reg2) (env reg3)
-    DIVW    reg1 reg2 reg3  -> DIVW (env reg1) (env reg2) (env reg3)
-    DIVD    reg1 reg2 reg3  -> DIVD (env reg1) (env reg2) (env reg3)
-    DIVWU   reg1 reg2 reg3  -> DIVWU (env reg1) (env reg2) (env reg3)
-    DIVDU   reg1 reg2 reg3  -> DIVDU (env reg1) (env reg2) (env reg3)
     MULLW_MayOflo reg1 reg2 reg3
                             -> MULLW_MayOflo (env reg1) (env reg2) (env reg3)
     MULLD_MayOflo reg1 reg2 reg3
