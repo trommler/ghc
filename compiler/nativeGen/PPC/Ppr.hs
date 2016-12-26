@@ -661,6 +661,7 @@ pprInstr (ADDIS reg1 reg2 imm) = hcat [
 
 pprInstr (ADDC reg1 reg2 reg3) = pprLogic (sLit "addc") reg1 reg2 (RIReg reg3)
 pprInstr (ADDE reg1 reg2 reg3) = pprLogic (sLit "adde") reg1 reg2 (RIReg reg3)
+pprInstr (ADDZE reg1 reg2) = pprUnary (sLit "addze") reg1 reg2
 pprInstr (SUBF reg1 reg2 reg3) = pprLogic (sLit "subf") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFC reg1 reg2 reg3) = pprLogic (sLit "subfc") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFE reg1 reg2 reg3) = pprLogic (sLit "subfe") reg1 reg2 (RIReg reg3)
@@ -684,22 +685,22 @@ pprInstr (MULHU fmt reg1 reg2 reg3) = hcat [
 pprInstr (DIV fmt sgn reg1 reg2 reg3) = pprDiv fmt sgn reg1 reg2 reg3
 
 pprInstr (MULLW_MayOflo reg1 reg2 reg3) = vcat [
-         hcat [ text "\tmullwo\t", pprReg reg1, ptext (sLit ", "),
-                                          pprReg reg2, text ", ",
-                                          pprReg reg3 ],
+         hcat [ text "\tmullwo\t", pprReg reg1, text ", ",
+                                   pprReg reg2, text ", ",
+                                   pprReg reg3 ],
          hcat [ text "\tmfxer\t",  pprReg reg1 ],
-         hcat [ text "\trlwinm\t", pprReg reg1, ptext (sLit ", "),
-                                          pprReg reg1, text ", ",
-                                          text "2, 31, 31" ]
+         hcat [ text "\trlwinm\t", pprReg reg1, text ", ",
+                                   pprReg reg1, text ", ",
+                                   text "2, 31, 31" ]
     ]
 pprInstr (MULLD_MayOflo reg1 reg2 reg3) = vcat [
-         hcat [ text "\tmulldo\t", pprReg reg1, ptext (sLit ", "),
-                                          pprReg reg2, text ", ",
-                                          pprReg reg3 ],
+         hcat [ text "\tmulldo\t", pprReg reg1, text ", ",
+                                   pprReg reg2, text ", ",
+                                   pprReg reg3 ],
          hcat [ text "\tmfxer\t",  pprReg reg1 ],
-         hcat [ text "\trlwinm\t", pprReg reg1, ptext (sLit ", "),
-                                          pprReg reg1, text ", ",
-                                          text "2, 31, 31" ]
+         hcat [ text "\trlwinm\t", pprReg reg1, text ", ",
+                                   pprReg reg1, text ", ",
+                                   text "2, 31, 31" ]
     ]
 
         -- for some reason, "andi" doesn't exist.

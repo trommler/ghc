@@ -211,7 +211,8 @@ data Instr
 
     | ADD     Reg Reg RI            -- dst, src1, src2
     | ADDC    Reg Reg Reg           -- (carrying) dst, src1, src2
-    | ADDE    Reg Reg Reg           -- (extend) dst, src1, src2
+    | ADDE    Reg Reg Reg           -- (extended) dst, src1, src2
+    | ADDZE   Reg Reg               -- (to zero extended) dst, src
     | ADDI    Reg Reg Imm           -- Add Immediate dst, src1, src2
     | ADDIS   Reg Reg Imm           -- Add Immediate Shifted dst, src1, src2
     | SUBF    Reg Reg Reg           -- dst, src1, src2 ; dst = src2 - src1
@@ -312,6 +313,7 @@ ppc_regUsageOfInstr platform instr
     ADD     reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
     ADDC    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     ADDE    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
+    ADDZE   reg1 reg2        -> usage ([reg2], [reg1])
     ADDI    reg1 reg2 _      -> usage ([reg2], [reg1])
     ADDIS   reg1 reg2 _      -> usage ([reg2], [reg1])
     SUBF    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
@@ -398,6 +400,7 @@ ppc_patchRegsOfInstr instr env
     ADD     reg1 reg2 ri    -> ADD (env reg1) (env reg2) (fixRI ri)
     ADDC    reg1 reg2 reg3  -> ADDC (env reg1) (env reg2) (env reg3)
     ADDE    reg1 reg2 reg3  -> ADDE (env reg1) (env reg2) (env reg3)
+    ADDZE   reg1 reg2       -> ADDZE (env reg1) (env reg2)
     ADDI    reg1 reg2 imm   -> ADDI (env reg1) (env reg2) imm
     ADDIS   reg1 reg2 imm   -> ADDIS (env reg1) (env reg2) imm
     SUBF    reg1 reg2 reg3  -> SUBF (env reg1) (env reg2) (env reg3)

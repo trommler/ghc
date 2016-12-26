@@ -827,11 +827,13 @@ callishPrimOpSupported dflags op
                           || llvm     -> Left (MO_U_QuotRem2 (wordWidth dflags))
                      | otherwise      -> Right (genericWordQuotRem2Op dflags)
 
-      WordAdd2Op     | (ncg && x86ish)
+      WordAdd2Op     | (ncg && (x86ish
+                                || ppc))
                          || llvm      -> Left (MO_Add2       (wordWidth dflags))
                      | otherwise      -> Right genericWordAdd2Op
 
-      WordSubCOp     | (ncg && x86ish)
+      WordSubCOp     | (ncg && (x86ish
+                                || ppc))
                          || llvm      -> Left (MO_SubWordC   (wordWidth dflags))
                      | otherwise      -> Right genericWordSubCOp
 

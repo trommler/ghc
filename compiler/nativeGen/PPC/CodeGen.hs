@@ -594,7 +594,7 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
             -> trivialCode rep True ADD x (CmmLit $ CmmInt (-imm) immrep)
           _ -> trivialCodeNoImm' (intFormat rep) SUBF y x
 
-      MO_Mul rep -> shiftCode rep MULL x y
+      MO_Mul rep -> shiftMulCode rep True MULL x y
 
       MO_S_MulMayOflo W32 -> trivialCodeNoImm' II32 MULLW_MayOflo x y
       MO_S_MulMayOflo W64 -> trivialCodeNoImm' II64 MULLD_MayOflo x y
@@ -625,9 +625,9 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_Or rep    -> trivialCode rep False OR x y
       MO_Xor rep   -> trivialCode rep False XOR x y
 
-      MO_Shl rep   -> shiftCode rep SL x y
-      MO_S_Shr rep -> shiftCode rep SRA (extendSExpr dflags rep x) y
-      MO_U_Shr rep -> shiftCode rep SR (extendUExpr dflags rep x) y
+      MO_Shl rep   -> shiftMulCode rep False SL x y
+      MO_S_Shr rep -> shiftMulCode rep False SRA (extendSExpr dflags rep x) y
+      MO_U_Shr rep -> shiftMulCode rep False SR (extendUExpr dflags rep x) y
       _         -> panic "PPC.CodeGen.getRegister: no match"
 
   where
@@ -1089,6 +1089,8 @@ genCCall target dest_regs argsAndHints
         PrimTarget (MO_S_QuotRem  width) -> divOp1 platform True  width dest_regs argsAndHints
         PrimTarget (MO_U_QuotRem  width) -> divOp1 platform False width dest_regs argsAndHints
         PrimTarget (MO_U_Mul2 width) -> multOp2 platform width dest_regs argsAndHints
+        PrimTarget (MO_Add2 _) -> add2Op platform dest_regs argsAndHints
+        PrimTarget (MO_SubWordC _) -> subcOp platform dest_regs argsAndHints
         _ -> genCCall' dflags (platformToGCP platform)
                        target dest_regs argsAndHints
         where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
@@ -1117,6 +1119,37 @@ genCCall target dest_regs argsAndHints
                                          ]
               multOp2 _ _ _ _
                 = panic "genCall: Wrong number of arguments for multOp2"
+              add2Op platform [res_h, res_l] [arg_x, arg_y]
+                = do let reg_h = getRegisterReg platform (CmmLocal res_h)
+                         reg_l = getRegisterReg platform (CmmLocal res_l)
+                     (x_reg, x_code) <- getSomeReg arg_x
+                     (y_reg, y_code) <- getSomeReg arg_y
+                     return $ y_code `appOL` x_code
+                            `appOL` toOL [ LI reg_h (ImmInt 0)
+                                         , ADDC reg_l x_reg y_reg
+                                         , ADDZE reg_h reg_h
+                                         ]
+              add2Op _ _ _
+                = panic "genCCall: Wrong number of arguments/results for add2"
+
+              -- PowerPC subfc sets the carry for rT = ~(rA) + rB + 1,
+              -- which is 0 for borrow and 1 otherwise. We need 1 and 0
+              -- so xor with 1.
+              -- If you have better code please send it. PT
+              subcOp platform [res_r, res_c] [arg_x, arg_y]
+                = do let reg_r = getRegisterReg platform (CmmLocal res_r)
+                         reg_c = getRegisterReg platform (CmmLocal res_c)
+                     (x_reg, x_code) <- getSomeReg arg_x
+                     (y_reg, y_code) <- getSomeReg arg_y
+                     return $ y_code `appOL` x_code
+                            `appOL` toOL [ LI reg_c (ImmInt 0)
+                                         , SUBFC reg_r y_reg x_reg
+                                         , ADDZE reg_c reg_c
+                                         , XOR reg_c reg_c (RIImm (ImmInt 1))
+                                         ]
+              subcOp _ _ _
+                = panic "genCCall: Wrong number of arguments/results for subc"
+
 
 -- TODO: replace 'Int' by an enum such as 'PPC_64ABI'
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF !Int | GCPAIX
@@ -1780,21 +1813,22 @@ trivialCode rep _ instr x y = do
     let code dst = code1 `appOL` code2 `snocOL` instr dst src1 (RIReg src2)
     return (Any (intFormat rep) code)
 
-shiftCode
+shiftMulCode
         :: Width
+        -> Bool
         -> (Format-> Reg -> Reg -> RI -> Instr)
         -> CmmExpr
         -> CmmExpr
         -> NatM Register
-shiftCode width instr x (CmmLit (CmmInt y _))
-    | Just imm <- makeImmediate width False y
+shiftMulCode width sign instr x (CmmLit (CmmInt y _))
+    | Just imm <- makeImmediate width sign y
     = do
         (src1, code1) <- getSomeReg x
         let format = intFormat width
         let code dst = code1 `snocOL` instr format dst src1 (RIImm imm)
         return (Any format code)
 
-shiftCode width instr x y = do
+shiftMulCode width _ instr x y = do
     (src1, code1) <- getSomeReg x
     (src2, code2) <- getSomeReg y
     let format = intFormat width
