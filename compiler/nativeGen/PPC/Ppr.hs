@@ -666,6 +666,46 @@ pprInstr (SUBF reg1 reg2 reg3) = pprLogic (sLit "subf") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFC reg1 reg2 reg3) = pprLogic (sLit "subfc") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFE reg1 reg2 reg3) = pprLogic (sLit "subfe") reg1 reg2 (RIReg reg3)
 pprInstr (MULL fmt reg1 reg2 ri) = pprMul fmt reg1 reg2 ri
+pprInstr (MULLO fmt reg1 reg2 reg3) = hcat [
+        char '\t',
+        text "mull",
+        case fmt of
+          II32 -> char 'w'
+          II64 -> char 'd'
+          _    -> panic "PPC: illegal format",
+        text "o\t",
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprReg reg3
+    ]
+pprInstr (MFOV fmt reg) = vcat [
+        hcat [
+            char '\t',
+            text "mfxer",
+            char '\t',
+            pprReg reg
+            ],
+        hcat [
+            char '\t',
+            text "extr",
+            case fmt of
+              II32 -> char 'w'
+              II64 -> char 'd'
+              _    -> panic "PPC: illegal format",
+            text "i\t",
+            pprReg reg,
+            text ", ",
+            pprReg reg,
+            text ", 1, ",
+            case fmt of
+              II32 -> text "1"
+              II64 -> text "33"
+              _    -> panic "PPC: illegal format"
+            ]
+        ]
+
 pprInstr (MULHU fmt reg1 reg2 reg3) = hcat [
         char '\t',
         text "mulh",
@@ -673,8 +713,7 @@ pprInstr (MULHU fmt reg1 reg2 reg3) = hcat [
           II32 -> char 'w'
           II64 -> char 'd'
           _    -> panic "PPC: illegal format",
-        char 'u',
-        char '\t',
+        text "u\t",
         pprReg reg1,
         text ", ",
         pprReg reg2,
@@ -683,25 +722,6 @@ pprInstr (MULHU fmt reg1 reg2 reg3) = hcat [
     ]
 
 pprInstr (DIV fmt sgn reg1 reg2 reg3) = pprDiv fmt sgn reg1 reg2 reg3
-
-pprInstr (MULLW_MayOflo reg1 reg2 reg3) = vcat [
-         hcat [ text "\tmullwo\t", pprReg reg1, text ", ",
-                                   pprReg reg2, text ", ",
-                                   pprReg reg3 ],
-         hcat [ text "\tmfxer\t",  pprReg reg1 ],
-         hcat [ text "\trlwinm\t", pprReg reg1, text ", ",
-                                   pprReg reg1, text ", ",
-                                   text "2, 31, 31" ]
-    ]
-pprInstr (MULLD_MayOflo reg1 reg2 reg3) = vcat [
-         hcat [ text "\tmulldo\t", pprReg reg1, text ", ",
-                                   pprReg reg2, text ", ",
-                                   pprReg reg3 ],
-         hcat [ text "\tmfxer\t",  pprReg reg1 ],
-         hcat [ text "\trlwinm\t", pprReg reg1, text ", ",
-                                   pprReg reg1, text ", ",
-                                   text "2, 31, 31" ]
-    ]
 
         -- for some reason, "andi" doesn't exist.
         -- we'll use "andi." instead.

@@ -595,12 +595,16 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
           _ -> trivialCodeNoImm' (intFormat rep) SUBF y x
 
       MO_Mul rep -> shiftMulCode rep True MULL x y
-
-      MO_S_MulMayOflo W32 -> trivialCodeNoImm' II32 MULLW_MayOflo x y
-      MO_S_MulMayOflo W64 -> trivialCodeNoImm' II64 MULLD_MayOflo x y
-
-      MO_S_MulMayOflo _ -> panic "S_MulMayOflo: (II8/16) not implemented"
-      MO_U_MulMayOflo _ -> panic "U_MulMayOflo: not implemented"
+      MO_S_MulMayOflo rep -> do
+        (src1, code1) <- getSomeReg x
+        (src2, code2) <- getSomeReg y
+        let
+          format = intFormat rep
+          code dst = code1 `appOL` code2
+                       `appOL` toOL [ MULLO format dst src1 src2
+                                    , MFOV  format dst
+                                    ]
+        return (Any format code)
 
       MO_S_Quot rep -> trivialCodeNoImmSign (intFormat rep) True DIV
                 (extendSExpr dflags rep x) (extendSExpr dflags rep y)

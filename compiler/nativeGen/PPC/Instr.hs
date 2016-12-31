@@ -219,22 +219,13 @@ data Instr
     | SUBFC   Reg Reg Reg           -- (carrying) dst, src1, src2 ; dst = src2 - src1
     | SUBFE   Reg Reg Reg           -- (extend) dst, src1, src2 ; dst = src2 - src1
     | MULL    Format Reg Reg RI
+    | MULLO   Format Reg Reg Reg    -- multiply and set overflow
+    | MFOV    Format Reg            -- move overflow bit (33) to register
+                                    -- pseudo-instruction; pretty printed as
+                                    -- mfxer dst
+                                    -- extr[w|d]i dst, dst, 1, [1|33] 
     | MULHU   Format Reg Reg Reg
     | DIV     Format Bool Reg Reg Reg
-
-    | MULLW_MayOflo Reg Reg Reg
-                                    -- dst = 1 if src1 * src2 overflows
-                                    -- pseudo-instruction; pretty-printed as:
-                                    -- mullwo. dst, src1, src2
-                                    -- mfxer dst
-                                    -- rlwinm dst, dst, 2, 31,31
-    | MULLD_MayOflo Reg Reg Reg
-                                    -- dst = 1 if src1 * src2 overflows
-                                    -- pseudo-instruction; pretty-printed as:
-                                    -- mulldo. dst, src1, src2
-                                    -- mfxer dst
-                                    -- rlwinm dst, dst, 2, 31,31
-
     | AND     Reg Reg RI            -- dst, src1, src2
     | OR      Reg Reg RI            -- dst, src1, src2
     | ORIS    Reg Reg Imm           -- OR Immediate Shifted dst, src1, src2
@@ -320,14 +311,12 @@ ppc_regUsageOfInstr platform instr
     SUBFC   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     SUBFE   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     MULL    _ reg1 reg2 ri   -> usage (reg2 : regRI ri, [reg1])
+    MULLO   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
+    MFOV    _ reg            -> usage ([], [reg])
     MULHU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
     DIV     _ _ reg1 reg2 reg3
                              -> usage ([reg2,reg3], [reg1])
 
-    MULLW_MayOflo reg1 reg2 reg3
-                            -> usage ([reg2,reg3], [reg1])
-    MULLD_MayOflo reg1 reg2 reg3
-                            -> usage ([reg2,reg3], [reg1])
     AND     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     OR      reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     ORIS    reg1 reg2 _     -> usage ([reg2], [reg1])
@@ -408,14 +397,14 @@ ppc_patchRegsOfInstr instr env
     SUBFE   reg1 reg2 reg3  -> SUBFE (env reg1) (env reg2) (env reg3)
     MULL    fmt reg1 reg2 ri
                             -> MULL fmt (env reg1) (env reg2) (fixRI ri)
-    MULHU  fmt reg1 reg2 reg3
+    MULLO   fmt reg1 reg2 reg3
+                            -> MULLO fmt (env reg1) (env reg2) (env reg3)
+    MFOV    fmt reg         -> MFOV fmt (env reg)
+    MULHU   fmt reg1 reg2 reg3
                             -> MULHU fmt (env reg1) (env reg2) (env reg3)
     DIV     fmt sgn reg1 reg2 reg3
                             -> DIV fmt sgn (env reg1) (env reg2) (env reg3)
-    MULLW_MayOflo reg1 reg2 reg3
-                            -> MULLW_MayOflo (env reg1) (env reg2) (env reg3)
-    MULLD_MayOflo reg1 reg2 reg3
-                            -> MULLD_MayOflo (env reg1) (env reg2) (env reg3)
+
     AND     reg1 reg2 ri    -> AND (env reg1) (env reg2) (fixRI ri)
     OR      reg1 reg2 ri    -> OR  (env reg1) (env reg2) (fixRI ri)
     ORIS    reg1 reg2 imm   -> ORIS (env reg1) (env reg2) imm
