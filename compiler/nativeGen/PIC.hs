@@ -521,7 +521,7 @@ pprGotDeclaration _ _ OSAIX
                  ]
 
 
--- PPC 64 ELF v1needs a Table Of Contents (TOC) on Linux
+-- PPC 64 ELF v1 needs a Table Of Contents (TOC) on Linux
 pprGotDeclaration _ (ArchPPC_64 ELF_V1) OSLinux
         = text ".section \".toc\",\"aw\""
 -- In ELF v2 we also need to tell the assembler that we want ABI
