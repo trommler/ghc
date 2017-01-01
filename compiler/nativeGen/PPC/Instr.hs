@@ -210,12 +210,14 @@ data Instr
     | BCTRL   [Reg]
 
     | ADD     Reg Reg RI            -- dst, src1, src2
+    | ADDO    Reg Reg Reg           -- add and set overflow
     | ADDC    Reg Reg Reg           -- (carrying) dst, src1, src2
     | ADDE    Reg Reg Reg           -- (extended) dst, src1, src2
     | ADDZE   Reg Reg               -- (to zero extended) dst, src
     | ADDI    Reg Reg Imm           -- Add Immediate dst, src1, src2
     | ADDIS   Reg Reg Imm           -- Add Immediate Shifted dst, src1, src2
     | SUBF    Reg Reg Reg           -- dst, src1, src2 ; dst = src2 - src1
+    | SUBFO   Reg Reg Reg           -- subtract from and set overflow
     | SUBFC   Reg Reg Reg           -- (carrying) dst, src1, src2 ; dst = src2 - src1
     | SUBFE   Reg Reg Reg           -- (extend) dst, src1, src2 ; dst = src2 - src1
     | MULL    Format Reg Reg RI
@@ -302,12 +304,14 @@ ppc_regUsageOfInstr platform instr
     BCTRL   params           -> usage (params, callClobberedRegs platform)
 
     ADD     reg1 reg2 ri     -> usage (reg2 : regRI ri, [reg1])
+    ADDO    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     ADDC    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     ADDE    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     ADDZE   reg1 reg2        -> usage ([reg2], [reg1])
     ADDI    reg1 reg2 _      -> usage ([reg2], [reg1])
     ADDIS   reg1 reg2 _      -> usage ([reg2], [reg1])
     SUBF    reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
+    SUBFO   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     SUBFC   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     SUBFE   reg1 reg2 reg3   -> usage ([reg2,reg3], [reg1])
     MULL    _ reg1 reg2 ri   -> usage (reg2 : regRI ri, [reg1])
@@ -387,12 +391,14 @@ ppc_patchRegsOfInstr instr env
     BL      imm argRegs     -> BL imm argRegs    -- argument regs
     BCTRL   argRegs         -> BCTRL argRegs     -- cannot be remapped
     ADD     reg1 reg2 ri    -> ADD (env reg1) (env reg2) (fixRI ri)
+    ADDO    reg1 reg2 reg3  -> ADDO (env reg1) (env reg2) (env reg3)
     ADDC    reg1 reg2 reg3  -> ADDC (env reg1) (env reg2) (env reg3)
     ADDE    reg1 reg2 reg3  -> ADDE (env reg1) (env reg2) (env reg3)
     ADDZE   reg1 reg2       -> ADDZE (env reg1) (env reg2)
     ADDI    reg1 reg2 imm   -> ADDI (env reg1) (env reg2) imm
     ADDIS   reg1 reg2 imm   -> ADDIS (env reg1) (env reg2) imm
     SUBF    reg1 reg2 reg3  -> SUBF (env reg1) (env reg2) (env reg3)
+    SUBFO   reg1 reg2 reg3  -> SUBFO (env reg1) (env reg2) (env reg3)
     SUBFC   reg1 reg2 reg3  -> SUBFC (env reg1) (env reg2) (env reg3)
     SUBFE   reg1 reg2 reg3  -> SUBFE (env reg1) (env reg2) (env reg3)
     MULL    fmt reg1 reg2 ri

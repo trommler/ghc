@@ -1095,6 +1095,10 @@ genCCall target dest_regs argsAndHints
         PrimTarget (MO_U_Mul2 width) -> multOp2 platform width dest_regs argsAndHints
         PrimTarget (MO_Add2 _) -> add2Op platform dest_regs argsAndHints
         PrimTarget (MO_SubWordC _) -> subcOp platform dest_regs argsAndHints
+        PrimTarget (MO_AddIntC width) -> addoOp ADDO platform width dest_regs
+                                                argsAndHints
+        PrimTarget (MO_SubIntC width) -> addoOp SUBFO platform width dest_regs
+                                                argsAndHints
         _ -> genCCall' dflags (platformToGCP platform)
                        target dest_regs argsAndHints
         where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
@@ -1139,7 +1143,6 @@ genCCall target dest_regs argsAndHints
               -- PowerPC subfc sets the carry for rT = ~(rA) + rB + 1,
               -- which is 0 for borrow and 1 otherwise. We need 1 and 0
               -- so xor with 1.
-              -- If you have better code please send it. PT
               subcOp platform [res_r, res_c] [arg_x, arg_y]
                 = do let reg_r = getRegisterReg platform (CmmLocal res_r)
                          reg_c = getRegisterReg platform (CmmLocal res_c)
@@ -1153,7 +1156,18 @@ genCCall target dest_regs argsAndHints
                                          ]
               subcOp _ _ _
                 = panic "genCCall: Wrong number of arguments/results for subc"
-
+              addoOp instr platform width [res_r, res_c] [arg_x, arg_y]
+                = do let reg_r = getRegisterReg platform (CmmLocal res_r)
+                         reg_c = getRegisterReg platform (CmmLocal res_c)
+                     (x_reg, x_code) <- getSomeReg arg_x
+                     (y_reg, y_code) <- getSomeReg arg_y
+                     return $ y_code `appOL` x_code
+                            `appOL` toOL [ instr reg_r y_reg x_reg,
+                                           -- SUBFO argument order reversed!
+                                           MFOV (intFormat width) reg_c
+                                         ]
+              addoOp _ _ _ _ _
+                = panic "genCall: Wrong number of arguments/results for addC"
 
 -- TODO: replace 'Int' by an enum such as 'PPC_64ABI'
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF !Int | GCPAIX

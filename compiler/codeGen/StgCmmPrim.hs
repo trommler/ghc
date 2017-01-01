@@ -837,11 +837,13 @@ callishPrimOpSupported dflags op
                          || llvm      -> Left (MO_SubWordC   (wordWidth dflags))
                      | otherwise      -> Right genericWordSubCOp
 
-      IntAddCOp      | (ncg && x86ish)
+      IntAddCOp      | (ncg && (x86ish
+                                || ppc))
                          || llvm      -> Left (MO_AddIntC    (wordWidth dflags))
                      | otherwise      -> Right genericIntAddCOp
 
-      IntSubCOp      | (ncg && x86ish)
+      IntSubCOp      | (ncg && (x86ish
+                                || ppc))
                          || llvm      -> Left (MO_SubIntC    (wordWidth dflags))
                      | otherwise      -> Right genericIntSubCOp
 

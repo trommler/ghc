@@ -659,10 +659,12 @@ pprInstr (ADDIS reg1 reg2 imm) = hcat [
         pprImm imm
     ]
 
+pprInstr (ADDO reg1 reg2 reg3) = pprLogic (sLit "addo") reg1 reg2 (RIReg reg3)
 pprInstr (ADDC reg1 reg2 reg3) = pprLogic (sLit "addc") reg1 reg2 (RIReg reg3)
 pprInstr (ADDE reg1 reg2 reg3) = pprLogic (sLit "adde") reg1 reg2 (RIReg reg3)
 pprInstr (ADDZE reg1 reg2) = pprUnary (sLit "addze") reg1 reg2
 pprInstr (SUBF reg1 reg2 reg3) = pprLogic (sLit "subf") reg1 reg2 (RIReg reg3)
+pprInstr (SUBFO reg1 reg2 reg3) = pprLogic (sLit "subfo") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFC reg1 reg2 reg3) = pprLogic (sLit "subfc") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFE reg1 reg2 reg3) = pprLogic (sLit "subfe") reg1 reg2 (RIReg reg3)
 pprInstr (MULL fmt reg1 reg2 ri) = pprMul fmt reg1 reg2 ri
