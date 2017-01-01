@@ -1171,7 +1171,6 @@ genCCall target dest_regs argsAndHints
 
 -- TODO: replace 'Int' by an enum such as 'PPC_64ABI'
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF !Int | GCPAIX
-                      deriving Eq
 
 platformToGCP :: Platform -> GenCCallPlatform
 platformToGCP platform = case platformOS platform of
