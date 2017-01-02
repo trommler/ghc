@@ -823,7 +823,8 @@ callishPrimOpSupported dflags op
                               || ppc) -> Left (MO_U_QuotRem  (wordWidth dflags))
                      | otherwise      -> Right (genericWordQuotRemOp dflags)
 
-      WordQuotRem2Op | (ncg && x86ish)
+      WordQuotRem2Op | (ncg && (x86ish
+                                || ppc))
                           || llvm     -> Left (MO_U_QuotRem2 (wordWidth dflags))
                      | otherwise      -> Right (genericWordQuotRem2Op dflags)
 

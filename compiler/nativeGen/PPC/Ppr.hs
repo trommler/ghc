@@ -602,6 +602,19 @@ pprInstr (JMP lbl)
         ppr lbl
     ]
 
+pprInstr (BCCI cond imm) = sdocWithPlatform $ \platform -> hcat [
+        char '\t',
+        text "b",
+        pprCond cond,
+        char '\t',
+        case platformOS platform of
+          OSAIX -> char '$'
+          OSLinux -> char '.'
+          _ -> panic "PPC.pprInstr: No symbol for current location",
+        char '+',
+        pprImm imm
+    ]
+
 pprInstr (MTCTR reg) = hcat [
         char '\t',
         text "mtctr",
@@ -667,7 +680,22 @@ pprInstr (SUBF reg1 reg2 reg3) = pprLogic (sLit "subf") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFO reg1 reg2 reg3) = pprLogic (sLit "subfo") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFC reg1 reg2 reg3) = pprLogic (sLit "subfc") reg1 reg2 (RIReg reg3)
 pprInstr (SUBFE reg1 reg2 reg3) = pprLogic (sLit "subfe") reg1 reg2 (RIReg reg3)
-pprInstr (MULL fmt reg1 reg2 ri) = pprMul fmt reg1 reg2 ri
+pprInstr (MULL fmt reg1 reg2 ri) = hcat [
+        char '\t',
+        text "mull",
+        case ri of
+            RIReg _ -> case fmt of
+              II32 -> char 'w'
+              II64 -> char 'd'
+              _    -> panic "PPC: illegal format"
+            RIImm _ -> char 'i',
+        char '\t',
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprRI ri
+    ]
 pprInstr (MULLO fmt reg1 reg2 reg3) = hcat [
         char '\t',
         text "mull",
@@ -723,7 +751,36 @@ pprInstr (MULHU fmt reg1 reg2 reg3) = hcat [
         pprReg reg3
     ]
 
-pprInstr (DIV fmt sgn reg1 reg2 reg3) = pprDiv fmt sgn reg1 reg2 reg3
+pprInstr (DIV fmt sgn reg1 reg2 reg3) = hcat [
+        char '\t',
+        text "div",
+        case fmt of
+          II32 -> char 'w'
+          II64 -> char 'd'
+          _    -> panic "PPC: illegal format",
+        if sgn then empty else char 'u',
+        char '\t',
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprReg reg3
+    ]
+
+pprInstr (DIVEU fmt reg1 reg2 reg3) = hcat [
+        char '\t',
+        text "div",
+        case fmt of
+          II32 -> char 'w'
+          II64 -> char 'd'
+          _    -> panic "PPC: illegal format",
+        text "eu\t",
+        pprReg reg1,
+        text ", ",
+        pprReg reg2,
+        text ", ",
+        pprReg reg3
+    ]
 
         -- for some reason, "andi" doesn't exist.
         -- we'll use "andi." instead.
@@ -944,43 +1001,6 @@ pprLogic op reg1 reg2 ri = hcat [
         pprReg reg2,
         text ", ",
         pprRI ri
-    ]
-
-
-pprMul :: Format -> Reg -> Reg -> RI -> SDoc
-pprMul fmt reg1 reg2 ri = hcat [
-        char '\t',
-        text "mull",
-        case ri of
-            RIReg _ -> case fmt of
-              II32 -> char 'w'
-              II64 -> char 'd'
-              _    -> panic "PPC: illegal format"
-            RIImm _ -> char 'i',
-        char '\t',
-        pprReg reg1,
-        text ", ",
-        pprReg reg2,
-        text ", ",
-        pprRI ri
-    ]
-
-
-pprDiv :: Format -> Bool -> Reg -> Reg -> Reg -> SDoc
-pprDiv fmt sgn reg1 reg2 reg3 = hcat [
-        char '\t',
-        text "div",
-        case fmt of
-          II32 -> char 'w'
-          II64 -> char 'd'
-          _    -> panic "PPC: illegal format",
-        if sgn then empty else char 'u',
-        char '\t',
-        pprReg reg1,
-        text ", ",
-        pprReg reg2,
-        text ", ",
-        pprReg reg3
     ]
 
 

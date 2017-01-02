@@ -204,6 +204,7 @@ data Instr
     | BCCFAR  Cond BlockId
     | JMP     CLabel                -- same as branch,
                                     -- but with CLabel instead of block ID
+    | BCCI    Cond Imm              -- branch with relative offset
     | MTCTR   Reg
     | BCTR    [Maybe BlockId] (Maybe CLabel) -- with list of local destinations, and jump table location if necessary
     | BL      CLabel [Reg]          -- with list of argument regs
@@ -228,6 +229,7 @@ data Instr
                                     -- extr[w|d]i dst, dst, 1, [1|33] 
     | MULHU   Format Reg Reg Reg
     | DIV     Format Bool Reg Reg Reg
+    | DIVEU   Format Reg Reg Reg    -- divide extended unsigned
     | AND     Reg Reg RI            -- dst, src1, src2
     | OR      Reg Reg RI            -- dst, src1, src2
     | ORIS    Reg Reg Imm           -- OR Immediate Shifted dst, src1, src2
@@ -320,6 +322,7 @@ ppc_regUsageOfInstr platform instr
     MULHU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
     DIV     _ _ reg1 reg2 reg3
                              -> usage ([reg2,reg3], [reg1])
+    DIVEU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
 
     AND     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     OR      reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
@@ -410,6 +413,8 @@ ppc_patchRegsOfInstr instr env
                             -> MULHU fmt (env reg1) (env reg2) (env reg3)
     DIV     fmt sgn reg1 reg2 reg3
                             -> DIV fmt sgn (env reg1) (env reg2) (env reg3)
+    DIVEU   fmt reg1 reg2 reg3
+                            -> DIVEU fmt (env reg1) (env reg2) (env reg3)
 
     AND     reg1 reg2 ri    -> AND (env reg1) (env reg2) (fixRI ri)
     OR      reg1 reg2 ri    -> OR  (env reg1) (env reg2) (fixRI ri)

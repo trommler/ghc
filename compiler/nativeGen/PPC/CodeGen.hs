@@ -1093,6 +1093,8 @@ genCCall target dest_regs argsAndHints
         PrimTarget (MO_S_QuotRem  width) -> divOp1 platform True  width dest_regs argsAndHints
         PrimTarget (MO_U_QuotRem  width) -> divOp1 platform False width dest_regs argsAndHints
         PrimTarget (MO_U_Mul2 width) -> multOp2 platform width dest_regs argsAndHints
+        PrimTarget (MO_U_QuotRem2 width) -> divOp2 platform width dest_regs
+                                                   argsAndHints
         PrimTarget (MO_Add2 _) -> add2Op platform dest_regs argsAndHints
         PrimTarget (MO_SubWordC _) -> subcOp platform dest_regs argsAndHints
         PrimTarget (MO_AddIntC width) -> addoOp ADDO platform width dest_regs
@@ -1115,6 +1117,35 @@ genCCall target dest_regs argsAndHints
                               
               divOp1 _ _ _ _ _
                 = panic "genCCall: Wrong number of arguments for divOp1"
+              divOp2 platform width [res_q, res_r]
+                                    [arg_x_high, arg_x_low, arg_y]
+                = do let reg_q = getRegisterReg platform (CmmLocal res_q)
+                         reg_r = getRegisterReg platform (CmmLocal res_r)
+                         fmt = intFormat width
+                     (x_l_reg, x_l_code) <- getSomeReg arg_x_low
+                     (x_h_reg, x_h_code) <- getSomeReg arg_x_high
+                     (y_reg, y_code) <- getSomeReg arg_y
+                     q1 <- getNewRegNat fmt
+                     q2 <- getNewRegNat fmt
+                     r1 <- getNewRegNat fmt
+                     r2 <- getNewRegNat fmt
+                     return $ y_code `appOL` x_l_code `appOL` x_h_code `appOL`
+                       toOL [ DIVEU fmt q1 x_h_reg y_reg
+                            , DIV   fmt False q2 x_l_reg y_reg
+                            , MULL  fmt r1 q1 (RIReg y_reg)
+                            , MULL  fmt r2 q2 (RIReg y_reg)
+                            , SUBF  r2 r2 x_l_reg
+                            , ADD   reg_q q1 (RIReg q2)
+                            , SUBF  reg_r r1 r2
+                            , CMPL  fmt reg_r (RIReg r2)
+                            , BCCI  LTT (ImmInt 12)
+                            , CMPL  fmt reg_r (RIReg y_reg)
+                            , BCCI  LTT (ImmInt 12)
+                            , ADD   reg_q reg_q (RIImm (ImmInt 1))
+                            , SUBF  reg_r y_reg reg_r
+                            ]
+              divOp2 _ _ _ _
+                = panic "genCall: Wrong number of arguments for divOp2"
               multOp2 platform width [res_h, res_l] [arg_x, arg_y]
                 = do let reg_h = getRegisterReg platform (CmmLocal res_h)
                          reg_l = getRegisterReg platform (CmmLocal res_l)
