@@ -96,6 +96,7 @@ pprSizeDecl platform lbl
 
 pprFunctionDescriptor :: CLabel -> SDoc
 pprFunctionDescriptor lab = pprGloblDecl lab
+                        $$  pprProtectedDecl lab
                         $$  text "\t.section \".opd\", \"aw\""
                         $$  text "\t.align 3"
                         $$  ppr lab <> char ':'
@@ -167,6 +168,11 @@ pprGloblDecl :: CLabel -> SDoc
 pprGloblDecl lbl
   | not (externallyVisibleCLabel lbl) = empty
   | otherwise = text ".globl " <> ppr lbl
+
+pprProtectedDecl :: CLabel -> SDoc
+pprProtectedDecl lbl
+  | not (externallyVisibleCLabel lbl) = empty
+  | otherwise = text ".protected " <> ppr lbl
 
 pprTypeAndSizeDecl :: Platform -> CLabel -> SDoc
 pprTypeAndSizeDecl platform lbl
