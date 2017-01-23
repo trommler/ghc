@@ -730,7 +730,6 @@ pprImportedSymbol _ platform@(Platform { platformArch = ArchPPC_64 _ })
         = case dynamicLinkerLabelInfo importedLbl of
             Just (SymbolPtr, lbl)
               -> vcat [
-                   text ".section \".toc\", \"aw\"",
                    text ".LC_" <> pprCLabel platform lbl <> char ':',
                    text "\t.quad" <+> pprCLabel platform lbl ]
             _ -> empty
