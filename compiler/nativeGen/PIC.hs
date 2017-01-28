@@ -322,7 +322,7 @@ howToAccessLabel _dflags _arch OSAIX _this_mod kind _lbl
 -- from position independent code. It is also required from the main program
 -- when dynamic libraries containing Haskell code are used.
 
-howToAccessLabel _ (ArchPPC_64 _) os _ kind _
+howToAccessLabel dflags (ArchPPC_64 _) os this_mod kind lbl
         | osElfTarget os
         = case kind of
           -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
@@ -330,7 +330,8 @@ howToAccessLabel _ (ArchPPC_64 _) os _ kind _
           -- RTLD does not generate stubs for function descriptors
           -- in tail calls. Create a symbol pointer and generate
           -- the code to load the function descriptor at the call site.
-          JumpReference -> AccessViaSymbolPtr
+          JumpReference | labelDynamic dflags this_mod lbl
+                        -> AccessViaSymbolPtr
           -- regular calls are handled by the runtime linker
           _             -> AccessDirectly
 
