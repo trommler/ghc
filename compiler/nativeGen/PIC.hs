@@ -325,14 +325,14 @@ howToAccessLabel _dflags _arch OSAIX _this_mod kind _lbl
 howToAccessLabel dflags (ArchPPC_64 _) os this_mod kind lbl
         | osElfTarget os
         = case kind of
-          -- ELF PPC64 (powerpc64-linux), AIX, MacOS 9, BeOS/PPC
           DataReference -> AccessViaSymbolPtr
-          -- RTLD does not generate stubs for function descriptors
-          -- in tail calls. Create a symbol pointer and generate
-          -- the code to load the function descriptor at the call site.
+          -- The link editor (at least BFD) insists on a NOP even after a jump
+          -- to a symbol outside the current module. Import the symbol and
+          -- perform an indirect jump.
           JumpReference | labelDynamic dflags this_mod lbl
                         -> AccessViaSymbolPtr
-          -- regular calls are handled by the runtime linker
+          -- Module local jumps (tail calls) and
+          -- regular calls are handled by the runtime linker.
           _             -> AccessDirectly
 
 howToAccessLabel dflags _ os _ _ _
