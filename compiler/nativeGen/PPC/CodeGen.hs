@@ -1046,7 +1046,6 @@ genJump' tree (GCPLinux64ELF 1)
                `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 0))
                `snocOL` LD II64 toc (AddrRegImm target (ImmInt 8))
                `snocOL` MTCTR r11
-               `snocOL` LD II64 r11 (AddrRegImm target (ImmInt 16))
                `snocOL` BCTR [] Nothing)
 
 genJump' tree (GCPLinux64ELF 2)
