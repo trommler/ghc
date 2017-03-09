@@ -87,7 +87,7 @@ pprFunctionDescriptor lab = pprGloblDecl lab
                         $$  ppr lab <> char ':'
                         $$  text "\t.quad ."
                         <>  ppr lab
-                        <>  text ",.TOC.@tocbase,0"
+                        <>  text ",.TOC.@tocbase"
                         $$  text "\t.previous"
                         $$  text "\t.type"
                         <+> ppr lab
