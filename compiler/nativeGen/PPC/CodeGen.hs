@@ -639,8 +639,7 @@ getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
                 (src, srcCode) <- getSomeReg x
                 let clear_mask = if imm == -4 then 2 else 3
                     fmt = intFormat rep
-                    code dst = srcCode
-                               `appOL` unitOL (CLRRI fmt dst src clear_mask)
+                    code dst = srcCode `snocOL` (CLRRI fmt dst src clear_mask)
                 return (Any fmt code)
         _ -> trivialCode rep False AND x y
       MO_Or rep    -> trivialCode rep False OR x y
