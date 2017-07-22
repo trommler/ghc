@@ -1663,10 +1663,10 @@ genCCall' dflags gcp target dest_regs args
                        `snocOL` LD spFormat toc (AddrRegImm sp (ImmInt 40))
                        `appOL`  codeAfter)
                      GCPLinux64ELF 2 -> return ( dynCode
+                       `snocOL` MTCTR dynReg
                        `appOL`  codeBefore
                        `snocOL` ST spFormat toc (AddrRegImm sp (ImmInt 24))
                        `snocOL` MR r12 dynReg
-                       `snocOL` MTCTR r12
                        `snocOL` BCTRL usedRegs
                        `snocOL` LD spFormat toc (AddrRegImm sp (ImmInt 24))
                        `appOL`  codeAfter)
