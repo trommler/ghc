@@ -330,6 +330,7 @@ howToAccessLabel dflags (ArchPPC_64 _) os this_mod kind lbl
           -- to a symbol outside the current module. Import the symbol and
           -- perform an indirect jump.
           JumpReference | labelDynamic dflags this_mod lbl
+                        , gopt Opt_PIC dflags || WayDyn `elem` ways dflags
                         -> AccessViaSymbolPtr
           -- Module local jumps (tail calls) and
           -- regular calls are handled by the runtime linker.
