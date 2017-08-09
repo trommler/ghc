@@ -527,13 +527,13 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         | arch32    -> conversionNop (intFormat to) x
         | otherwise ->
           case to of
-           W64 -> trivialCode to False AND x (CmmLit (CmmInt 4294967295 W64))
+           W64 -> clearLeft W32 to
            W16 -> conversionNop II16 x
            W8  -> conversionNop II8 x
            _   -> panic "PPC.CodeGen.getRegister: no match"
       MO_UU_Conv W16 W8 -> conversionNop II8 x
-      MO_UU_Conv W8 to  -> trivialCode to False AND x (CmmLit (CmmInt 255 W32))
-      MO_UU_Conv W16 to -> trivialCode to False AND x (CmmLit (CmmInt 65535 W32))
+      MO_UU_Conv W8 to  -> clearLeft W8 to
+      MO_UU_Conv W16 to -> clearLeft W16 to
       _ -> panic "PPC.CodeGen.getRegister: no match"
 
     where
@@ -543,6 +543,16 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         conversionNop new_format expr
             = do e_code <- getRegister' dflags expr
                  return (swizzleRegisterRep e_code new_format)
+
+        clearLeft from to
+            = do (src1, code1) <- getSomeReg x
+                 let arch_fmt  = intFormat (wordWidth dflags)
+                     arch_bits = widthInBits (wordWidth dflags)
+                     size      = widthInBits from
+                     code dst  = code1 `snocOL`
+                                 CLRLI arch_fmt dst src1 (arch_bits - size)
+                 return (Any (intFormat to) code)
+
         arch32 = target32Bit $ targetPlatform dflags
 
 getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
