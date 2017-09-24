@@ -954,6 +954,19 @@ pprInstr platform instr = case instr of
    FDIV fmt reg1 reg2 reg3
       -> pprBinaryF (sLit "fdiv") fmt reg1 reg2 reg3
 
+   FSQRT fmt reg1 reg2
+      -> hcat [
+           text "\tfsqrt",
+           case fmt of
+             FF32 -> char 's'
+             FF64 -> empty
+             _    -> panic "PPC.FSQRT: no match",
+           char '\t',
+           pprReg reg1,
+           text ", ",
+           pprReg reg2
+           ]
+
    FABS reg1 reg2
       -> pprUnary (sLit "fabs") reg1 reg2
 

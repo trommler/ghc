@@ -324,15 +324,15 @@ howToAccessLabel _config _arch OSAIX _this_mod kind _lbl
 -- from position independent code. It is also required from the main program
 -- when dynamic libraries containing Haskell code are used.
 
-howToAccessLabel dflags (ArchPPC_64 _) os this_mod kind lbl
+howToAccessLabel config (ArchPPC_64 _) os this_mod kind lbl
         | osElfTarget os
         = case kind of
           DataReference -> AccessViaSymbolPtr
           -- The link editor (at least BFD) insists on a NOP even after a jump
           -- to a symbol outside the current module. Import the symbol and
           -- perform an indirect jump.
-          JumpReference | labelDynamic dflags this_mod lbl
-                        , gopt Opt_PIC dflags || WayDyn `elem` ways dflags
+          JumpReference | labelDynamic config this_mod lbl
+                        , ncgPIC config -- TODO: || WayDyn `elem` ways config
                         -> AccessViaSymbolPtr
           -- Module local jumps (tail calls) and
           -- regular calls are handled by the runtime linker.
