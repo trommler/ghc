@@ -837,6 +837,17 @@ pprInstr (FADD fmt reg1 reg2 reg3) = pprBinaryF (sLit "fadd") fmt reg1 reg2 reg3
 pprInstr (FSUB fmt reg1 reg2 reg3) = pprBinaryF (sLit "fsub") fmt reg1 reg2 reg3
 pprInstr (FMUL fmt reg1 reg2 reg3) = pprBinaryF (sLit "fmul") fmt reg1 reg2 reg3
 pprInstr (FDIV fmt reg1 reg2 reg3) = pprBinaryF (sLit "fdiv") fmt reg1 reg2 reg3
+pprInstr (FSQRT fmt reg1 reg2) = hcat [
+         text "\tfsqrt",
+         case fmt of
+           FF32 -> char 's'
+           FF64 -> empty
+           _    -> panic "PPC.FSQRT: no match",
+         char '\t',
+         pprReg reg1,
+         text ", ",
+         pprReg reg2
+      ]
 pprInstr (FABS reg1 reg2) = pprUnary (sLit "fabs") reg1 reg2
 pprInstr (FNEG reg1 reg2) = pprUnary (sLit "fneg") reg1 reg2
 
