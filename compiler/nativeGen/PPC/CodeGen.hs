@@ -1340,6 +1340,8 @@ genCCall target dest_regs argsAndHints
                                                    dest_regs argsAndHints
         PrimTarget MO_F64_Fabs -> fabs platform dest_regs argsAndHints
         PrimTarget MO_F32_Fabs -> fabs platform dest_regs argsAndHints
+        PrimTarget MO_F64_Sqrt -> fsqrt FF64 platform dest_regs argsAndHints
+        PrimTarget MO_F32_Sqrt -> fsqrt FF32 platform dest_regs argsAndHints
         _ -> genCCall' dflags (platformToGCP platform)
                        target dest_regs argsAndHints
         where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
@@ -1557,6 +1559,12 @@ genCCall target dest_regs argsAndHints
                      return $ arg_code `snocOL` FABS res_r arg_reg
               fabs _ _ _
                 = panic "genCall: Wrong number of arguments/results for fabs"
+              fsqrt format platform [res] [arg]
+                = do let res_r = getRegisterReg platform (CmmLocal res)
+                     (arg_reg, arg_code) <- getSomeReg arg
+                     return $ arg_code `snocOL` FSQRT format res_r arg_reg
+              fsqrt _ _ _ _
+                = panic "genCall: Wrong number of arguments/results for fsqrt"
 
 -- TODO: replace 'Int' by an enum such as 'PPC_64ABI'
 data GenCCallPlatform = GCPLinux | GCPDarwin | GCPLinux64ELF !Int | GCPAIX

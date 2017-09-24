@@ -264,6 +264,7 @@ data Instr
     | FSUB    Format Reg Reg Reg
     | FMUL    Format Reg Reg Reg
     | FDIV    Format Reg Reg Reg
+    | FSQRT   Format Reg Reg
     | FABS    Reg Reg               -- abs is the same for single and double
     | FNEG    Reg Reg               -- negate is the same for single and double prec.
 
@@ -358,6 +359,7 @@ ppc_regUsageOfInstr platform instr
     FSUB    _ r1 r2 r3      -> usage ([r2,r3], [r1])
     FMUL    _ r1 r2 r3      -> usage ([r2,r3], [r1])
     FDIV    _ r1 r2 r3      -> usage ([r2,r3], [r1])
+    FSQRT   _ r1 r2         -> usage ([r2], [r1])
     FABS    r1 r2           -> usage ([r2], [r1])
     FNEG    r1 r2           -> usage ([r2], [r1])
     FCMP    r1 r2           -> usage ([r1,r2], [])
@@ -456,6 +458,7 @@ ppc_patchRegsOfInstr instr env
     FSUB    fmt r1 r2 r3    -> FSUB fmt (env r1) (env r2) (env r3)
     FMUL    fmt r1 r2 r3    -> FMUL fmt (env r1) (env r2) (env r3)
     FDIV    fmt r1 r2 r3    -> FDIV fmt (env r1) (env r2) (env r3)
+    FSQRT   fmt r1 r2       -> FSQRT fmt (env r1) (env r2)
     FABS    r1 r2           -> FABS (env r1) (env r2)
     FNEG    r1 r2           -> FNEG (env r1) (env r2)
     FCMP    r1 r2           -> FCMP (env r1) (env r2)
