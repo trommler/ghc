@@ -646,7 +646,7 @@ gen_Enum_binds loc tycon = do
                            (nlHsVar (maxtag_RDR dflags tycon))
                            ))
 
-    from_enum dflags
+    from_enum _
       = mk_easy_FunBind loc fromEnum_RDR [a_Pat] $
           --untag_Expr dflags tycon [(a_RDR, ah_RDR)] $
           nlHsApp (nlHsVar intDataCon_RDR) (nlHsApp (nlHsVar getTag_RDR) a_Expr) -- $
