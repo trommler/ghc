@@ -648,10 +648,7 @@ gen_Enum_binds loc tycon = do
 
     from_enum _
       = mk_easy_FunBind loc fromEnum_RDR [a_Pat] $
-          --untag_Expr dflags tycon [(a_RDR, ah_RDR)] $
-          nlHsApp (nlHsVar intDataCon_RDR) (nlHsApp (nlHsVar getTag_RDR) a_Expr) -- $
-          --mkHsLam [a_Pat] (nlHsApp (nlHsVar intDataCon_RDR) (nlHsApp (nlHsVar getTag_RDR) a_Expr)) -- $
-          -- (nlHsVarApps intDataCon_RDR [ah_RDR])
+          nlHsApp (nlHsVar intDataCon_RDR) (nlHsApp (nlHsVar getTag_RDR) a_Expr)
 
 {-
 ************************************************************************
@@ -1766,14 +1763,12 @@ genAuxBindSpec dflags loc (DerivCon2Tag tycon)
              mkSpecSigmaTy (tyConTyVars tycon) (tyConStupidTheta tycon) $
              mkParentType tycon `mkFunTy` intPrimTy
 
-    lots_of_constructors = True -- GGR: was     tyConFamilySize tycon > 8
-                        -- was: mAX_FAMILY_SIZE_FOR_VEC_RETURNS
-                        -- but we don't do vectored returns any more.
+    lots_of_constructors = True -- GGR: Is this a good idea? If so, simplify...
 
     eqns | lots_of_constructors = [get_tag_eqn]
          | otherwise = map mk_eqn (tyConDataCons tycon)
 
-    get_tag_eqn = ([nlVarPat a_RDR], nlHsApp (nlHsVar getTag_RDR) a_Expr)  -- GGR
+    get_tag_eqn = ([nlVarPat a_RDR], nlHsApp (nlHsVar getTag_RDR) a_Expr)
 
     mk_eqn :: DataCon -> ([LPat GhcPs], LHsExpr GhcPs)
     mk_eqn con = ([nlWildConPat con],
