@@ -648,8 +648,10 @@ gen_Enum_binds loc tycon = do
 
     from_enum dflags
       = mk_easy_FunBind loc fromEnum_RDR [a_Pat] $
-          untag_Expr dflags tycon [(a_RDR, ah_RDR)] $
-          (nlHsVarApps intDataCon_RDR [ah_RDR])
+          --untag_Expr dflags tycon [(a_RDR, ah_RDR)] $
+          nlHsApp (nlHsVar intDataCon_RDR) (nlHsApp (nlHsVar getTag_RDR) a_Expr) -- $
+          --mkHsLam [a_Pat] (nlHsApp (nlHsVar intDataCon_RDR) (nlHsApp (nlHsVar getTag_RDR) a_Expr)) -- $
+          -- (nlHsVarApps intDataCon_RDR [ah_RDR])
 
 {-
 ************************************************************************
@@ -1764,14 +1766,14 @@ genAuxBindSpec dflags loc (DerivCon2Tag tycon)
              mkSpecSigmaTy (tyConTyVars tycon) (tyConStupidTheta tycon) $
              mkParentType tycon `mkFunTy` intPrimTy
 
-    lots_of_constructors = tyConFamilySize tycon > 8
+    lots_of_constructors = True -- GGR: was     tyConFamilySize tycon > 8
                         -- was: mAX_FAMILY_SIZE_FOR_VEC_RETURNS
                         -- but we don't do vectored returns any more.
 
     eqns | lots_of_constructors = [get_tag_eqn]
          | otherwise = map mk_eqn (tyConDataCons tycon)
 
-    get_tag_eqn = ([nlVarPat a_RDR], nlHsApp (nlHsVar getTag_RDR) a_Expr)
+    get_tag_eqn = ([nlVarPat a_RDR], nlHsApp (nlHsVar getTag_RDR) a_Expr)  -- GGR
 
     mk_eqn :: DataCon -> ([LPat GhcPs], LHsExpr GhcPs)
     mk_eqn con = ([nlWildConPat con],
@@ -2016,7 +2018,7 @@ eq_Expr tycon ty a b
  where
    (_, _, prim_eq, _, _) = primOrdOps "Eq" tycon ty
 
-untag_Expr :: DynFlags -> TyCon -> [( RdrName,  RdrName)]
+untag_Expr :: DynFlags -> TyCon -> [(RdrName, RdrName)]
               -> LHsExpr GhcPs -> LHsExpr GhcPs
 untag_Expr _ _ [] expr = expr
 untag_Expr dflags tycon ((untag_this, put_tag_here) : more) expr
