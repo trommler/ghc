@@ -1348,23 +1348,6 @@ thenIO (IO m) k = IO (\ s -> case m s of (# new_s, _ #) -> unIO k new_s)
 unIO :: IO a -> (State# RealWorld -> (# State# RealWorld, a #))
 unIO (IO a) = a
 
-{- |
-Returns the 'tag' of a constructor application; this function is used
-by the deriving code for Eq, Ord and Enum.
-
-The primitive dataToTag# requires an evaluated constructor application
-as its argument, so we provide getTag as a wrapper that performs the
-evaluation before calling dataToTag#.  We could have dataToTag#
-evaluate its argument, but we prefer to do it this way because (a)
-dataToTag# can be an inline primop if it doesn't need to do any
-evaluation, and (b) we want to expose the evaluation to the
-simplifier, because it might be possible to eliminate the evaluation
-in the case when the argument is already known to be evaluated.
--}
-{-# INLINE getTag #-}
-getTag :: a -> Int#
-getTag !x = dataToTag# x
-
 ----------------------------------------------
 -- Numeric primops
 ----------------------------------------------

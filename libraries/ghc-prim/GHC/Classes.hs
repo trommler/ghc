@@ -33,6 +33,9 @@ module GHC.Classes(
     -- * Implicit paramaters
     IP(..),
 
+    -- * Get tag
+    getTag,
+
     -- * Equality and ordering
     Eq(..),
     Ord(..),
@@ -74,6 +77,24 @@ default ()              -- Double isn't available yet
 -- advantage of the implicit-call-stack feature
 class IP (x :: Symbol) a | x -> a where
   ip :: a
+
+-- PT: Moved from libraries/base/GHC/Base.hs because GHC.Classes needs it.
+{- |
+Returns the 'tag' of a constructor application; this function is used
+by the deriving code for Eq, Ord and Enum.
+
+The primitive dataToTag# requires an evaluated constructor application
+as its argument, so we provide getTag as a wrapper that performs the
+evaluation before calling dataToTag#.  We could have dataToTag#
+evaluate its argument, but we prefer to do it this way because (a)
+dataToTag# can be an inline primop if it doesn't need to do any
+evaluation, and (b) we want to expose the evaluation to the
+simplifier, because it might be possible to eliminate the evaluation
+in the case when the argument is already known to be evaluated.
+-}
+{-# INLINE getTag #-}
+getTag :: a -> Int#
+getTag !x = dataToTag# x
 
 {- $matching_overloaded_methods_in_rules
 
