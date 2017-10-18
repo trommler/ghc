@@ -160,8 +160,7 @@ produced don't get through the typechecker.
 
 gen_Eq_binds :: SrcSpan -> TyCon -> TcM (LHsBinds GhcPs, BagDerivStuff)
 gen_Eq_binds loc tycon = do
-    dflags <- getDynFlags
-    return (method_binds dflags, aux_binds)
+    return (method_binds, aux_binds)
   where
     all_cons = tyConDataCons tycon
     (nullary_cons, non_nullary_cons) = partition isNullarySrcDataCon all_cons
@@ -169,15 +168,15 @@ gen_Eq_binds loc tycon = do
     -- If there are ten or more (arbitrary number) nullary constructors,
     -- use the con2tag stuff.  For small types it's better to use
     -- ordinary pattern matching.
-    (tag_match_cons, pat_match_cons)
-       | nullary_cons `lengthExceeds` 1  = (nullary_cons, non_nullary_cons)
-       | otherwise                       = ([],           all_cons)
+    -- (tag_match_cons, pat_match_cons)
+    --   | nullary_cons `lengthExceeds` 1  = (nullary_cons, non_nullary_cons)
+    --   | otherwise                       = ([],           all_cons)
 
-    no_tag_match_cons = null tag_match_cons
+    no_tag_match_cons = null nullary_cons
 
-    fall_through_eqn _dflags
+    fall_through_eqn
       | no_tag_match_cons   -- All constructors have arguments
-      = case pat_match_cons of
+      = case non_nullary_cons of
           []  -> []   -- No constructors; no fall-though case
           [_] -> []   -- One constructor; no fall-though case
           _   ->      -- Two or more constructors; add fall-through of
@@ -196,9 +195,9 @@ gen_Eq_binds loc tycon = do
     aux_binds | no_tag_match_cons = emptyBag
               | otherwise         = unitBag $ DerivAuxBind $ DerivCon2Tag tycon
 
-    method_binds dflags = unitBag (eq_bind dflags)
-    eq_bind dflags = mkFunBindSE 2 loc eq_RDR (map pats_etc pat_match_cons
-                                            ++ fall_through_eqn dflags)
+    method_binds = unitBag eq_bind
+    eq_bind      = mkFunBindSE 2 loc eq_RDR (map pats_etc non_nullary_cons
+                                              ++ fall_through_eqn)
 
     ------------------------------------------------------------------
     pats_etc data_con
@@ -353,7 +352,7 @@ gen_Ord_binds loc tycon = do
         -- Note [Game plan for deriving Ord]
     other_ops dflags
       | (last_tag - first_tag) <= 2     -- 1-3 constructors
-        || null non_nullary_cons        -- Or it's an enumeration
+--        || null non_nullary_cons        -- Or it's an enumeration
       = listToBag [mkOrdOp dflags OrdLT, lE, gT, gE]
       | otherwise
       = emptyBag
@@ -387,14 +386,14 @@ gen_Ord_binds loc tycon = do
 
     mkOrdOpRhs :: DynFlags -> OrdOp -> LHsExpr GhcPs
     mkOrdOpRhs dflags op       -- RHS for comparing 'a' and 'b' according to op
+      | null non_nullary_cons    -- All nullary, so go straight to comparing tags
+      = mkTagCmp dflags op
+
       | nullary_cons `lengthAtMost` 2 -- Two nullary or fewer, so use cases
       = nlHsCase (nlHsVar a_RDR) $
         map (mkOrdOpAlt dflags op) tycon_data_cons
         -- i.e.  case a of { C1 x y -> case b of C1 x y -> ....compare x,y...
-        --                   C2 x   -> case b of C2 x -> ....comopare x.... }
-
-      | null non_nullary_cons    -- All nullary, so go straight to comparing tags
-      = mkTagCmp dflags op
+        --                   C2 x   -> case b of C2 x -> ....compare x.... }
 
       | otherwise                -- Mixed nullary and non-nullary
       = nlHsCase (nlHsVar a_RDR) $
@@ -463,10 +462,13 @@ gen_Ord_binds loc tycon = do
 
     mkTagCmp :: DynFlags -> OrdOp -> LHsExpr GhcPs
     -- Both constructors known to be nullary
+    -- generates (getTag a `op` getTag b)
     -- generates (case data2Tag a of a# -> case data2Tag b of b# -> a# `op` b#
-    mkTagCmp dflags op =
-      untag_Expr dflags tycon[(a_RDR, ah_RDR),(b_RDR, bh_RDR)] $
-        unliftedOrdOp tycon intPrimTy op ah_RDR bh_RDR
+    mkTagCmp _dflags op =
+        unliftedOrdOp' tycon intPrimTy op (nlHsApp (nlHsVar getTag_RDR) a_Expr)
+                                          (nlHsApp (nlHsVar getTag_RDR) b_Expr)
+--      untag_Expr dflags tycon[(a_RDR, ah_RDR),(b_RDR, bh_RDR)] $
+--        unliftedOrdOp tycon intPrimTy op ah_RDR bh_RDR
 
 mkCompareFields :: TyCon -> OrdOp -> [Type] -> LHsExpr GhcPs
 -- Generates nested comparisons for (a1,a2...) against (b1,b2,...)
@@ -514,6 +516,19 @@ unliftedOrdOp tycon ty op a b
    wrap prim_op = genPrimOpApp a_expr prim_op b_expr
    a_expr = nlHsVar a
    b_expr = nlHsVar b
+
+unliftedOrdOp' :: TyCon -> Type -> OrdOp -> LHsExpr GhcPs -> LHsExpr GhcPs -> LHsExpr GhcPs
+unliftedOrdOp' tycon ty op a_expr b_expr
+  = case op of
+       OrdCompare -> unliftedCompare lt_op eq_op a_expr b_expr
+                                     ltTag_Expr eqTag_Expr gtTag_Expr
+       OrdLT      -> wrap lt_op
+       OrdLE      -> wrap le_op
+       OrdGE      -> wrap ge_op
+       OrdGT      -> wrap gt_op
+  where
+   (lt_op, le_op, eq_op, ge_op, gt_op) = primOrdOps "Ord" tycon ty
+   wrap prim_op = genPrimOpApp a_expr prim_op b_expr
 
 unliftedCompare :: RdrName -> RdrName
                 -> LHsExpr GhcPs -> LHsExpr GhcPs   -- What to cmpare
