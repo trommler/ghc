@@ -330,21 +330,20 @@ gtResult OrdGT      = true_Expr
 ------------
 gen_Ord_binds :: SrcSpan -> TyCon -> TcM (LHsBinds GhcPs, BagDerivStuff)
 gen_Ord_binds loc tycon = do
-    dflags <- getDynFlags
     return $ if null tycon_data_cons -- No data-cons => invoke bale-out case
       then ( unitBag $ mkFunBindSE 2 loc compare_RDR []
            , emptyBag)
-      else ( unitBag (mkOrdOp dflags OrdCompare) `unionBags` other_ops dflags
+      else ( unitBag (mkOrdOp OrdCompare) `unionBags` other_ops
            , aux_binds)
   where
     aux_binds | single_con_type = emptyBag
               | otherwise       = unitBag $ DerivAuxBind $ DerivCon2Tag tycon
 
         -- Note [Game plan for deriving Ord]
-    other_ops dflags
+    other_ops
       | (last_tag - first_tag) <= 2     -- 1-3 constructors
         || null non_nullary_cons        -- Or it's an enumeration
-      = listToBag [mkOrdOp dflags OrdLT, lE, gT, gE]
+      = listToBag [mkOrdOp OrdLT, lE, gT, gE]
       | otherwise
       = emptyBag
 
@@ -370,39 +369,38 @@ gen_Ord_binds loc tycon = do
     (nullary_cons, non_nullary_cons) = partition isNullarySrcDataCon tycon_data_cons
 
 
-    mkOrdOp :: DynFlags -> OrdOp -> LHsBind GhcPs
+    mkOrdOp :: OrdOp -> LHsBind GhcPs
     -- Returns a binding   op a b = ... compares a and b according to op ....
-    mkOrdOp dflags op = mk_easy_FunBind loc (ordMethRdr op) [a_Pat, b_Pat]
-                                        (mkOrdOpRhs dflags op)
+    mkOrdOp op = mk_easy_FunBind loc (ordMethRdr op) [a_Pat, b_Pat]
+                                     (mkOrdOpRhs op)
 
-    mkOrdOpRhs :: DynFlags -> OrdOp -> LHsExpr GhcPs
-    mkOrdOpRhs dflags op       -- RHS for comparing 'a' and 'b' according to op
+    mkOrdOpRhs :: OrdOp -> LHsExpr GhcPs
+    mkOrdOpRhs op       -- RHS for comparing 'a' and 'b' according to op
       | nullary_cons `lengthAtMost` 2 -- Two nullary or fewer, so use cases
       = nlHsCase (nlHsVar a_RDR) $
-        map (mkOrdOpAlt dflags op) tycon_data_cons
+        map (mkOrdOpAlt op) tycon_data_cons
         -- i.e.  case a of { C1 x y -> case b of C1 x y -> ....compare x,y...
         --                   C2 x   -> case b of C2 x -> ....compare x.... }
 
       | null non_nullary_cons    -- All nullary, so go straight to comparing tags
-      = mkTagCmp dflags op
+      = mkTagCmp op
 
       | otherwise                -- Mixed nullary and non-nullary
       = nlHsCase (nlHsVar a_RDR) $
-        (map (mkOrdOpAlt dflags op) non_nullary_cons
-         ++ [mkHsCaseAlt nlWildPat (mkTagCmp dflags op)])
+        (map (mkOrdOpAlt op) non_nullary_cons
+         ++ [mkHsCaseAlt nlWildPat (mkTagCmp op)])
 
 
-    mkOrdOpAlt :: DynFlags -> OrdOp -> DataCon
-                  -> LMatch GhcPs (LHsExpr GhcPs)
+    mkOrdOpAlt :: OrdOp -> DataCon -> LMatch GhcPs (LHsExpr GhcPs)
     -- Make the alternative  (Ki a1 a2 .. av ->
-    mkOrdOpAlt dflags op data_con
+    mkOrdOpAlt op data_con
       = mkHsCaseAlt (nlConVarPat data_con_RDR as_needed)
-                    (mkInnerRhs dflags op data_con)
+                    (mkInnerRhs op data_con)
       where
         as_needed    = take (dataConSourceArity data_con) as_RDRs
         data_con_RDR = getRdrName data_con
 
-    mkInnerRhs dflags op data_con
+    mkInnerRhs op data_con
       | single_con_type
       = nlHsCase (nlHsVar b_RDR) [ mkInnerEqAlt op data_con ]
 
@@ -425,8 +423,6 @@ gen_Ord_binds loc tycon = do
                                  , mkHsCaseAlt nlWildPat (gtResult op) ]
 
       | tag > last_tag `div` 2  -- lower range is larger
---      = untag_Expr dflags tycon [(b_RDR, bh_RDR)] $
---        nlHsIf (genPrimOpApp (nlHsVar bh_RDR) ltInt_RDR tag_lit)
       = nlHsIf (genPrimOpApp (nlHsApp (nlHsVar getTag_RDR) b_Expr)
                              ltInt_RDR tag_lit)
                (gtResult op) $  -- Definitely GT
@@ -436,8 +432,6 @@ gen_Ord_binds loc tycon = do
       | otherwise               -- upper range is larger
       = nlHsIf (genPrimOpApp (nlHsApp (nlHsVar getTag_RDR) b_Expr)
                              gtInt_RDR tag_lit)
---      = untag_Expr dflags tycon [(b_RDR, bh_RDR)] $
---        nlHsIf (genPrimOpApp (nlHsVar bh_RDR) gtInt_RDR tag_lit)
                (ltResult op) $  -- Definitely LT
         nlHsCase (nlHsVar b_RDR) [ mkInnerEqAlt op data_con
                                  , mkHsCaseAlt nlWildPat (gtResult op) ]
@@ -455,11 +449,11 @@ gen_Ord_binds loc tycon = do
         data_con_RDR = getRdrName data_con
         bs_needed    = take (dataConSourceArity data_con) bs_RDRs
 
-    mkTagCmp :: DynFlags -> OrdOp -> LHsExpr GhcPs
+    mkTagCmp :: OrdOp -> LHsExpr GhcPs
     -- Both constructors known to be nullary
     -- generates (getTag a `op` getTag b)
     -- generates (case data2Tag a of a# -> case data2Tag b of b# -> a# `op` b#
-    mkTagCmp _dflags op =
+    mkTagCmp op =
         unliftedOrdOp' tycon intPrimTy op (nlHsApp (nlHsVar getTag_RDR) a_Expr)
                                           (nlHsApp (nlHsVar getTag_RDR) b_Expr)
 --      untag_Expr dflags tycon[(a_RDR, ah_RDR),(b_RDR, bh_RDR)] $
@@ -609,6 +603,9 @@ gen_Enum_binds loc tycon = do
 
     succ_enum dflags
       = mk_easy_FunBind loc succ_RDR [a_Pat] $
+--        nlHsIf (nlHsApps eq_RDR [nlHsVar (maxtag_RDR dflags tycon),
+--                                 (nlHsApp (nlHsVar intDataCon_RDR)
+--                                  (nlHsApp (nlHsVar getTag_RDR) a_Expr))])
         untag_Expr dflags tycon [(a_RDR, ah_RDR)] $
         nlHsIf (nlHsApps eq_RDR [nlHsVar (maxtag_RDR dflags tycon),
                                nlHsVarApps intDataCon_RDR [ah_RDR]])
