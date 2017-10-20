@@ -165,13 +165,6 @@ gen_Eq_binds loc tycon = do
     all_cons = tyConDataCons tycon
     (nullary_cons, non_nullary_cons) = partition isNullarySrcDataCon all_cons
 
-    -- If there are ten or more (arbitrary number) nullary constructors,
-    -- use the con2tag stuff.  For small types it's better to use
-    -- ordinary pattern matching.
-    -- (tag_match_cons, pat_match_cons)
-    --   | nullary_cons `lengthExceeds` 1  = (nullary_cons, non_nullary_cons)
-    --   | otherwise                       = ([],           all_cons)
-
     no_tag_match_cons = null nullary_cons
 
     fall_through_eqn
@@ -189,8 +182,6 @@ gen_Eq_binds loc tycon = do
           genPrimOpApp (nlHsApp (nlHsVar getTag_RDR) a_Expr)
                        eqInt_RDR
                        (nlHsApp (nlHsVar getTag_RDR) b_Expr))]
---         untag_Expr dflags tycon [(a_RDR,ah_RDR), (b_RDR,bh_RDR)]
---                    (genPrimOpApp (nlHsVar ah_RDR) eqInt_RDR (nlHsVar bh_RDR)))]
 
     aux_binds | no_tag_match_cons = emptyBag
               | otherwise         = unitBag $ DerivAuxBind $ DerivCon2Tag tycon
@@ -352,7 +343,7 @@ gen_Ord_binds loc tycon = do
         -- Note [Game plan for deriving Ord]
     other_ops dflags
       | (last_tag - first_tag) <= 2     -- 1-3 constructors
---        || null non_nullary_cons        -- Or it's an enumeration
+        || null non_nullary_cons        -- Or it's an enumeration
       = listToBag [mkOrdOp dflags OrdLT, lE, gT, gE]
       | otherwise
       = emptyBag
@@ -434,15 +425,19 @@ gen_Ord_binds loc tycon = do
                                  , mkHsCaseAlt nlWildPat (gtResult op) ]
 
       | tag > last_tag `div` 2  -- lower range is larger
-      = untag_Expr dflags tycon [(b_RDR, bh_RDR)] $
-        nlHsIf (genPrimOpApp (nlHsVar bh_RDR) ltInt_RDR tag_lit)
+--      = untag_Expr dflags tycon [(b_RDR, bh_RDR)] $
+--        nlHsIf (genPrimOpApp (nlHsVar bh_RDR) ltInt_RDR tag_lit)
+      = nlHsIf (genPrimOpApp (nlHsApp (nlHsVar getTag_RDR) b_Expr)
+                             ltInt_RDR tag_lit)
                (gtResult op) $  -- Definitely GT
         nlHsCase (nlHsVar b_RDR) [ mkInnerEqAlt op data_con
                                  , mkHsCaseAlt nlWildPat (ltResult op) ]
 
       | otherwise               -- upper range is larger
-      = untag_Expr dflags tycon [(b_RDR, bh_RDR)] $
-        nlHsIf (genPrimOpApp (nlHsVar bh_RDR) gtInt_RDR tag_lit)
+      = nlHsIf (genPrimOpApp (nlHsApp (nlHsVar getTag_RDR) b_Expr)
+                             gtInt_RDR tag_lit)
+--      = untag_Expr dflags tycon [(b_RDR, bh_RDR)] $
+--        nlHsIf (genPrimOpApp (nlHsVar bh_RDR) gtInt_RDR tag_lit)
                (ltResult op) $  -- Definitely LT
         nlHsCase (nlHsVar b_RDR) [ mkInnerEqAlt op data_con
                                  , mkHsCaseAlt nlWildPat (gtResult op) ]
