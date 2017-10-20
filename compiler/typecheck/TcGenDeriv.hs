@@ -386,14 +386,14 @@ gen_Ord_binds loc tycon = do
 
     mkOrdOpRhs :: DynFlags -> OrdOp -> LHsExpr GhcPs
     mkOrdOpRhs dflags op       -- RHS for comparing 'a' and 'b' according to op
-      | null non_nullary_cons    -- All nullary, so go straight to comparing tags
-      = mkTagCmp dflags op
-
       | nullary_cons `lengthAtMost` 2 -- Two nullary or fewer, so use cases
       = nlHsCase (nlHsVar a_RDR) $
         map (mkOrdOpAlt dflags op) tycon_data_cons
         -- i.e.  case a of { C1 x y -> case b of C1 x y -> ....compare x,y...
         --                   C2 x   -> case b of C2 x -> ....compare x.... }
+
+      | null non_nullary_cons    -- All nullary, so go straight to comparing tags
+      = mkTagCmp dflags op
 
       | otherwise                -- Mixed nullary and non-nullary
       = nlHsCase (nlHsVar a_RDR) $
