@@ -91,7 +91,14 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
       case picBaseMb of
            Just picBase -> initializePicBase_ppc arch os picBase tops
            Nothing -> return tops
-    ArchPPC_64 ELF_V1 -> return tops
+    ArchPPC_64 ELF_V1 -> do
+      let (CmmProc info lab live (ListGraph (entry:blocks)) : statics) = tops
+          BasicBlock bID insns = entry
+      bID' <- if lab == (blockLbl bID)
+              then newBlockId
+              else return bID
+      let b' = BasicBlock bID' insns
+      return (CmmProc info lab live (ListGraph (b':blocks)) : statics)
                       -- generating function descriptor is handled in
                       -- pretty printer
     ArchPPC_64 ELF_V2 -> return tops
