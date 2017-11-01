@@ -35,6 +35,8 @@ module CLabel (
         mkLocalConInfoTableLabel,
         mkLocalClosureTableLabel,
 
+        mkBlockInfoTableLabel,
+
         mkReturnPtLabel,
         mkReturnInfoLabel,
         mkAltLabel,
@@ -390,6 +392,7 @@ data IdLabelInfo
 
   | Bytes               -- ^ Content of a string literal. See
                         -- Note [Bytes label].
+  | BlockInfoTable      -- ^ Like InfoTable but BlockID instead of Entry label
 
   deriving (Eq, Ord)
 
@@ -489,6 +492,8 @@ mkBytesLabel name                 = IdLabel name NoCafRefs Bytes
 mkConEntryLabel       :: Name -> CafInfo -> CLabel
 mkConEntryLabel name        c     = IdLabel name c ConEntry
 
+mkBlockInfoTableLabel :: Name -> CafInfo -> CLabel
+mkBlockInfoTableLabel name c = IdLabel name c BlockInfoTable
 -- Constructing Cmm Labels
 mkDirty_MUT_VAR_Label, mkSplitMarkerLabel, mkUpdInfoLabel,
     mkBHUpdInfoLabel, mkIndStaticInfoLabel, mkMainCapabilityLabel,
@@ -693,6 +698,7 @@ toSlowEntryLbl l = pprPanic "toSlowEntryLbl" (ppr l)
 toEntryLbl :: CLabel -> CLabel
 toEntryLbl (IdLabel n c LocalInfoTable)  = IdLabel n c LocalEntry
 toEntryLbl (IdLabel n c ConInfoTable)    = IdLabel n c ConEntry
+toEntryLbl (IdLabel n _ BlockInfoTable)  = mkAsmTempLabel (nameUnique n)
 toEntryLbl (IdLabel n c _)               = IdLabel n c Entry
 toEntryLbl (CaseLabel n CaseReturnInfo)  = CaseLabel n CaseReturnPt
 toEntryLbl (CmmLabel m str CmmInfo)      = CmmLabel m str CmmEntry
@@ -1263,6 +1269,7 @@ ppIdFlavor x = pp_cSEP <>
                        ConInfoTable     -> text "con_info"
                        ClosureTable     -> text "closure_tbl"
                        Bytes            -> text "bytes"
+                       BlockInfoTable   -> text "info"
                       )
 
 

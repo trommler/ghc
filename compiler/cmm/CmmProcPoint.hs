@@ -277,7 +277,7 @@ splitAtProcPoints dflags entry_label callPPs procPoints procMap
                       | otherwise   = (block_lbl, guard (setMember pp callPPs) >>
                                                     Just info_table_lbl)
                       where block_lbl      = blockLbl pp
-                            info_table_lbl = infoTblLbl pp
+                            info_table_lbl = blockInfoTblLbl pp
 
          procLabels :: LabelMap (CLabel, Maybe CLabel)
          procLabels = foldl' add_label mapEmpty
