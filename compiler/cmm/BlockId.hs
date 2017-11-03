@@ -43,7 +43,9 @@ blockLbl :: BlockId -> CLabel
 blockLbl label = mkAsmTempLabel (getUnique label)
 
 infoTblLbl :: BlockId -> CLabel
-infoTblLbl label = mkInfoTableLabel (mkFCallName (getUnique label) "block") NoCafRefs
+infoTblLbl label
+  = mkInfoTableLabel (mkFCallName (getUnique label) "block") NoCafRefs
 
 blockInfoTblLbl :: BlockId -> CLabel
-blockInfoTblLbl label = mkBlockInfoTableLabel (mkFCallName (getUnique label) "block") NoCafRefs
+blockInfoTblLbl label
+  = mkBlockInfoTableLabel (mkFCallName (getUnique label) "block") NoCafRefs
