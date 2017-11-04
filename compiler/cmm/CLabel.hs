@@ -706,7 +706,6 @@ toEntryLbl (CmmLabel m str CmmRetInfo)   = CmmLabel m str CmmRet
 toEntryLbl l = pprPanic "toEntryLbl" (ppr l)
 
 toInfoLbl :: CLabel -> CLabel
-toInfoLbl (IdLabel n c Entry)          = IdLabel n c InfoTable
 toInfoLbl (IdLabel n c LocalEntry)     = IdLabel n c LocalInfoTable
 toInfoLbl (IdLabel n c ConEntry)       = IdLabel n c ConInfoTable
 toInfoLbl (IdLabel n c _)              = IdLabel n c InfoTable
@@ -913,6 +912,7 @@ externallyVisibleIdLabel :: IdLabelInfo -> Bool
 externallyVisibleIdLabel SRT             = False
 externallyVisibleIdLabel LocalInfoTable  = False
 externallyVisibleIdLabel LocalEntry      = False
+externallyVisibleIdLabel BlockInfoTable  = False
 externallyVisibleIdLabel _               = True
 
 -- -----------------------------------------------------------------------------
