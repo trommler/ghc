@@ -687,11 +687,15 @@ mkAsmTempDieLabel l = mkAsmTempDerivedLabel l (fsLit "_die")
 -- Convert between different kinds of label
 
 toClosureLbl :: CLabel -> CLabel
+toClosureLbl (IdLabel n _ BlockInfoTable)
+  = pprPanic "toClosureLbl: BlockInfoTable" (ppr n)
 toClosureLbl (IdLabel n c _) = IdLabel n c Closure
 toClosureLbl (CmmLabel m str _) = CmmLabel m str CmmClosure
 toClosureLbl l = pprPanic "toClosureLbl" (ppr l)
 
 toSlowEntryLbl :: CLabel -> CLabel
+toSlowEntryLbl (IdLabel n _ BlockInfoTable)
+  = pprPanic "toSlowEntryLbl" (ppr n)
 toSlowEntryLbl (IdLabel n c _) = IdLabel n c Slow
 toSlowEntryLbl l = pprPanic "toSlowEntryLbl" (ppr l)
 

@@ -5,7 +5,7 @@
 module BlockId
   ( BlockId, mkBlockId -- ToDo: BlockId should be abstract, but it isn't yet
   , newBlockId
-  , blockLbl, infoTblLbl, blockInfoTblLbl
+  , blockLbl, infoTblLbl
   ) where
 
 import GhcPrelude
@@ -44,8 +44,4 @@ blockLbl label = mkAsmTempLabel (getUnique label)
 
 infoTblLbl :: BlockId -> CLabel
 infoTblLbl label
-  = mkInfoTableLabel (mkFCallName (getUnique label) "block") NoCafRefs
-
-blockInfoTblLbl :: BlockId -> CLabel
-blockInfoTblLbl label
   = mkBlockInfoTableLabel (mkFCallName (getUnique label) "block") NoCafRefs
