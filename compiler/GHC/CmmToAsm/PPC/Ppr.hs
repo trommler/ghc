@@ -299,27 +299,27 @@ pprSectionAlign config sec@(Section seg _) =
 -- | Print appropriate alignment for the given section type.
 pprAlignForSection :: Platform -> SectionType -> SDoc
 pprAlignForSection platform seg =
- let ppc64    = not $ target32Bit platform
- in ptext $ case seg of
-       Text              -> sLit ".align 2"
+ let ppc64 = not $ target32Bit platform
+ in text $ case seg of
+       Text              -> ".align 2"
        Data
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        ReadOnlyData
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        RelocatableReadOnlyData
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        UninitialisedData
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
-       ReadOnlyData16    -> sLit ".align 4"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
+       ReadOnlyData16    -> ".align 4"
        -- TODO: This is copied from the ReadOnlyData case, but it can likely be
        -- made more efficient.
        CString
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        OtherSection _    -> panic "PprMach.pprSectionAlign: unknown section"
 
 pprDataItem :: Platform -> CmmLit -> SDoc
