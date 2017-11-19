@@ -356,34 +356,27 @@ pprSectionAlign sec@(Section seg _) =
 pprAlignForSection :: SectionType -> SDoc
 pprAlignForSection seg =
  sdocWithPlatform $ \platform ->
- let osDarwin = platformOS platform == OSDarwin
-     ppc64    = not $ target32Bit platform
- in ptext $ case seg of
-       Text              -> sLit ".align 2"
+ let ppc64 = not $ target32Bit platform
+ in text $ case seg of
+       Text              -> ".align 2"
        Data
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        ReadOnlyData
-        | osDarwin       -> sLit ".align 2"
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        RelocatableReadOnlyData
-        | osDarwin       -> sLit ".align 2"
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        UninitialisedData
-        | osDarwin       -> sLit ".align 2"
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
-       ReadOnlyData16
-        | osDarwin       -> sLit ".align 4"
-        | otherwise      -> sLit ".align 4"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
+       ReadOnlyData16    -> ".align 4"
        -- TODO: This is copied from the ReadOnlyData case, but it can likely be
        -- made more efficient.
        CString
-        | osDarwin       -> sLit ".align 2"
-        | ppc64          -> sLit ".align 3"
-        | otherwise      -> sLit ".align 2"
+        | ppc64          -> ".align 3"
+        | otherwise      -> ".align 2"
        OtherSection _    -> panic "PprMach.pprSectionAlign: unknown section"
 
 pprDataItem :: CmmLit -> SDoc
@@ -394,13 +387,14 @@ pprDataItem lit
         imm = litToImm lit
         archPPC_64 dflags = not $ target32Bit $ targetPlatform dflags
 
-        ppr_item II8   _ _ = [text "\t.byte\t" <> pprImm imm]
+        ppr_item II8  _ _ = [text "\t.byte\t" <> pprImm imm]
 
-        ppr_item II32  _ _ = [text "\t.long\t" <> pprImm imm]
+        ppr_item II16 _ _ = [text "\t.short\t" <> pprImm imm]
+
+        ppr_item II32 _ _ = [text "\t.long\t" <> pprImm imm]
 
         ppr_item II64 _ dflags
            | archPPC_64 dflags = [text "\t.quad\t" <> pprImm imm]
-
 
         ppr_item FF32 (CmmFloat r _) _
            = let bs = floatToBytes (fromRational r)
@@ -409,8 +403,6 @@ pprDataItem lit
         ppr_item FF64 (CmmFloat r _) _
            = let bs = doubleToBytes (fromRational r)
              in  map (\b -> text "\t.byte\t" <> pprImm (ImmInt b)) bs
-
-        ppr_item II16 _ _      = [text "\t.short\t" <> pprImm imm]
 
         ppr_item II64 (CmmInt x _) dflags
            | not(archPPC_64 dflags) =
