@@ -1069,7 +1069,7 @@ TODO: Depending on how much allocation overhead stgMallocBytes uses for
 #if defined(FUNDESCS)
             // function descriptors are a cool idea.
             // We don't need to generate any code at runtime.
-        adjustorStub->toc = adjustorStub;
+        adjustorStub->toc = adjustor;
 #else
 
             // no function descriptors :-(
