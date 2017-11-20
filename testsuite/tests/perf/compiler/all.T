@@ -97,6 +97,7 @@ test('T1969',
                                  # 2013-02-10 310633884 (x86/Windows)
                                  # 2013-11-13 317975916 (x86/Windows, 64bit machine)
                                  # 2014-04-04 301784492 (x86/Windows, 64bit machine)
+           (platform('powerpc64-unknown-linux'), 754659024, 1),
            (wordsize(32), 324586096, 1),
              #            221667908 (x86/OS X)
              #            274932264 (x86/Linux)
@@ -198,6 +199,7 @@ test('T3294',
            # 2013-11-13: 1478325844  (x86/Windows, 64bit machine)
            # 2014-01-12: 1565185140  (x86/Linux)
            # 2013-04-04: 1377050640  (x86/Windows, 64bit machine)
+           (platform('powerpc64-unknown-linux'), 2174633712, 1),
            (wordsize(64), 1858491504, 5)]),
             # old:        1357587088 (amd64/Linux)
             # 29/08/2012: 2961778696 (amd64/Linux)
@@ -249,7 +251,7 @@ test('T4801',
            # prev:       510938976 (amd64/OS X):
            # 2015-12-11: 465653312 (amd64/OS X) Update, bump tolerance to +/-10%
            # 2017-03-24: 417302064 (amd64/OS X) Correlated with Linux improvement
-
+           (platform('powerpc64-unknown-linux'), 995723096, 1),
            (wordsize(32), 199856388, 10),
            # prev:        185669232 (x86/OSX)
            # 2014-01-22:  211198056 (x86/Linux)
@@ -500,6 +502,7 @@ test('T783',
             # 2016-04-06: 249332816 (x86/Linux, 64-bit machine)
             # 2017-03-24: 225911912 (x86/Linux, 64-bit machine)
 
+           (platform('powerpc64-unknown-linux'), 607361064, 1),
            (wordsize(64), 481875416, 10)]),
             # prev:       349263216 (amd64/Linux)
             # 07/08/2012: 384479856 (amd64/Linux)
@@ -548,6 +551,7 @@ test('T5321Fun',
              # 2016-04-06: 279922360 x86/Linux
              # 2017-03-24: 244387620 x86/Linux (64-bit machine)
 
+            (platform('powerpc64-unknown-linux'), 542583536, 1),
             (wordsize(64), 423774560, 5)])
              # prev:       585521080
              # 2012-08-29: 713385808     #  (increase due to new codegen)
@@ -590,6 +594,7 @@ test('T5321FD',
             #  (due to better optCoercion, 5e7406d9, #9233)
             # 2016-04-06: 250757460 (x86/Linux)
 
+           (platform('powerpc64-unknown-linux'), 507897584, 1),
            (wordsize(64), 415136648, 10)])
             # prev:       418306336
             # 29/08/2012: 492905640
@@ -716,6 +721,7 @@ test('T6048',
             # 2014-12-01: 49987836 (x86 Windows)
             # 2016-04-06: 55701280 (x86/Linux, 64-bit machine)
 
+           (platform('powerpc64-unknown-linux'), 112786264, 1),
            (wordsize(64), 90996312, 10)])
              # 2012-09-18  97247032 amd64/Linux
              # 2014-01-16 108578664 amd64/Linux (unknown, likely foldl-via-foldr)
@@ -1076,7 +1082,8 @@ test('T12545',
 test('T13035',
      [ only_ways(['normal']),
        compiler_stats_num_field('bytes allocated',
-          [(wordsize(64), 118665640, 5),
+          [(platform('powerpc64-unknown-linux'), 132218264, 1),
+           (wordsize(64), 118665640, 5),
           # 2017-01-05   90595208  initial
           # 2017-01-19   95269000  Allow top-level string literals in Core
           # 2017-02-05   88806416  Probably OccAnal fixes
@@ -1106,7 +1113,8 @@ test('T13056',
 
 test('T12707',
      [ compiler_stats_num_field('bytes allocated',
-          [(wordsize(64), 1163821528, 5),
+          [(platform('powerpc64-unknown-linux'), 1483432872, 1),
+           (wordsize(64), 1163821528, 5),
           # initial:    1271577192
           # 2017-01-22: 1348865648  Allow top-level strings in Core
           # 2017-01-31: 1280336112  Join points (#12988)
@@ -1136,6 +1144,7 @@ test('T13379',
      [ compiler_stats_num_field('bytes allocated',
           [(platform('x86_64-apple-darwin'), 453166912, 10),
           # 453166912: add osx-specific after two-pass CmmLayoutStack
+           (platform('powerpc64-unknown-linux'), 600763824, 1),
            (wordsize(64), 411597856, 10),
           # initial:    411597856
           # widen window to 10%, Darwin had 449080520, a 9.1% difference
