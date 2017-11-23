@@ -632,6 +632,7 @@ test('T5642',
             # 2016-04-06:  462677300
             # 2017-03-24:  413517560 (x86/Linux, 64-bit machine)
 
+            (platform('powerpc64-unknown-linux'), 920749696, 1),
             (wordsize(64),  838316496, 10)])
             # prev:        1300000000
             # 2014-07-17:  1358833928 (general round of updates)
@@ -721,7 +722,7 @@ test('T6048',
             # 2014-12-01: 49987836 (x86 Windows)
             # 2016-04-06: 55701280 (x86/Linux, 64-bit machine)
 
-           (platform('powerpc64-unknown-linux'), 112786264, 1),
+           (platform('powerpc64-unknown-linux'), 112786264, 2),
            (wordsize(64), 90996312, 10)])
              # 2012-09-18  97247032 amd64/Linux
              # 2014-01-16 108578664 amd64/Linux (unknown, likely foldl-via-foldr)
@@ -1082,7 +1083,7 @@ test('T12545',
 test('T13035',
      [ only_ways(['normal']),
        compiler_stats_num_field('bytes allocated',
-          [(platform('powerpc64-unknown-linux'), 132218264, 1),
+          [(platform('powerpc64-unknown-linux'), 132218264, 2),
            (wordsize(64), 118665640, 5),
           # 2017-01-05   90595208  initial
           # 2017-01-19   95269000  Allow top-level string literals in Core
@@ -1200,6 +1201,7 @@ test('T13701',
            # 2017-07-11:  2187920960
            # 2017-07-12:  2412223768    inconsistency between Ben's machine and Harbormaster?
            # 2017-07-17:  2133380768    Resolved the issue causing the inconsistencies in this test
+           (platform('powerpc64-unknown-linux'), 2211125688, 1),
           ]),
        pre_cmd('./genT13701'),
        extra_files(['genT13701']),
