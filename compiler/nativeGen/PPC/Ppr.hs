@@ -133,12 +133,7 @@ pprData (CmmString str)
   where
     do1 :: Word8 -> SDoc
     do1 w = text "\t.byte\t" <> int (fromIntegral w)
-pprData (CmmUninitialised bytes) = keyword <> int bytes
-    where keyword = sdocWithPlatform $ \platform ->
-                    case platformOS platform of
-                    OSDarwin -> text ".space "
-                    OSAIX    -> text ".space "
-                    _        -> text ".skip "
+pprData (CmmUninitialised bytes) = text ".space " <> int bytes
 pprData (CmmStaticLit lit)       = pprDataItem lit
 
 pprGloblDecl :: CLabel -> SDoc
