@@ -2065,7 +2065,7 @@ genSwitch dflags expr targets
                     ]
         return code
 
-  | (positionIndependent dflags) || (not $ target32Bit $ targetPlatform dflags)
+  | positionIndependent dflags
   = do
         (reg,e_code) <- getSomeReg (cmmOffset dflags expr offset)
         let fmt = archWordFormat $ target32Bit $ targetPlatform dflags
@@ -2103,10 +2103,8 @@ generateJumpTableForInstr :: DynFlags -> Instr
                           -> Maybe (NatCmmDecl CmmStatics Instr)
 generateJumpTableForInstr dflags (BCTR ids (Just lbl)) =
     let jumpTable
-            | (positionIndependent dflags)
-              || (not $ target32Bit $ targetPlatform dflags)
-            = map jumpTableEntryRel ids
-            | otherwise = map (jumpTableEntry dflags) ids
+            | positionIndependent dflags = map jumpTableEntryRel ids
+            | otherwise                  = map (jumpTableEntry dflags) ids
                 where jumpTableEntryRel Nothing
                         = CmmStaticLit (CmmInt 0 (wordWidth dflags))
                       jumpTableEntryRel (Just blockid)
