@@ -2112,9 +2112,14 @@ generateJumpTableForInstr :: NCGConfig -> Instr
                           -> Maybe (NatCmmDecl RawCmmStatics Instr)
 generateJumpTableForInstr config (BCTR ids (Just lbl) _) =
     let jumpTable
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
             | (ncgPIC config) || (not $ target32Bit $ ncgPlatform config)
             = map jumpTableEntryRel ids
             | otherwise = map (jumpTableEntry config) ids
+=======
+            | positionIndependent dflags = map jumpTableEntryRel ids
+            | otherwise                  = map (jumpTableEntry dflags) ids
+>>>>>>> 70e0db3f6c... Make jump tables position dependent on 64-bit:compiler/nativeGen/PPC/CodeGen.hs
                 where jumpTableEntryRel Nothing
                         = CmmStaticLit (CmmInt 0 (ncgWordWidth config))
                       jumpTableEntryRel (Just blockid)
