@@ -787,8 +787,8 @@ pprImportedSymbol _ _ _
 
 initializePicBase_ppc
         :: Arch -> OS -> Reg
-        -> [NatCmmDecl CmmStatics PPC.Instr]
-        -> NatM [NatCmmDecl CmmStatics PPC.Instr]
+        -> [NatCmmDecl (Alignment, CmmStatics) PPC.Instr]
+        -> NatM [NatCmmDecl (Alignment, CmmStatics) PPC.Instr]
 
 initializePicBase_ppc ArchPPC os picReg
     (CmmProc info lab live (ListGraph blocks) : statics)

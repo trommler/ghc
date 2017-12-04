@@ -33,6 +33,7 @@ import TargetReg
 import RegClass
 import Reg
 
+import BasicTypes       (Alignment)
 import CodeGen.Platform
 import BlockId
 import Hoopl.Collections
@@ -177,7 +178,7 @@ data Instr
     -- some static data spat out during code
     -- generation.  Will be extracted before
     -- pretty-printing.
-    | LDATA   Section CmmStatics
+    | LDATA   Section (Alignment, CmmStatics)
 
     -- start a new basic block.  Useful during
     -- codegen, removed later.  Preceding

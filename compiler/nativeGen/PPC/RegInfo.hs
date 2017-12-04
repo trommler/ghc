@@ -24,6 +24,7 @@ import GhcPrelude
 
 import PPC.Instr
 
+import BasicTypes       (Alignment)
 import BlockId
 import Cmm
 import CLabel
@@ -43,9 +44,10 @@ shortcutJump _ other = other
 
 
 -- Here because it knows about JumpDest
-shortcutStatics :: (BlockId -> Maybe JumpDest) -> CmmStatics -> CmmStatics
-shortcutStatics fn (Statics lbl statics)
-  = Statics lbl $ map (shortcutStatic fn) statics
+shortcutStatics :: (BlockId -> Maybe JumpDest) -> (Alignment, CmmStatics)
+                -> (Alignment, CmmStatics)
+shortcutStatics fn (align, Statics lbl statics)
+  = (align, Statics lbl $ map (shortcutStatic fn) statics)
   -- we need to get the jump tables, so apply the mapping to the entries
   -- of a CmmData too.
 

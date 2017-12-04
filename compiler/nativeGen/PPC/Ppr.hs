@@ -25,6 +25,7 @@ import Cmm hiding (topInfoTable)
 import Hoopl.Collections
 import Hoopl.Label
 
+import BasicTypes       (Alignment)
 import BlockId
 import CLabel
 
@@ -41,7 +42,7 @@ import Data.Bits
 -- -----------------------------------------------------------------------------
 -- Printing this stuff out
 
-pprNatCmmDecl :: NatCmmDecl CmmStatics Instr -> SDoc
+pprNatCmmDecl :: NatCmmDecl (Alignment, CmmStatics) Instr -> SDoc
 pprNatCmmDecl (CmmData section dats) =
   pprSectionAlign section $$ pprDatas dats
 
@@ -117,16 +118,18 @@ pprBasicBlock info_env (BasicBlock blockid instrs)
        Nothing   -> empty
        Just (Statics info_lbl info) ->
            pprAlignForSection Text $$
-           vcat (map pprData info) $$
+           vcat (map (pprData 3) info) $$
            pprLabel info_lbl
 
 
 
-pprDatas :: CmmStatics -> SDoc
-pprDatas (Statics lbl dats) = vcat (pprLabel lbl : map pprData dats)
+pprDatas :: (Alignment, CmmStatics) -> SDoc
+pprDatas (align, Statics lbl dats)
+  = vcat (pprLabel lbl : map (pprData align) dats)
+-- TODO pprAlign align : ...
 
-pprData :: CmmStatic -> SDoc
-pprData (CmmString str)
+pprData :: Alignment -> CmmStatic -> SDoc
+pprData _ (CmmString str)
   = sdocWithPlatform $ \platform ->
     if platformOS platform == OSDarwin
     then vcat (map do1 str) $$ do1 0
@@ -134,8 +137,8 @@ pprData (CmmString str)
   where
     do1 :: Word8 -> SDoc
     do1 w = text "\t.byte\t" <> int (fromIntegral w)
-pprData (CmmUninitialised bytes) = text ".space " <> int bytes
-pprData (CmmStaticLit lit)       = pprDataItem lit
+pprData _ (CmmUninitialised bytes) = text ".space " <> int bytes
+pprData align (CmmStaticLit lit)   = pprDataItem align lit
 
 pprGloblDecl :: CLabel -> SDoc
 pprGloblDecl lbl
@@ -352,11 +355,15 @@ pprAlignForSection seg =
         | otherwise      -> ".align 2"
        OtherSection _    -> panic "PprMach.pprSectionAlign: unknown section"
 
-pprDataItem :: CmmLit -> SDoc
-pprDataItem lit
+pprDataItem :: Alignment -> CmmLit -> SDoc
+pprDataItem align lit
   = sdocWithDynFlags $ \dflags ->
-    vcat (ppr_item (cmmTypeFormat $ cmmLitType dflags lit) lit dflags)
+    vcat (ppr_item (litFormat dflags align lit) lit dflags)
     where
+        litFormat _ 2 (CmmLabelDiffOff {}) = II32 -- medium code model
+        litFormat _ 2 (CmmLabelOff {})     = II32
+        litFormat _ 2 (CmmLabel {})        = II32
+        litFormat dflags _ lit = cmmTypeFormat $ cmmLitType dflags lit
         imm = litToImm lit
         archPPC_64 dflags = not $ target32Bit $ targetPlatform dflags
 

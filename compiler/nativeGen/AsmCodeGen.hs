@@ -224,7 +224,7 @@ x86_64NcgImpl dflags
    }
     where platform = targetPlatform dflags
 
-ppcNcgImpl :: DynFlags -> NcgImpl CmmStatics PPC.Instr.Instr PPC.RegInfo.JumpDest
+ppcNcgImpl :: DynFlags -> NcgImpl (Alignment, CmmStatics) PPC.Instr.Instr PPC.RegInfo.JumpDest
 ppcNcgImpl dflags
  = NcgImpl {
         cmmTopCodeGen             = PPC.CodeGen.cmmTopCodeGen
