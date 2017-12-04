@@ -81,7 +81,11 @@ import GHC.Utils.Misc
 
 cmmTopCodeGen
         :: RawCmmDecl
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
         -> NatM [NatCmmDecl RawCmmStatics Instr]
+=======
+        -> NatM [NatCmmDecl (Alignment, CmmStatics) Instr]
+>>>>>>> 09d6c78a3a... Implement jump tables with 32 bit labels:compiler/nativeGen/PPC/CodeGen.hs
 
 cmmTopCodeGen (CmmProc info lab live graph) = do
   let blocks = toBlockListEntryFirst graph
@@ -117,12 +121,16 @@ cmmTopCodeGen (CmmProc info lab live graph) = do
       fixup_entry _ = panic "cmmTopCodegen: Broken CmmProc"
 
 cmmTopCodeGen (CmmData sec dat) = do
-  return [CmmData sec dat]  -- no translation, we just use CmmStatic
+  return [CmmData sec (mkAlignment 8, dat)]  -- no translation, we just use CmmStatic
 
 basicBlockCodeGen
         :: Block CmmNode C C
         -> NatM ( [NatBasicBlock Instr]
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
                 , [NatCmmDecl RawCmmStatics Instr])
+=======
+                , [NatCmmDecl (Alignment, CmmStatics) Instr])
+>>>>>>> 09d6c78a3a... Implement jump tables with 32 bit labels:compiler/nativeGen/PPC/CodeGen.hs
 
 basicBlockCodeGen block = do
   let (_, nodes, tail)  = blockSplit block
@@ -240,9 +248,15 @@ getRegisterReg platform (CmmGlobal mid)
         -- platform.  Hence ...
 
 -- | Convert a BlockId to some CmmStatic data
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
 jumpTableEntry :: NCGConfig -> Maybe BlockId -> CmmStatic
 jumpTableEntry config Nothing   = CmmStaticLit (CmmInt 0 (ncgWordWidth config))
 jumpTableEntry _ (Just blockid) = CmmStaticLit (CmmLabel blockLabel)
+=======
+jumpTableEntry :: Maybe BlockId -> CmmStatic
+jumpTableEntry Nothing = CmmStaticLit (CmmInt 0 W32)
+jumpTableEntry (Just blockid) = CmmStaticLit (CmmLabel blockLabel)
+>>>>>>> 09d6c78a3a... Implement jump tables with 32 bit labels:compiler/nativeGen/PPC/CodeGen.hs
     where blockLabel = blockLbl blockid
 
 
@@ -680,7 +694,11 @@ getRegister' config _ (CmmLit (CmmFloat f frep)) = do
     let format = floatFormat frep
         code dst =
             LDATA (Section ReadOnlyData lbl)
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
                   (CmmStaticsRaw lbl [CmmStaticLit (CmmFloat f frep)])
+=======
+                  (mkAlignment 8, (Statics lbl [CmmStaticLit (CmmFloat f frep)]))
+>>>>>>> 09d6c78a3a... Implement jump tables with 32 bit labels:compiler/nativeGen/PPC/CodeGen.hs
             `consOL` (addr_code `snocOL` LD format dst addr)
     return (Any format code)
 
@@ -700,7 +718,12 @@ getRegister' config platform (CmmLit lit)
        let rep = cmmLitType platform lit
            format = cmmTypeFormat rep
            code dst =
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
             LDATA (Section ReadOnlyData lbl) (CmmStaticsRaw lbl [CmmStaticLit lit])
+=======
+            LDATA (Section ReadOnlyData lbl)
+                  (mkAlignment 8, (Statics lbl [CmmStaticLit lit]))
+>>>>>>> 09d6c78a3a... Implement jump tables with 32 bit labels:compiler/nativeGen/PPC/CodeGen.hs
             `consOL` (addr_code `snocOL` LD format dst addr)
        return (Any format code)
 
@@ -2074,16 +2097,22 @@ genSwitch config expr targets
 
   | (ncgPIC config) || (not $ target32Bit platform)
   = do
+<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
         (reg,e_code) <- getSomeReg (cmmOffset platform expr offset)
         let fmt = archWordFormat $ target32Bit platform
             sha = if target32Bit platform then 2 else 3
+=======
+        (reg,e_code) <- getSomeReg (cmmOffset dflags expr offset)
+        let fmt = II32
+            sha = 2
+>>>>>>> 09d6c78a3a... Implement jump tables with 32 bit labels:compiler/nativeGen/PPC/CodeGen.hs
         tmp <- getNewRegNat fmt
         lbl <- getNewLabelNat
         dynRef <- cmmMakeDynamicReference config DataReference lbl
         (tableReg,t_code) <- getSomeReg $ dynRef
         let code = e_code `appOL` t_code `appOL` toOL [
                             SL fmt tmp reg (RIImm (ImmInt sha)),
-                            LD fmt tmp (AddrRegReg tableReg tmp),
+                            LA fmt tmp (AddrRegReg tableReg tmp),
                             ADD tmp tmp (RIReg tableReg),
                             MTCTR tmp,
                             BCTR ids (Just lbl) []
@@ -2092,8 +2121,8 @@ genSwitch config expr targets
   | otherwise
   = do
         (reg,e_code) <- getSomeReg (cmmOffset platform expr offset)
-        let fmt = archWordFormat $ target32Bit platform
-            sha = if target32Bit platform then 2 else 3
+        let fmt = II32
+            sha = 2
         tmp <- getNewRegNat fmt
         lbl <- getNewLabelNat
         let code = e_code `appOL` toOL [
@@ -2109,24 +2138,19 @@ genSwitch config expr targets
     platform      = ncgPlatform config
 
 generateJumpTableForInstr :: NCGConfig -> Instr
-                          -> Maybe (NatCmmDecl RawCmmStatics Instr)
+                          -> Maybe (NatCmmDecl (Alignment, RawCmmStatics) Instr)
 generateJumpTableForInstr config (BCTR ids (Just lbl) _) =
     let jumpTable
-<<<<<<< HEAD:compiler/GHC/CmmToAsm/PPC/CodeGen.hs
             | (ncgPIC config) || (not $ target32Bit $ ncgPlatform config)
             = map jumpTableEntryRel ids
             | otherwise = map (jumpTableEntry config) ids
-=======
-            | positionIndependent dflags = map jumpTableEntryRel ids
-            | otherwise                  = map (jumpTableEntry dflags) ids
->>>>>>> 70e0db3f6c... Make jump tables position dependent on 64-bit:compiler/nativeGen/PPC/CodeGen.hs
                 where jumpTableEntryRel Nothing
-                        = CmmStaticLit (CmmInt 0 (ncgWordWidth config))
+                        = CmmStaticLit (CmmInt 0 W32)
                       jumpTableEntryRel (Just blockid)
                         = CmmStaticLit (CmmLabelDiffOff blockLabel lbl 0
-                                         (ncgWordWidth config))
+                                         W32)
                             where blockLabel = blockLbl blockid
-    in Just (CmmData (Section ReadOnlyData lbl) (CmmStaticsRaw lbl jumpTable))
+    in Just (CmmData (Section ReadOnlyData lbl) (mkAlignment 4, CmmStaticsRaw lbl jumpTable))
 generateJumpTableForInstr _ _ = Nothing
 
 -- -----------------------------------------------------------------------------
@@ -2356,9 +2380,10 @@ coerceInt2FP' ArchPPC fromRep toRep x = do
     Amode addr addr_code <- getAmode D dynRef
     let
         code' dst = code `appOL` maybe_exts `appOL` toOL [
-                LDATA (Section ReadOnlyData lbl) $ CmmStaticsRaw lbl
-                                 [CmmStaticLit (CmmInt 0x43300000 W32),
-                                  CmmStaticLit (CmmInt 0x80000000 W32)],
+                LDATA (Section ReadOnlyData lbl)
+                      (mkAlignment 8, CmmStaticsRaw lbl)
+                           [CmmStaticLit (CmmInt 0x43300000 W32),
+                            CmmStaticLit (CmmInt 0x80000000 W32)],
                 XORIS itmp src (ImmInt 0x8000),
                 ST II32 itmp (spRel platform 3),
                 LIS itmp (ImmInt 0x4330),

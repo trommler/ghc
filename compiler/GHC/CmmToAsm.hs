@@ -212,7 +212,7 @@ x86_64NcgImpl config
     where
       platform = ncgPlatform config
 
-ppcNcgImpl :: NCGConfig -> NcgImpl RawCmmStatics PPC.Instr.Instr PPC.RegInfo.JumpDest
+ppcNcgImpl :: NCGConfig -> NcgImpl (Alignment, RawCmmStatics) PPC.Instr.Instr PPC.RegInfo.JumpDest
 ppcNcgImpl config
  = NcgImpl {
         ncgConfig                 = config

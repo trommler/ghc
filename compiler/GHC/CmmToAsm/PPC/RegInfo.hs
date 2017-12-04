@@ -27,6 +27,7 @@ import GHC.Cmm.BlockId
 import GHC.Cmm
 import GHC.Cmm.CLabel
 
+import GHC.Types.Basic
 import GHC.Types.Unique
 import GHC.Utils.Outputable (ppr, text, Outputable, (<>))
 
@@ -47,9 +48,10 @@ shortcutJump _ other = other
 
 
 -- Here because it knows about JumpDest
-shortcutStatics :: (BlockId -> Maybe JumpDest) -> RawCmmStatics -> RawCmmStatics
-shortcutStatics fn (CmmStaticsRaw lbl statics)
-  = CmmStaticsRaw lbl $ map (shortcutStatic fn) statics
+shortcutStatics :: (BlockId -> Maybe JumpDest) -> (Alignment, RawCmmStatics)
+                -> (Alignment, RawCmmStatics)
+shortcutStatics fn (align, CmmStaticsRaw lbl statics)
+  = (align, CmmStaticsRaw lbl $ map (shortcutStatic fn) statics)
   -- we need to get the jump tables, so apply the mapping to the entries
   -- of a CmmData too.
 

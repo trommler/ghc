@@ -35,6 +35,7 @@ import GHC.CmmToAsm.Config
 import GHC.Platform.Reg.Class
 import GHC.Platform.Reg
 
+import GHC.Types.Basic (Alignment)
 import GHC.Platform.Regs
 import GHC.Cmm.BlockId
 import GHC.Cmm.Dataflow.Collections
@@ -193,7 +194,7 @@ data Instr
     -- some static data spat out during code
     -- generation.  Will be extracted before
     -- pretty-printing.
-    | LDATA   Section RawCmmStatics
+    | LDATA   Section (Alignment, RawCmmStatics)
 
     -- start a new basic block.  Useful during
     -- codegen, removed later.  Preceding

@@ -741,8 +741,8 @@ pprImportedSymbol dflags config importedLbl = case (arch,os) of
 
 initializePicBase_ppc
         :: Arch -> OS -> Reg
-        -> [NatCmmDecl RawCmmStatics PPC.Instr]
-        -> NatM [NatCmmDecl RawCmmStatics PPC.Instr]
+        -> [NatCmmDecl (Alignment, RawCmmStatics) PPC.Instr]
+        -> NatM [NatCmmDecl (Alignment, RawCmmStatics) PPC.Instr]
 
 initializePicBase_ppc ArchPPC os picReg
     (CmmProc info lab live (ListGraph blocks) : statics)
