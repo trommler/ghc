@@ -715,7 +715,9 @@ StgRunIsImplementedInAssembler(void)
                 "\taddi 12,1,-(8*18)\n"
                 "\tbl _savegpr1_14\n"
                 "\tbl _savefpr_14\n"
+                "\taddi 0, 1, -288\n" // end of vector register save area
                 "\tstdu 1, -%0(1)\n"
+                "\tbl _savevr_26\n"
                 "\tmr 27, 4\n"  // BaseReg == r27
                 "\tld 3, 0(3)\n"
                 "\tld 2, 8(3)\n"
@@ -724,11 +726,14 @@ StgRunIsImplementedInAssembler(void)
                 ".type StgReturn,@function\n"
                 ".StgReturn:\n"
                 "\tmr 3,14\n"
+                "\tla 12, %0(1)\n"
+                "\taddi 0, 12, -288\n"
+                "\tbl _restvr_26\n"
                 "\tla 1, %0(1)\n" // load address == addi r1, r1, %0
                 "\taddi 12,1,-(8*18)\n"
                 "\tbl _restgpr1_14\n"
                 "\tb _restfpr_14\n"
-        : : "i"((RESERVED_C_STACK_BYTES+288+15) & ~15 /*stack frame size*/));
+        : : "i"((RESERVED_C_STACK_BYTES+288+6*16+15) & ~15 /*stack frame size*/));
 }
 
 #endif
