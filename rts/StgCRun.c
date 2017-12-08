@@ -696,6 +696,13 @@ StgRunIsImplementedInAssembler(void)
 static void STG_USED
 StgRunIsImplementedInAssembler(void)
 {
+        // r0 volatile
+        // r1 stack pointer
+        // r2 toc - restored from function descriptor by caller of StgReturn
+        // r3-r10 argument passing, volatile
+        // r11, r12 very volatile (not saved across cross-module calls)
+        // r13 thread local state (never modified, don't need to save)
+        // r14-r31 callee-save
         __asm__ volatile (
                 ".section \".opd\",\"aw\"\n"
                 ".align 3\n"
@@ -715,8 +722,11 @@ StgRunIsImplementedInAssembler(void)
                 "\taddi 12,1,-(8*18)\n"
                 "\tbl _savegpr1_14\n"
                 "\tbl _savefpr_14\n"
-                "\taddi 0, 1, -288\n" // end of vector register save area
+                "\taddi 12, 1, -304\n" // end of vector register save area
                 "\tstdu 1, -%0(1)\n"
+                "\tmfspr 0, 256\n"     // VRSAVE
+                "\tstw 0, 12(12)\n"
+                "\tmr 0,12\n"
                 "\tbl _savevr_26\n"
                 "\tmr 27, 4\n"  // BaseReg == r27
                 "\tld 3, 0(3)\n"
@@ -727,13 +737,15 @@ StgRunIsImplementedInAssembler(void)
                 ".StgReturn:\n"
                 "\tmr 3,14\n"
                 "\tla 12, %0(1)\n"
-                "\taddi 0, 12, -288\n"
+                "\tlwz 0, -292(12)\n"
+                "\tmtspr 256, 0\n"
+                "\taddi 0, 12, -304\n"
                 "\tbl _restvr_26\n"
                 "\tla 1, %0(1)\n" // load address == addi r1, r1, %0
                 "\taddi 12,1,-(8*18)\n"
                 "\tbl _restgpr1_14\n"
                 "\tb _restfpr_14\n"
-        : : "i"((RESERVED_C_STACK_BYTES+288+6*16+15) & ~15 /*stack frame size*/));
+        : : "i"((RESERVED_C_STACK_BYTES+304+6*16+15) & ~15 /*stack frame size*/));
 }
 
 #endif
