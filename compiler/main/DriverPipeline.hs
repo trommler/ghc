@@ -850,6 +850,7 @@ llvmOptions dflags =
               ++ ["+avx512pf"| isAvx512pfEnabled dflags ]
               ++ ["+bmi"     | isBmiEnabled dflags      ]
               ++ ["+bmi2"    | isBmi2Enabled dflags     ]
+              ++ ["+altivec" | isAltivecEnabled dflags  ]
 
 -- -----------------------------------------------------------------------------
 -- | Each phase in the pipeline returns the next phase to execute, and the

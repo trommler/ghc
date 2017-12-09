@@ -12,6 +12,7 @@ module Platform (
 
         target32Bit,
         isARM,
+        isPPC,
         osElfTarget,
         osMachOTarget,
         osSubsectionsViaSymbols,
@@ -70,6 +71,11 @@ isARM :: Arch -> Bool
 isARM (ArchARM {}) = True
 isARM ArchARM64    = True
 isARM _ = False
+
+isPPC :: Arch -> Bool
+isPPC (ArchPPC_64 {}) = True
+isPPC ArchPPC         = True
+isPPC _               = False
 
 -- | Operating systems that the native code generator knows about.
 --      Having OSUnknown should produce a sensible default, but no promises.
