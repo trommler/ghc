@@ -224,6 +224,8 @@ module GHC.Driver.Session (
         isAvx512erEnabled,
         isAvx512fEnabled,
         isAvx512pfEnabled,
+        -- * PowerPC Altivec/VMX
+        isAltivecEnabled,
 
         -- * Linker/compiler information
         LinkerInfo(..),
@@ -746,6 +748,7 @@ data DynFlags = DynFlags {
   avx512er              :: Bool, -- Enable AVX-512 Exponential and Reciprocal Instructions.
   avx512f               :: Bool, -- Enable AVX-512 instructions.
   avx512pf              :: Bool, -- Enable AVX-512 PreFetch Instructions.
+  altivec               :: Bool, -- Enable PowerPC Altivec/VMX instructions.
 
   -- | Run-time linker information (what options we need, etc.)
   rtldInfo              :: IORef (Maybe LinkerInfo),
@@ -1469,6 +1472,7 @@ defaultDynFlags mySettings llvmConfig =
         avx512er = False,
         avx512f = False,
         avx512pf = False,
+        altivec = False,
         rtldInfo = panic "defaultDynFlags: no rtldInfo",
         rtccInfo = panic "defaultDynFlags: no rtccInfo",
 
@@ -2859,6 +2863,7 @@ dynamic_flags_deps = [
   , make_ord_flag defGhcFlag "mavx512f"     (noArg (\d -> d { avx512f = True }))
   , make_ord_flag defGhcFlag "mavx512pf"    (noArg (\d ->
                                                          d { avx512pf = True }))
+  , make_ord_flag defGhcFlag "maltivec"     (noArg (\d -> d { altivec = True }))
 
      ------ Warning opts -------------------------------------------------
   , make_ord_flag defFlag "W"       (NoArg (mapM_ setWarningFlag minusWOpts))
@@ -5094,6 +5099,10 @@ isAvx512fEnabled dflags = avx512f dflags
 
 isAvx512pfEnabled :: DynFlags -> Bool
 isAvx512pfEnabled dflags = avx512pf dflags
+
+-- PowerPC Altivec/VMX
+isAltivecEnabled :: DynFlags -> Bool
+isAltivecEnabled dflags = altivec dflags
 
 -- -----------------------------------------------------------------------------
 -- BMI2

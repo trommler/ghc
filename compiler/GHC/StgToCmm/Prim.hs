@@ -2163,7 +2163,10 @@ vecElemProjectCast _        _        _   =  Nothing
 
 
 checkVecCompatibility :: DynFlags -> PrimOpVecCat -> Length -> Width -> FCode ()
-checkVecCompatibility dflags vcat l w = do
+checkVecCompatibility dflags vcat l w
+  | isPPC $ platformArch $ targetPlatform dflags = do
+      checkPPC vecWidth vcat l w
+  | otherwise = do
     when (hscTarget dflags /= HscLlvm) $ do
         sorry $ unlines ["SIMD vector instructions require the LLVM back-end."
                          ,"Please use -fllvm."]
@@ -2188,6 +2191,14 @@ checkVecCompatibility dflags vcat l w = do
     check _ _ _ _ = return ()
 
     vecWidth = typeWidth (vecVmmType vcat l w)
+
+    checkPPC :: Width -> PrimOpVecCat -> Length -> Width -> Fcode
+    checkPPC W256 _ _ _ = sorry $ "No 256-bit SIMD vector instructions on PPC."
+    checkPPC W512 _ _ _ = sorry $ "No 512-bit SIMD vector instructions on PPC."
+    checkPPC _ _ _ W64 = sorry $ "No doubles in SIMD vector instructions on PPC."
+    checkPPC _ _ _ _ | not (isAltivecEnabled) =
+                         sorry $ "SIMD vector instructions require -maltivec"
+                     | otherwise = return ()
 
 ------------------------------------------------------------------------------
 -- Helpers for translating vector packing and unpacking.
