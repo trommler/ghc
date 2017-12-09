@@ -726,6 +726,8 @@ StgRunIsImplementedInAssembler(void)
                 "\tstdu 1, -%0(1)\n"
                 "\tmfspr 0, 256\n"     // VRSAVE
                 "\tstw 0, 12(12)\n"
+                "\tli 0, -1\n" // TODO: add comment from kernel file
+                "\tmtspr 256, 0\n"
                 "\tmr 0,12\n"
                 "\tbl _savevr_26\n"
                 "\tmr 27, 4\n"  // BaseReg == r27
