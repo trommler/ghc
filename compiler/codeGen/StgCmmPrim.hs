@@ -1561,7 +1561,7 @@ checkVecCompatibility dflags vcat l w
     checkPPC W256 _ _ _ = sorry $ "No 256-bit SIMD vector instructions on PPC."
     checkPPC W512 _ _ _ = sorry $ "No 512-bit SIMD vector instructions on PPC."
     checkPPC _ _ _ W64 = sorry $ "No doubles in SIMD vector instructions on PPC."
-    checkPPC _ _ _ _ | not (isAltivecEnabled) =
+    checkPPC _ _ _ _ | not (isAltivecEnabled dflags) =
                          sorry $ "SIMD vector instructions require -maltivec"
                      | otherwise = return ()
 
