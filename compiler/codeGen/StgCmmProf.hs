@@ -150,7 +150,7 @@ profDynAlloc :: SMRep -> CmmExpr -> FCode ()
 profDynAlloc rep ccs
   = ifProfiling $
     do dflags <- getDynFlags
-       profAlloc (mkIntExpr dflags (heapClosureSizeW dflags rep)) ccs
+       profAlloc (mkIntExpr dflags (toInteger $ heapClosureSizeW dflags rep)) ccs
 
 -- | Record the allocation of a closure (size is given by a CmmExpr)
 -- The size must be in words, because the allocation counter in a CCS counts
@@ -164,7 +164,7 @@ profAlloc words ccs
                        (cmmOffsetB dflags ccs (oFFSET_CostCentreStack_mem_alloc dflags))
                        (CmmMachOp (MO_UU_Conv (wordWidth dflags) (typeWidth alloc_rep)) $
                          [CmmMachOp (mo_wordSub dflags) [words,
-                                                         mkIntExpr dflags (profHdrSize dflags)]]))
+                                                         mkIntExpr dflags (toInteger $ profHdrSize dflags)]]))
                        -- subtract the "profiling overhead", which is the
                        -- profiling header in a closure.
 
@@ -216,7 +216,8 @@ initCostCentres (local_CCs, singleton_CCSs)
 emitCostCentreDecl :: CostCentre -> FCode ()
 emitCostCentreDecl cc = do
   { dflags <- getDynFlags
-  ; let is_caf | isCafCC cc = mkIntCLit dflags (ord 'c') -- 'c' == is a CAF
+  ; let is_caf | isCafCC cc = mkIntCLit dflags (toInteger $ ord 'c')
+                                                          -- 'c' == is a CAF
                | otherwise  = zero dflags
                         -- NB. bytesFS: we want the UTF-8 bytes here (#5559)
   ; label <- newByteStringCLit (bytesFS $ costCentreUserNameFS cc)
@@ -312,7 +313,7 @@ staticLdvInit = zeroCLit
 dynLdvInit :: DynFlags -> CmmExpr
 dynLdvInit dflags =     -- (era << LDV_SHIFT) | LDV_STATE_CREATE
   CmmMachOp (mo_wordOr dflags) [
-      CmmMachOp (mo_wordShl dflags) [loadEra dflags, mkIntExpr dflags (lDV_SHIFT dflags)],
+      CmmMachOp (mo_wordShl dflags) [loadEra dflags, mkIntExpr dflags (toInteger $ lDV_SHIFT dflags)],
       CmmLit (mkWordCLit dflags (iLDV_STATE_CREATE dflags))
   ]
 

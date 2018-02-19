@@ -159,12 +159,10 @@ typeForeignHint = primRepForeignHint . typePrimRep1
 --
 ---------------------------------------------------
 
--- XXX: should really be Integer, since Int doesn't necessarily cover
--- the full range of target Ints.
-mkIntCLit :: DynFlags -> Int -> CmmLit
-mkIntCLit dflags i = CmmInt (toInteger i) (wordWidth dflags)
+mkIntCLit :: DynFlags -> Integer -> CmmLit
+mkIntCLit dflags i = CmmInt i (wordWidth dflags)
 
-mkIntExpr :: DynFlags -> Int -> CmmExpr
+mkIntExpr :: DynFlags -> Integer -> CmmExpr
 mkIntExpr dflags i = CmmLit $! mkIntCLit dflags i
 
 zeroCLit :: DynFlags -> CmmLit
@@ -287,7 +285,7 @@ cmmIndexExpr dflags width base idx =
   cmmOffsetExpr dflags base byte_off
   where
     idx_w = cmmExprWidth dflags idx
-    byte_off = CmmMachOp (MO_Shl idx_w) [idx, mkIntExpr dflags (widthInLog width)]
+    byte_off = CmmMachOp (MO_Shl idx_w) [idx, mkIntExpr dflags (toInteger $ widthInLog width)]
 
 cmmLoadIndex :: DynFlags -> CmmType -> CmmExpr -> Int -> CmmExpr
 cmmLoadIndex dflags ty expr ix = CmmLoad (cmmIndex dflags (typeWidth ty) expr ix) ty
@@ -397,8 +395,8 @@ hasNoGlobalRegs _ = False
 
 -- Tag bits mask
 cmmTagMask, cmmPointerMask :: DynFlags -> CmmExpr
-cmmTagMask dflags = mkIntExpr dflags (tAG_MASK dflags)
-cmmPointerMask dflags = mkIntExpr dflags (complement (tAG_MASK dflags))
+cmmTagMask dflags = mkIntExpr dflags (toInteger $ tAG_MASK dflags)
+cmmPointerMask dflags = mkIntExpr dflags (toInteger $ complement (tAG_MASK dflags))
 
 -- Used to untag a possibly tagged pointer
 -- A static label need not be untagged

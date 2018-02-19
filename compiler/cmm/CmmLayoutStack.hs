@@ -922,7 +922,7 @@ areaToSp dflags sp_old _sp_hwm area_off (CmmStackSlot area n)
     -- Replace (CmmStackSlot area n) with an offset from Sp
 
 areaToSp dflags _ sp_hwm _ (CmmLit CmmHighStackMark)
-  = mkIntExpr dflags sp_hwm
+  = mkIntExpr dflags (toInteger sp_hwm)
     -- Replace CmmHighStackMark with the number of bytes of stack used,
     -- the sp_hwm.   See Note [Stack usage] in StgCmmHeap
 
@@ -1197,7 +1197,7 @@ callSuspendThread dflags id intrbl =
   CmmUnsafeForeignCall
        (ForeignTarget (foreignLbl (fsLit "suspendThread"))
         (ForeignConvention CCallConv [AddrHint, NoHint] [AddrHint] CmmMayReturn))
-       [id] [baseExpr, mkIntExpr dflags (fromEnum intrbl)]
+       [id] [baseExpr, mkIntExpr dflags (toInteger $ fromEnum intrbl)]
 
 callResumeThread :: LocalReg -> LocalReg -> CmmNode O O
 callResumeThread new_base id =

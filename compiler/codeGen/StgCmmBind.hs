@@ -501,7 +501,7 @@ closureCodeBody top_lvl bndr cl_info cc args arity body fv_details
                 ; enterCostCentreFun cc
                     (CmmMachOp (mo_wordSub dflags)
                          [ CmmReg (CmmLocal node) -- See [NodeReg clobbered with loopification]
-                         , mkIntExpr dflags (funTag dflags cl_info) ])
+                         , mkIntExpr dflags (toInteger $ funTag dflags cl_info) ])
                 ; fv_bindings <- mapM bind_fv fv_details
                 -- Load free vars out of closure *after*
                 -- heap check, to reduce live vars over check

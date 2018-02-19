@@ -526,7 +526,7 @@ heapCheck checkStack checkYield do_gc code
                      "See http://hackage.haskell.org/trac/ghc/ticket/4505 for details.",
                      "Suggestion: read data from a file instead of having large static data",
                      "structures in code."]
-                 | hpHw > 0  = Just (mkIntExpr dflags (hpHw * (wORD_SIZE dflags)))
+                 | hpHw > 0  = Just (mkIntExpr dflags (toInteger $ hpHw * (wORD_SIZE dflags)))
                  | otherwise = Nothing
                  where mBLOCK_SIZE = bLOCKS_PER_MBLOCK dflags * bLOCK_SIZE_W dflags
               stk_hwm | checkStack = Just (CmmLit CmmHighStackMark)

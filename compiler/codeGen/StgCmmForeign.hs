@@ -456,7 +456,7 @@ openNursery df tso = do
                (CmmMachOp (mo_wordMul df) [
                  CmmMachOp (MO_SS_Conv W32 (wordWidth df))
                    [CmmLoad (nursery_bdescr_blocks df cnreg) b32],
-                 mkIntExpr df (bLOCK_SIZE df)
+                 mkIntExpr df (toInteger $ bLOCK_SIZE df)
                 ])
                (-1)
              )

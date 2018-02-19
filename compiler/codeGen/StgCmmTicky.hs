@@ -243,14 +243,15 @@ emitTickyCounter cloType name args
         -- krc: note that all the fields are I32 now; some were I16
         -- before, but the code generator wasn't handling that
         -- properly and it led to chaos, panic and disorder.
-            [ mkIntCLit dflags 0,               -- registered?
-              mkIntCLit dflags (length args),   -- Arity
-              mkIntCLit dflags 0,               -- Heap allocated for this thing
+            [ mkIntCLit dflags 0,                          -- registered?
+              mkIntCLit dflags (toInteger $ length args),  -- Arity
+              mkIntCLit dflags 0,                          -- Heap allocated
+                                                           -- for this thing
               fun_descr_lit,
               arg_descr_lit,
               zeroCLit dflags,          -- Entries into this thing
               zeroCLit dflags,          -- Heap allocated by this thing
-              zeroCLit dflags                   -- Link to next StgEntCounter
+              zeroCLit dflags           -- Link to next StgEntCounter
             ]
         }
 

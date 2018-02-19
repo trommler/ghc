@@ -169,7 +169,7 @@ shouldInlinePrimOp dflags NewArrayOp [(CmmLit (CmmInt n w)), init]
       doNewArrayOp res (arrPtrsRep dflags (fromInteger n)) mkMAP_DIRTY_infoLabel
       [ (mkIntExpr dflags (fromInteger n),
          fixedHdrSize dflags + oFFSET_StgMutArrPtrs_ptrs dflags)
-      , (mkIntExpr dflags (nonHdrSizeW (arrPtrsRep dflags (fromInteger n))),
+      , (mkIntExpr dflags (toInteger $ nonHdrSizeW (arrPtrsRep dflags (fromInteger n))),
          fixedHdrSize dflags + oFFSET_StgMutArrPtrs_size dflags)
       ]
       (fromInteger n) init
@@ -1034,7 +1034,7 @@ genericIntAddCOp [res_r, res_c] [aa, bb]
                     CmmMachOp (mo_wordNot dflags) [CmmMachOp (mo_wordXor dflags) [aa,bb]],
                     CmmMachOp (mo_wordXor dflags) [aa, CmmReg (CmmLocal res_r)]
                 ],
-                mkIntExpr dflags (wORD_SIZE_IN_BITS dflags - 1)
+                mkIntExpr dflags (toInteger $ wORD_SIZE_IN_BITS dflags - 1)
           ]
         ]
 genericIntAddCOp _ _ = panic "genericIntAddCOp"
@@ -1059,7 +1059,7 @@ genericIntSubCOp [res_r, res_c] [aa, bb]
                     CmmMachOp (mo_wordXor dflags) [aa,bb],
                     CmmMachOp (mo_wordXor dflags) [aa, CmmReg (CmmLocal res_r)]
                 ],
-                mkIntExpr dflags (wORD_SIZE_IN_BITS dflags - 1)
+                mkIntExpr dflags (toInteger $ wORD_SIZE_IN_BITS dflags - 1)
           ]
         ]
 genericIntSubCOp _ _ = panic "genericIntSubCOp"
@@ -1433,7 +1433,7 @@ doWritePtrArrayOp addr idx val
           (cmmOffsetExprW dflags (cmmOffsetB dflags addr (arrPtrsHdrSize dflags))
                          (loadArrPtrsSize dflags addr))
           (CmmMachOp (mo_wordUShr dflags) [idx,
-                                           mkIntExpr dflags (mUT_ARR_PTRS_CARD_BITS dflags)])
+                                           mkIntExpr dflags (toInteger $ mUT_ARR_PTRS_CARD_BITS dflags)])
          ) (CmmLit (CmmInt 1 W8))
 
 loadArrPtrsSize :: DynFlags -> CmmExpr -> CmmExpr
@@ -1727,14 +1727,14 @@ doNewByteArrayOp res_r n = do
     let info_ptr = mkLblExpr mkArrWords_infoLabel
         rep = arrWordsRep dflags n
 
-    tickyAllocPrim (mkIntExpr dflags (arrWordsHdrSize dflags))
-        (mkIntExpr dflags (nonHdrSize dflags rep))
+    tickyAllocPrim (mkIntExpr dflags (toInteger $ arrWordsHdrSize dflags))
+        (mkIntExpr dflags (toInteger $ nonHdrSize dflags rep))
         (zeroExpr dflags)
 
     let hdr_size = fixedHdrSize dflags
 
     base <- allocHeapClosure rep info_ptr cccsExpr
-                     [ (mkIntExpr dflags n,
+                     [ (mkIntExpr dflags (toInteger n),
                         hdr_size + oFFSET_StgArrBytes_bytes dflags)
                      ]
 
@@ -1897,8 +1897,8 @@ doNewArrayOp res_r rep info payload n init = do
 
     let info_ptr = mkLblExpr info
 
-    tickyAllocPrim (mkIntExpr dflags (hdrSize dflags rep))
-        (mkIntExpr dflags (nonHdrSize dflags rep))
+    tickyAllocPrim (mkIntExpr dflags (toInteger $ hdrSize dflags rep))
+        (mkIntExpr dflags (toInteger $ nonHdrSize dflags rep))
         (zeroExpr dflags)
 
     base <- allocHeapClosure rep info_ptr cccsExpr payload
@@ -1951,7 +1951,7 @@ doCopyArrayOp = emitCopyArray copy
     -- they're of different types)
     copy _src _dst dst_p src_p bytes =
         do dflags <- getDynFlags
-           emitMemcpyCall dst_p src_p (mkIntExpr dflags bytes)
+           emitMemcpyCall dst_p src_p (mkIntExpr dflags (toInteger bytes))
                (wORD_SIZE dflags)
 
 
@@ -1969,9 +1969,9 @@ doCopyMutableArrayOp = emitCopyArray copy
     copy src dst dst_p src_p bytes = do
         dflags <- getDynFlags
         [moveCall, cpyCall] <- forkAlts [
-            getCode $ emitMemmoveCall dst_p src_p (mkIntExpr dflags bytes)
+            getCode $ emitMemmoveCall dst_p src_p (mkIntExpr dflags (toInteger bytes))
             (wORD_SIZE dflags),
-            getCode $ emitMemcpyCall  dst_p src_p (mkIntExpr dflags bytes)
+            getCode $ emitMemcpyCall  dst_p src_p (mkIntExpr dflags (toInteger bytes))
             (wORD_SIZE dflags)
             ]
         emit =<< mkCmmIfThenElse (cmmEqWord dflags src dst) moveCall cpyCall
@@ -2018,7 +2018,7 @@ doCopySmallArrayOp = emitCopySmallArray copy
     -- they're of different types)
     copy _src _dst dst_p src_p bytes =
         do dflags <- getDynFlags
-           emitMemcpyCall dst_p src_p (mkIntExpr dflags bytes)
+           emitMemcpyCall dst_p src_p (mkIntExpr dflags (toInteger bytes))
                (wORD_SIZE dflags)
 
 
@@ -2032,9 +2032,9 @@ doCopySmallMutableArrayOp = emitCopySmallArray copy
     copy src dst dst_p src_p bytes = do
         dflags <- getDynFlags
         [moveCall, cpyCall] <- forkAlts
-            [ getCode $ emitMemmoveCall dst_p src_p (mkIntExpr dflags bytes)
+            [ getCode $ emitMemmoveCall dst_p src_p (mkIntExpr dflags (toInteger bytes))
               (wORD_SIZE dflags)
-            , getCode $ emitMemcpyCall  dst_p src_p (mkIntExpr dflags bytes)
+            , getCode $ emitMemcpyCall  dst_p src_p (mkIntExpr dflags (toInteger bytes))
               (wORD_SIZE dflags)
             ]
         emit =<< mkCmmIfThenElse (cmmEqWord dflags src dst) moveCall cpyCall
@@ -2077,16 +2077,16 @@ emitCloneArray info_p res_r src src_off n = do
     let info_ptr = mkLblExpr info_p
         rep = arrPtrsRep dflags n
 
-    tickyAllocPrim (mkIntExpr dflags (arrPtrsHdrSize dflags))
-        (mkIntExpr dflags (nonHdrSize dflags rep))
+    tickyAllocPrim (mkIntExpr dflags (toInteger $ arrPtrsHdrSize dflags))
+        (mkIntExpr dflags (toInteger $ nonHdrSize dflags rep))
         (zeroExpr dflags)
 
     let hdr_size = fixedHdrSize dflags
 
     base <- allocHeapClosure rep info_ptr cccsExpr
-                     [ (mkIntExpr dflags n,
+                     [ (mkIntExpr dflags (toInteger n),
                         hdr_size + oFFSET_StgMutArrPtrs_ptrs dflags)
-                     , (mkIntExpr dflags (nonHdrSizeW rep),
+                     , (mkIntExpr dflags (toInteger $ nonHdrSizeW rep),
                         hdr_size + oFFSET_StgMutArrPtrs_size dflags)
                      ]
 
@@ -2097,9 +2097,9 @@ emitCloneArray info_p res_r src src_off n = do
              (arrPtrsHdrSize dflags)
     src_p <- assignTempE $ cmmOffsetExprW dflags src
              (cmmAddWord dflags
-              (mkIntExpr dflags (arrPtrsHdrSizeW dflags)) src_off)
+              (mkIntExpr dflags (toInteger $ arrPtrsHdrSizeW dflags)) src_off)
 
-    emitMemcpyCall dst_p src_p (mkIntExpr dflags (wordsToBytes dflags n))
+    emitMemcpyCall dst_p src_p (mkIntExpr dflags (toInteger $ wordsToBytes dflags n))
         (wORD_SIZE dflags)
 
     emit $ mkAssign (CmmLocal res_r) (CmmReg arr)
@@ -2116,14 +2116,14 @@ emitCloneSmallArray info_p res_r src src_off n = do
     let info_ptr = mkLblExpr info_p
         rep = smallArrPtrsRep n
 
-    tickyAllocPrim (mkIntExpr dflags (smallArrPtrsHdrSize dflags))
-        (mkIntExpr dflags (nonHdrSize dflags rep))
+    tickyAllocPrim (mkIntExpr dflags (toInteger $ smallArrPtrsHdrSize dflags))
+        (mkIntExpr dflags (toInteger $ nonHdrSize dflags rep))
         (zeroExpr dflags)
 
     let hdr_size = fixedHdrSize dflags
 
     base <- allocHeapClosure rep info_ptr cccsExpr
-                     [ (mkIntExpr dflags n,
+                     [ (mkIntExpr dflags (toInteger n),
                         hdr_size + oFFSET_StgSmallMutArrPtrs_ptrs dflags)
                      ]
 
@@ -2134,9 +2134,9 @@ emitCloneSmallArray info_p res_r src src_off n = do
              (smallArrPtrsHdrSize dflags)
     src_p <- assignTempE $ cmmOffsetExprW dflags src
              (cmmAddWord dflags
-              (mkIntExpr dflags (smallArrPtrsHdrSizeW dflags)) src_off)
+              (mkIntExpr dflags (toInteger $ smallArrPtrsHdrSizeW dflags)) src_off)
 
-    emitMemcpyCall dst_p src_p (mkIntExpr dflags (wordsToBytes dflags n))
+    emitMemcpyCall dst_p src_p (mkIntExpr dflags (toInteger $ wordsToBytes dflags n))
         (wORD_SIZE dflags)
 
     emit $ mkAssign (CmmLocal res_r) (CmmReg arr)
@@ -2151,7 +2151,7 @@ emitSetCards dst_start dst_cards_start n = do
     start_card <- assignTempE $ cardCmm dflags dst_start
     let end_card = cardCmm dflags
                    (cmmSubWord dflags
-                    (cmmAddWord dflags dst_start (mkIntExpr dflags n))
+                    (cmmAddWord dflags dst_start (mkIntExpr dflags (toInteger n)))
                     (mkIntExpr dflags 1))
     emitMemsetCall (cmmAddWord dflags dst_cards_start start_card)
         (mkIntExpr dflags 1)
@@ -2161,7 +2161,7 @@ emitSetCards dst_start dst_cards_start n = do
 -- Convert an element index to a card index
 cardCmm :: DynFlags -> CmmExpr -> CmmExpr
 cardCmm dflags i =
-    cmmUShrWord dflags i (mkIntExpr dflags (mUT_ARR_PTRS_CARD_BITS dflags))
+    cmmUShrWord dflags i (mkIntExpr dflags (toInteger $ mUT_ARR_PTRS_CARD_BITS dflags))
 
 ------------------------------------------------------------------------------
 -- SmallArray PrimOp implementations
