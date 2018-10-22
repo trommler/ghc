@@ -258,6 +258,7 @@ data Instr
                                     -- extr[w|d]i dst, dst, 1, [1|33]
     | MULHU   Format Reg Reg Reg
     | DIV     Format Bool Reg Reg Reg
+    | DIVEU   Format Reg Reg Reg
     | AND     Reg Reg RI            -- dst, src1, src2
     | ANDC    Reg Reg Reg           -- AND with complement, dst = src1 & ~ src2
     | NAND    Reg Reg Reg           -- dst, src1, src2
@@ -355,6 +356,7 @@ ppc_regUsageOfInstr platform instr
     MULHU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
     DIV     _ _ reg1 reg2 reg3
                              -> usage ([reg2,reg3], [reg1])
+    DIVEU   _ reg1 reg2 reg3 -> usage ([reg2,reg3], [reg1])
 
     AND     reg1 reg2 ri    -> usage (reg2 : regRI ri, [reg1])
     ANDC    reg1 reg2 reg3  -> usage ([reg2,reg3], [reg1])
@@ -451,6 +453,8 @@ ppc_patchRegsOfInstr instr env
                             -> MULHU fmt (env reg1) (env reg2) (env reg3)
     DIV     fmt sgn reg1 reg2 reg3
                             -> DIV fmt sgn (env reg1) (env reg2) (env reg3)
+    DIVEU   fmt reg1 reg2 reg3
+                            -> DIVEU fmt (env reg1) (env reg2) (env reg3)
 
     AND     reg1 reg2 ri    -> AND (env reg1) (env reg2) (fixRI ri)
     ANDC    reg1 reg2 reg3  -> ANDC (env reg1) (env reg2) (env reg3)

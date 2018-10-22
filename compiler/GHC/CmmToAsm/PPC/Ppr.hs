@@ -779,6 +779,21 @@ pprInstr platform instr = case instr of
    DIV fmt sgn reg1 reg2 reg3
       -> pprDiv fmt sgn reg1 reg2 reg3
 
+   DIVEU fmt reg1 reg2 reg3
+      -> hcat [
+            text "\tdiv",
+            case fmt of
+              II32 -> char 'w'
+              II64 -> char 'd'
+              _    -> panic "PPC: illegal format",
+            text "eu\t",
+            pprReg reg1,
+            text ", ",
+            pprReg reg2,
+            text ", ",
+            pprReg reg3
+            ]
+
         -- for some reason, "andi" doesn't exist.
         -- we'll use "andi." instead.
    AND reg1 reg2 (RIImm imm)
