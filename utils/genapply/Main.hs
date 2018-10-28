@@ -1,7 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# OPTIONS_GHC -fno-warn-unused-matches #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
@@ -117,7 +114,13 @@ assignRegs
             Int)                -- Sp of left-over args
 assignRegs regstatus sp args = assign sp args (availableRegs regstatus) []
 
-assign sp [] regs doc = (doc, [], sp)
+assign
+        :: Int
+        -> [ArgRep]
+        -> ([a], [a], [a], [a])
+        -> [(a, Int)]
+        -> ([(a, Int)], [ArgRep], Int)
+assign sp [] _ doc = (doc, [], sp)
 assign sp (V : args) regs doc = assign sp args regs doc
 assign sp (arg : args) regs doc
  = case findAvailableReg arg regs of
@@ -125,6 +128,8 @@ assign sp (arg : args) regs doc
                             ((reg, sp) : doc)
     Nothing -> (doc, (arg:args), sp)
 
+findAvailableReg :: ArgRep
+                    -> ([a], [a], [a], [a]) -> Maybe (a, ([a], [a], [a], [a]))
 findAvailableReg N (vreg:vregs, fregs, dregs, lregs) =
   Just (vreg, (vregs,fregs,dregs,lregs))
 findAvailableReg P (vreg:vregs, fregs, dregs, lregs) =
@@ -137,12 +142,15 @@ findAvailableReg L (vregs, fregs, dregs, lreg:lregs) =
   Just (lreg, (vregs,fregs,dregs,lregs))
 findAvailableReg _ _ = Nothing
 
+assign_reg_to_stk :: [Char] -> Int -> Doc
 assign_reg_to_stk reg sp
    = loadSpWordOff (regRep reg) sp <> text " = " <> text reg <> semi
 
+assign_stk_to_reg :: String -> Int -> Doc
 assign_stk_to_reg reg sp
    = text reg <> text " = " <> loadSpWordOff (regRep reg) sp <> semi
 
+regRep :: [Char] -> [Char]
 regRep ('F':_) = "F_"
 regRep ('D':_) = "D_"
 regRep ('L':_) = "L_"
@@ -210,21 +218,27 @@ mkBitmap args = foldr f 0 args
 -- the args anyway (this might not be true of register-rich machines
 -- when we start passing args to stg_ap_* in regs).
 
+mkApplyName :: [ArgRep] -> Doc
 mkApplyName args
   = text "stg_ap_" <> text (concatMap showArg args)
 
+mkApplyRetName :: [ArgRep] -> Doc
 mkApplyRetName args
   = mkApplyName args <> text "_ret"
 
+mkApplyFastName :: [ArgRep] -> Doc
 mkApplyFastName args
   = mkApplyName args <> text "_fast"
 
+mkApplyInfoName :: [ArgRep] -> Doc
 mkApplyInfoName args
   = mkApplyName args <> text "_info"
 
+mb_tag_node :: Int -> Doc
 mb_tag_node arity | Just tag <- tagForArity arity = mkTagStmt tag <> semi
                   | otherwise = empty
 
+mkTagStmt :: Int -> Doc
 mkTagStmt tag = text ("R1 = R1 + "++ show tag)
 
 type StackUsage = (Int, Int)  -- PROFILING, normal
@@ -241,7 +255,7 @@ stackCheck
    -> Doc
 stackCheck regstatus args args_in_regs fun_info_label (prof_sp, norm_sp) =
   let
-     (reg_locs, leftovers, sp_offset) = assignRegs regstatus 1 args
+     (reg_locs, _, sp_offset) = assignRegs regstatus 1 args
 
      cmp_sp n
        | n > 0 =
@@ -280,7 +294,7 @@ genMkPAP :: RegStatus -- Register status
          -> Doc       -- info label
          -> Bool      -- Is a function
          -> (Doc, StackUsage)
-genMkPAP regstatus macro jump live ticker disamb
+genMkPAP regstatus macro jump live _ disamb
         no_load_regs    -- don't load argument regs before jumping
         args_in_regs    -- arguments are already in regs
         is_pap args all_args_size fun_info_label
@@ -383,7 +397,7 @@ genMkPAP regstatus macro jump live ticker disamb
               adj_reg_locs = [ (reg, off - adj + 1) |
                                (reg,off) <- extra_reg_locs ]
               adj = case extra_reg_locs of
-                      (reg, fst_off):_ -> fst_off
+                      (_, fst_off):_ -> fst_off
               size = snd (last adj_reg_locs) + 1
 
               doc =
@@ -463,7 +477,7 @@ genMkPAP regstatus macro jump live ticker disamb
     (larger_arity_doc, larger_arity_stack) = (doc, stack)
      where
        -- offsets in case we need to save regs:
-       (reg_locs, leftovers, sp_offset)
+       (reg_locs, _, sp_offset)
            = assignRegs regstatus stk_args_slow_offset args
            -- BUILD_PAP assumes args start at offset 1
 
@@ -520,6 +534,7 @@ genMkPAP regstatus macro jump live ticker disamb
 -- Examine tag bits of function pointer and enter it
 -- directly if needed.
 -- TODO: remove the redundant case in the original code.
+enterFastPath :: RegStatus -> Bool -> Bool -> [ArgRep] -> Doc
 enterFastPath regstatus no_load_regs args_in_regs args
     | Just tag <- tagForArity (length args)
     = enterFastPathHelper tag regstatus no_load_regs args_in_regs args
@@ -527,7 +542,9 @@ enterFastPath _ _ _ _ = empty
 
 -- Copied from Constants.hs & CgUtils.hs, i'd rather have this imported:
 -- (arity,tag)
+tAG_BITS :: Int
 tAG_BITS = (TAG_BITS :: Int)
+tAG_BITS_MAX :: Int
 tAG_BITS_MAX = ((1 `shiftL` tAG_BITS) :: Int)
 
 tagForArity :: Int -> Maybe Int
@@ -564,6 +581,7 @@ enterFastPathHelper tag regstatus no_load_regs args_in_regs args =
         | no_load_regs || args_in_regs = (empty, stk_args_offset)
         | otherwise    = loadRegArgs regstatus stk_args_offset args
 
+tickForArity :: Int -> Doc
 tickForArity arity
     | True
     = empty
@@ -592,8 +610,10 @@ formalParam V _ = empty
 formalParam arg n =
     formalParamType arg <> space <>
     text "arg" <> int n <> text ", "
+formalParamType :: ArgRep -> Doc
 formalParamType arg = argRep arg
 
+argRep :: ArgRep -> Doc
 argRep F   = text "F_"
 argRep D   = text "D_"
 argRep L   = text "L_"
@@ -814,7 +834,7 @@ genApplyFast regstatus args =
             False{-reg apply-} True{-args in regs-} False{-not a PAP-}
             args all_args_size fun_info_label {- tag stmt -}True
 
-    (reg_locs, leftovers, sp_offset) = assignRegs regstatus 1 args
+    (reg_locs, _, sp_offset) = assignRegs regstatus 1 args
 
     stack_usage = maxStack [fun_stack, (sp_offset,sp_offset)]
    in
@@ -936,6 +956,7 @@ genStackSave regstatus args =
 -- -----------------------------------------------------------------------------
 -- The prologue...
 
+main :: IO ()
 main = do
   args <- getArgs
   regstatus <- case args of
@@ -969,6 +990,7 @@ main = do
   putStr (render the_code)
 
 -- These have been shown to cover about 99% of cases in practice...
+applyTypes :: [[ArgRep]]
 applyTypes = [
         [V],
         [F],
@@ -997,6 +1019,7 @@ applyTypes = [
 --  NOTE: other places to change if you change stackApplyTypes:
 --       - includes/rts/storage/FunTypes.h
 --       - compiler/codeGen/StgCmmLayout.hs: stdPattern
+stackApplyTypes :: [[ArgRep]]
 stackApplyTypes = [
         [],
         [N],
@@ -1026,11 +1049,13 @@ stackApplyTypes = [
         [P,P,P,P,P,P,P,P]
    ]
 
+genStackFns :: RegStatus -> [ArgRep] -> Doc
 genStackFns regstatus args
   =  genStackApply regstatus args
   $$ genStackSave regstatus args
 
 
+genStackApplyArray :: [[ArgRep]] -> Doc
 genStackApplyArray types =
   vcat [
     text "section \"relrodata\" {",
@@ -1042,6 +1067,7 @@ genStackApplyArray types =
  where
   arr_ent ty = text "W_" <+> mkStackApplyEntryLabel ty <> semi
 
+genStackSaveArray :: [[ArgRep]] -> Doc
 genStackSaveArray types =
   vcat [
     text "section \"relrodata\" {",
