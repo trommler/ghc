@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 -- The above warning suppression flags are a temporary kludge.
@@ -599,7 +598,6 @@ tickForArity arity
             text "  }",
             text "}"
           ]
-tickForArity _ = text "W_[TOTAL_CALLS] = W_[TOTAL_CALLS] + 1;"
 
 -- -----------------------------------------------------------------------------
 -- generate an apply function
