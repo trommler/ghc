@@ -518,40 +518,12 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
       MO_SF_Conv from to -> coerceInt2FP from to x
 
       MO_SS_Conv from to
-        | from == to    -> conversionNop (intFormat to) x
-
-        -- narrowing is a nop: we treat the high bits as undefined
-      MO_SS_Conv W64 to
-        | arch32    -> panic "PPC.CodeGen.getRegister no 64 bit int register"
-        | otherwise -> conversionNop (intFormat to) x
-      MO_SS_Conv W32 to
-        | arch32    -> conversionNop (intFormat to) x
-        | otherwise -> case to of
-            W64 -> triv_ucode_int to (EXTS II32)
-            W16 -> conversionNop II16 x
-            W8  -> conversionNop II8 x
-            _   -> panic "PPC.CodeGen.getRegister: no match"
-      MO_SS_Conv W16 W8 -> conversionNop II8 x
-      MO_SS_Conv W8  to -> triv_ucode_int to (EXTS II8)
-      MO_SS_Conv W16 to -> triv_ucode_int to (EXTS II16)
+        | from >= to -> conversionNop (intFormat to) x
+        | otherwise  -> triv_ucode_int to (EXTS (intFormat from))
 
       MO_UU_Conv from to
-        | from == to -> conversionNop (intFormat to) x
-        -- narrowing is a nop: we treat the high bits as undefined
-      MO_UU_Conv W64 to
-        | arch32    -> panic "PPC.CodeGen.getRegister no 64 bit target"
-        | otherwise -> conversionNop (intFormat to) x
-      MO_UU_Conv W32 to
-        | arch32    -> conversionNop (intFormat to) x
-        | otherwise ->
-          case to of
-           W64 -> trivialCode to False AND x (CmmLit (CmmInt 4294967295 W64))
-           W16 -> conversionNop II16 x
-           W8  -> conversionNop II8 x
-           _   -> panic "PPC.CodeGen.getRegister: no match"
-      MO_UU_Conv W16 W8 -> conversionNop II8 x
-      MO_UU_Conv W8 to  -> trivialCode to False AND x (CmmLit (CmmInt 255 W32))
-      MO_UU_Conv W16 to -> trivialCode to False AND x (CmmLit (CmmInt 65535 W32))
+        | from >= to -> conversionNop (intFormat to) x
+        | otherwise  -> clearLeft from to
 
       MO_XX_Conv from to -> conversionNop (intFormat to) x
 
@@ -564,6 +536,16 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
         conversionNop new_format expr
             = do e_code <- getRegister' dflags expr
                  return (swizzleRegisterRep e_code new_format)
+
+        clearLeft from to
+            = do (src1, code1) <- getSomeReg x
+                 let arch_fmt  = intFormat (wordWidth dflags)
+                     arch_bits = widthInBits (wordWidth dflags)
+                     size      = widthInBits from
+                     code dst  = code1 `snocOL`
+                                 CLRLI arch_fmt dst src1 (arch_bits - size)
+                 return (Any (intFormat to) code)
+
         arch32 = target32Bit $ targetPlatform dflags
 
 getRegister' dflags (CmmMachOp mop [x, y]) -- dyadic PrimOps
