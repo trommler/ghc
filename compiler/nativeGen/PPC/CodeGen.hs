@@ -158,15 +158,15 @@ stmtToInstrs stmt = do
       | isFloatType ty -> assignReg_FltCode format reg src
       | target32Bit (targetPlatform dflags) &&
         isWord64 ty    -> assignReg_I64Code      reg src
-      | otherwise        -> assignReg_IntCode format reg src
+      | otherwise      -> assignReg_IntCode format reg src
         where ty = cmmRegType dflags reg
               format = cmmTypeFormat ty
 
     CmmStore addr src
       | isFloatType ty -> assignMem_FltCode format addr src
       | target32Bit (targetPlatform dflags) &&
-        isWord64 ty      -> assignMem_I64Code      addr src
-      | otherwise        -> assignMem_IntCode format addr src
+        isWord64 ty    -> assignMem_I64Code      addr src
+      | otherwise      -> assignMem_IntCode format addr src
         where ty = cmmExprType dflags src
               format = cmmTypeFormat ty
 
