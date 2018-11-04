@@ -703,12 +703,6 @@ getRegister' _ other = pprPanic "getRegister(ppc)" (pprExpr other)
     -- extend?Rep: wrap integer expression of type rep
     -- in a conversion to II32 or II64 resp.
 extendSExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
-extendSExpr dflags W32 x
- | target32Bit (targetPlatform dflags) = x
-
-extendSExpr dflags W64 x
- | not (target32Bit (targetPlatform dflags)) = x
-
 extendSExpr dflags rep x =
     let size = if target32Bit $ targetPlatform dflags
                then W32
@@ -716,10 +710,6 @@ extendSExpr dflags rep x =
     in CmmMachOp (MO_SS_Conv rep size) [x]
 
 extendUExpr :: DynFlags -> Width -> CmmExpr -> CmmExpr
-extendUExpr dflags W32 x
- | target32Bit (targetPlatform dflags) = x
-extendUExpr dflags W64 x
- | not (target32Bit (targetPlatform dflags)) = x
 extendUExpr dflags rep x =
     let size = if target32Bit $ targetPlatform dflags
                then W32
