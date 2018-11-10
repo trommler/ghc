@@ -1300,8 +1300,8 @@ genCCall target dest_regs argsAndHints
         where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
                 = do let reg_q = getRegisterReg platform (CmmLocal res_q)
                          reg_r = getRegisterReg platform (CmmLocal res_r)
-                     remainderCode' width signed reg_r arg_x arg_y
-                       <*> pure reg_q
+                     remainderCode' width signed reg_q arg_x arg_y
+                       <*> pure reg_r
 
               divOp1 _ _ _ _ _
                 = panic "genCCall: Wrong number of arguments for divOp1"
