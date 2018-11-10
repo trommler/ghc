@@ -880,8 +880,13 @@ callishPrimOpSupported dflags op
                      | otherwise              ->
                          Right (genericIntQuotRemOp (wordWidth dflags))
 
+<<<<<<< HEAD
       Int8QuotRemOp  | (ncg && x86ish)
                                      -> Left (MO_S_QuotRem W8)
+=======
+      Int8QuotRemOp  | (ncg && (x86ish || ppc))
+                        || llvm      -> Left (MO_S_QuotRem W8)
+>>>>>>> PPC NCG: Generate MO_?_QuotRem for subword sizes
                      | otherwise     -> Right (genericIntQuotRemOp W8)
 
       Int16QuotRemOp | (ncg && x86ish)
@@ -894,11 +899,11 @@ callishPrimOpSupported dflags op
                      | otherwise      ->
                          Right (genericWordQuotRemOp (wordWidth dflags))
 
-      WordQuotRem2Op | (ncg && (x86ish
-                                || ppc))
+      WordQuotRem2Op | (ncg && (x86ish || ppc))
                           || llvm     -> Left (MO_U_QuotRem2 (wordWidth dflags))
                      | otherwise      -> Right (genericWordQuotRem2Op dflags)
 
+<<<<<<< HEAD
       Word8QuotRemOp | (ncg && x86ish)
                                       -> Left (MO_U_QuotRem W8)
                      | otherwise      -> Right (genericWordQuotRemOp W8)
@@ -906,42 +911,39 @@ callishPrimOpSupported dflags op
       Word16QuotRemOp| (ncg && x86ish)
                         || llvm      -> Left (MO_U_QuotRem W16)
                      | otherwise     -> Right (genericWordQuotRemOp W16)
+=======
+      Word8QuotRemOp | (ncg && (x86ish || ppc))
+                        || llvm      -> Left (MO_U_QuotRem W8)
+                     | otherwise     -> Right (genericWordQuotRemOp W8)
+>>>>>>> PPC NCG: Generate MO_?_QuotRem for subword sizes
 
-      WordAdd2Op     | (ncg && (x86ish
-                                || ppc))
+      WordAdd2Op     | (ncg && (x86ish || ppc))
                          || llvm      -> Left (MO_Add2       (wordWidth dflags))
                      | otherwise      -> Right genericWordAdd2Op
 
-      WordAddCOp     | (ncg && (x86ish
-                                || ppc))
+      WordAddCOp     | (ncg && (x86ish || ppc))
                          || llvm      -> Left (MO_AddWordC   (wordWidth dflags))
                      | otherwise      -> Right genericWordAddCOp
 
-      WordSubCOp     | (ncg && (x86ish
-                                || ppc))
+      WordSubCOp     | (ncg && (x86ish || ppc))
                          || llvm      -> Left (MO_SubWordC   (wordWidth dflags))
                      | otherwise      -> Right genericWordSubCOp
 
-      IntAddCOp      | (ncg && (x86ish
-                                || ppc))
+      IntAddCOp      | (ncg && (x86ish || ppc))
                          || llvm      -> Left (MO_AddIntC    (wordWidth dflags))
                      | otherwise      -> Right genericIntAddCOp
 
-      IntSubCOp      | (ncg && (x86ish
-                                || ppc))
+      IntSubCOp      | (ncg && (x86ish || ppc))
                          || llvm      -> Left (MO_SubIntC    (wordWidth dflags))
                      | otherwise      -> Right genericIntSubCOp
 
-      WordMul2Op     | ncg && (x86ish
-                               || ppc)
+      WordMul2Op     | ncg && (x86ish || ppc)
                          || llvm      -> Left (MO_U_Mul2     (wordWidth dflags))
                      | otherwise      -> Right genericWordMul2Op
-      FloatFabsOp    | (ncg && x86ish
-                               || ppc)
+      FloatFabsOp    | (ncg && x86ish || ppc)
                          || llvm      -> Left MO_F32_Fabs
                      | otherwise      -> Right $ genericFabsOp W32
-      DoubleFabsOp   | (ncg && x86ish
-                               || ppc)
+      DoubleFabsOp   | (ncg && x86ish || ppc)
                          || llvm      -> Left MO_F64_Fabs
                      | otherwise      -> Right $ genericFabsOp W64
 
