@@ -168,7 +168,7 @@ aliasToLocalOrIntoThisModule _ lab
  , isInternalName nam
  = True
 
-aliasToLocalOrIntoThisModule _ _ = True
+aliasToLocalOrIntoThisModule _ _ = False
 
 
 pprDatas :: (Alignment, CmmStatics) -> SDoc
@@ -181,7 +181,7 @@ pprDatas (_, Statics alias [CmmStaticLit lit@(CmmLabel lbl), CmmStaticLit ind, _
   , Just ind' <- labelInd ind
   , aliasToLocalOrIntoThisModule alias ind'
   , let equate = pprGloblDecl alias
-                 $$ pprTypeAndSizeDecl alias -- NOT NEEDED!
+                 -- $$ pprTypeAndSizeDecl alias -- NOT NEEDED!
                  $$ text ".equiv" <+> ppr alias <> comma <> ppr (CmmLabel ind')
   = pprTrace "IndStaticInfo: pprDatas" (ppr alias <+> ppr lit <+> ppr ind') equate
 
