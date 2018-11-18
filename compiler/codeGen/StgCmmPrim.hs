@@ -880,16 +880,11 @@ callishPrimOpSupported dflags op
                      | otherwise              ->
                          Right (genericIntQuotRemOp (wordWidth dflags))
 
-<<<<<<< HEAD
-      Int8QuotRemOp  | (ncg && x86ish)
+      Int8QuotRemOp  | ncg && (x86ish || ppc)
                                      -> Left (MO_S_QuotRem W8)
-=======
-      Int8QuotRemOp  | (ncg && (x86ish || ppc))
-                        || llvm      -> Left (MO_S_QuotRem W8)
->>>>>>> PPC NCG: Generate MO_?_QuotRem for subword sizes
                      | otherwise     -> Right (genericIntQuotRemOp W8)
 
-      Int16QuotRemOp | (ncg && x86ish)
+      Int16QuotRemOp | ncg && (x86ish || ppc)
                                      -> Left (MO_S_QuotRem W16)
                      | otherwise     -> Right (genericIntQuotRemOp W16)
 
@@ -903,19 +898,13 @@ callishPrimOpSupported dflags op
                           || llvm     -> Left (MO_U_QuotRem2 (wordWidth dflags))
                      | otherwise      -> Right (genericWordQuotRem2Op dflags)
 
-<<<<<<< HEAD
-      Word8QuotRemOp | (ncg && x86ish)
+      Word8QuotRemOp | ncg && (x86ish || ppc)
                                       -> Left (MO_U_QuotRem W8)
                      | otherwise      -> Right (genericWordQuotRemOp W8)
 
-      Word16QuotRemOp| (ncg && x86ish)
+      Word16QuotRemOp| ncg && (x86ish || ppc)
                                      -> Left (MO_U_QuotRem W16)
                      | otherwise     -> Right (genericWordQuotRemOp W16)
-=======
-      Word8QuotRemOp | (ncg && (x86ish || ppc))
-                        || llvm      -> Left (MO_U_QuotRem W8)
-                     | otherwise     -> Right (genericWordQuotRemOp W8)
->>>>>>> PPC NCG: Generate MO_?_QuotRem for subword sizes
 
       WordAdd2Op     | (ncg && (x86ish || ppc))
                          || llvm      -> Left (MO_Add2       (wordWidth dflags))
