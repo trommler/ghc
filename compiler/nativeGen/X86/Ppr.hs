@@ -173,7 +173,7 @@ aliasToLocalOrIntoThisModule _ _ = False
 
 pprDatas :: (Alignment, CmmStatics) -> SDoc
 
-pprDatas (_, Statics alias [CmmStaticLit lit@(CmmLabel lbl), CmmStaticLit ind, _, _])
+pprDatas (_, Statics alias [CmmStaticLit (CmmLabel lbl), CmmStaticLit ind, _, _])
   | lbl == mkIndStaticInfoLabel
   , let labelInd (CmmLabelOff l _) = Just l
         labelInd (CmmLabel l) = Just l
