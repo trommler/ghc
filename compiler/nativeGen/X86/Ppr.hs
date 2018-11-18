@@ -180,10 +180,8 @@ pprDatas (_, Statics alias [CmmStaticLit lit@(CmmLabel lbl), CmmStaticLit ind, _
         labelInd _ = Nothing
   , Just ind' <- labelInd ind
   , aliasToLocalOrIntoThisModule alias ind'
-  , let equate = pprGloblDecl alias
-                 -- $$ pprTypeAndSizeDecl alias -- NOT NEEDED!
-                 $$ text ".equiv" <+> ppr alias <> comma <> ppr (CmmLabel ind')
-  = pprTrace "IndStaticInfo: pprDatas" (ppr alias <+> ppr lit <+> ppr ind') equate
+  = pprGloblDecl alias
+    $$ text ".equiv" <+> ppr alias <> comma <> ppr (CmmLabel ind')
 
 pprDatas (align, (Statics lbl dats))
  = vcat (pprAlign align : pprLabel lbl : map pprData dats)
