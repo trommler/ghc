@@ -2272,7 +2272,8 @@ remainderCode rep sgn x y = do
   code <- remainderCode' rep sgn tmp x y
   return (Any fmt code)
 
-remainderCode' :: Width -> Bool -> Reg -> CmmExpr -> CmmExpr -> NatM (Reg -> InstrBlock)
+remainderCode' :: Width -> Bool -> Reg -> CmmExpr -> CmmExpr
+               -> NatM (Reg -> InstrBlock)
 remainderCode' rep sgn reg_q arg_x arg_y = do
   let op_len = max W32 rep
       fmt    = intFormat op_len
