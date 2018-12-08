@@ -617,8 +617,8 @@ getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_S_Quot rep -> divCode rep True x y
       MO_U_Quot rep -> divCode rep False x y
 
-      MO_S_Rem rep -> remainderCode rep True x y
-      MO_U_Rem rep -> remainderCode rep False x y
+      MO_S_Rem rep -> remainder rep True x y
+      MO_U_Rem rep -> remainder rep False x y
 
       MO_And rep   -> case y of
         (CmmLit (CmmInt imm _)) | imm == -8 || imm == -4
@@ -641,6 +641,14 @@ getRegister' _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
   where
     triv_float :: Width -> (Format -> Reg -> Reg -> Reg -> Instr) -> NatM Register
     triv_float width instr = trivialCodeNoImm (floatFormat width) instr x y
+
+    remainder :: Width -> Bool -> CmmExpr -> CmmExpr -> NatM Register
+    remainder rep sgn x y = do
+      let fmt = intFormat rep
+      tmp <- getNewRegNat fmt
+      code <- remainderCode rep sgn tmp x y
+      return (Any fmt code)
+
 
 getRegister' _ (CmmLit (CmmInt i rep))
   | Just imm <- makeImmediate rep True i
@@ -1300,7 +1308,7 @@ genCCall target dest_regs argsAndHints
         where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
                 = do let reg_q = getRegisterReg platform (CmmLocal res_q)
                          reg_r = getRegisterReg platform (CmmLocal res_r)
-                     remainderCode' width signed reg_q arg_x arg_y
+                     remainderCode width signed reg_q arg_x arg_y
                        <*> pure reg_r
 
               divOp1 _ _ _ _ _
@@ -2265,16 +2273,9 @@ trivialUCode rep instr x = do
 -- it the hard way.
 -- The "sgn" parameter is the signedness for the division instruction
 
-remainderCode :: Width -> Bool -> CmmExpr -> CmmExpr -> NatM Register
-remainderCode rep sgn x y = do
-  let fmt = intFormat rep
-  tmp <- getNewRegNat fmt
-  code <- remainderCode' rep sgn tmp x y
-  return (Any fmt code)
-
-remainderCode' :: Width -> Bool -> Reg -> CmmExpr -> CmmExpr
+remainderCode :: Width -> Bool -> Reg -> CmmExpr -> CmmExpr
                -> NatM (Reg -> InstrBlock)
-remainderCode' rep sgn reg_q arg_x arg_y = do
+remainderCode rep sgn reg_q arg_x arg_y = do
   let op_len = max W32 rep
       fmt    = intFormat op_len
       extend = if sgn then extendSExpr else extendUExpr
