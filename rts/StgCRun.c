@@ -749,7 +749,6 @@ StgRunIsImplementedInAssembler(void)
 
 #if defined(powerpc64_HOST_ARCH)
 
-#if defined(linux_HOST_OS)
 static void GNUC3_ATTRIBUTE(used)
 StgRunIsImplementedInAssembler(void)
 {
@@ -870,10 +869,6 @@ StgRunIsImplementedInAssembler(void)
                 "\tblr\n"
         : : "i"(RESERVED_C_STACK_BYTES+304 /*stack frame size*/));
 }
-
-#else // linux_HOST_OS
-#error Only Linux support for power64 right now.
-#endif
 
 #endif
 
