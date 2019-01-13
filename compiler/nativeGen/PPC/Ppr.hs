@@ -141,9 +141,8 @@ pprGloblDecl lbl
 pprTypeAndSizeDecl :: CLabel -> SDoc
 pprTypeAndSizeDecl lbl
   = sdocWithPlatform $ \platform ->
-    if platformOS platform == OSLinux && externallyVisibleCLabel lbl
-    then text ".type " <>
-         ppr lbl <> text ", @object"
+    if osElfTarget (platformOS platform) && externallyVisibleCLabel lbl
+    then text "\t.type " <> ppr lbl <> text ", @object"
     else empty
 
 pprLabel :: CLabel -> SDoc
