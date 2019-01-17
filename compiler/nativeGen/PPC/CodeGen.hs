@@ -463,15 +463,7 @@ getRegister' _ (CmmMachOp (MO_UU_Conv W8 W32) [CmmLoad mem _]) = do
     Amode addr addr_code <- getAmode D mem
     return (Any II32 (\dst -> addr_code `snocOL` LD II8 dst addr))
 
-getRegister' _ (CmmMachOp (MO_XX_Conv W8 W32) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode D mem
-    return (Any II32 (\dst -> addr_code `snocOL` LD II8 dst addr))
-
 getRegister' _ (CmmMachOp (MO_UU_Conv W8 W64) [CmmLoad mem _]) = do
-    Amode addr addr_code <- getAmode D mem
-    return (Any II64 (\dst -> addr_code `snocOL` LD II8 dst addr))
-
-getRegister' _ (CmmMachOp (MO_XX_Conv W8 W64) [CmmLoad mem _]) = do
     Amode addr addr_code <- getAmode D mem
     return (Any II64 (\dst -> addr_code `snocOL` LD II8 dst addr))
 
@@ -522,8 +514,6 @@ getRegister' dflags (CmmMachOp mop [x]) -- unary MachOps
       MO_UU_Conv from to
         | from >= to -> conversionNop (intFormat to) x
         | otherwise  -> clearLeft from to
-
-      MO_XX_Conv _ to -> conversionNop (intFormat to) x
 
       _ -> panic "PPC.CodeGen.getRegister: no match"
 
