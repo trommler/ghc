@@ -1640,7 +1640,7 @@ genCCall' dflags gcp target dest_regs args
                                                    allArgRegs
                                                    (allFPArgRegs platform)
                                                    initialStackOffset
-                                                   (toOL []) []
+                                                   nilOL []
 
         (labelOrExpr, reduceToFF32) <- case target of
             ForeignTarget (CmmLit (CmmLabel lbl)) _ -> do
