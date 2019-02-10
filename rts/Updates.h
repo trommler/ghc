@@ -72,6 +72,7 @@
     OVERWRITING_CLOSURE(p1);                                    \
     prim_write_barrier;                                         \
     StgInd_indirectee(p1) = p2;                                 \
+    prim_write_barrier;                                         \
     SET_INFO(p1, stg_BLACKHOLE_info);                           \
     LDV_RECORD_CREATE(p1);                                      \
     bd = Bdescr(p1);                                            \
@@ -98,6 +99,7 @@ INLINE_HEADER void updateWithIndirection (Capability *cap,
     OVERWRITING_CLOSURE(p1);
     write_barrier();  // See Note [Write barrier on thunk update]
     ((StgInd *)p1)->indirectee = p2;
+    write_barrier();
     SET_INFO(p1, &stg_BLACKHOLE_info);
     LDV_RECORD_CREATE(p1);
     bd = Bdescr((StgPtr)p1);
