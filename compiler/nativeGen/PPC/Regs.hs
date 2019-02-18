@@ -208,20 +208,13 @@ spRel dflags n = AddrRegImm sp (ImmInt (n * wORD_SIZE dflags))
 
 
 -- argRegs is the set of regs which are read for an n-argument call to C.
--- For archs which pass all args on the stack (x86), is empty.
--- Sparc passes up to the first 6 args in regs.
+-- PowerPC passes up to the first 8 args in regs.
 argRegs :: RegNo -> [Reg]
-argRegs 0 = []
-argRegs 1 = map regSingle [3]
-argRegs 2 = map regSingle [3,4]
-argRegs 3 = map regSingle [3..5]
-argRegs 4 = map regSingle [3..6]
-argRegs 5 = map regSingle [3..7]
-argRegs 6 = map regSingle [3..8]
-argRegs 7 = map regSingle [3..9]
-argRegs 8 = map regSingle [3..10]
-argRegs _ = panic "MachRegs.argRegs(powerpc): don't know about >8 arguments!"
-
+argRegs r
+  | 0<=r, r<=8
+  = take r allArgRegs
+  | otherwise
+  = panic "MachRegs.argRegs(powerpc): don't know about >8 arguments!"
 
 allArgRegs :: [Reg]
 allArgRegs = map regSingle [3..10]
