@@ -755,6 +755,7 @@ pprInstr (CNTLZ fmt reg1 reg2) = hcat [
         pprReg reg2
     ]
 
+pprInstr (POPCNTD reg1 reg2) = pprUnary (sLit "popcntd") reg1 reg2
 pprInstr (NEG reg1 reg2) = pprUnary (sLit "neg") reg1 reg2
 pprInstr (NOT reg1 reg2) = pprUnary (sLit "not") reg1 reg2
 

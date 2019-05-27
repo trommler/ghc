@@ -264,6 +264,8 @@ data Instr
     | EXTS    Format Reg Reg
     | CNTLZ   Format Reg Reg
 
+    | POPCNTD Reg Reg               -- population count doubleword dst, src
+
     | NEG     Reg Reg
     | NOT     Reg Reg
 
@@ -359,6 +361,7 @@ ppc_regUsageOfInstr platform instr
     XORIS   reg1 reg2 _     -> usage ([reg2], [reg1])
     EXTS    _  reg1 reg2    -> usage ([reg2], [reg1])
     CNTLZ   _  reg1 reg2    -> usage ([reg2], [reg1])
+    POPCNTD reg1 reg2       -> usage ([reg2], [reg1])
     NEG     reg1 reg2       -> usage ([reg2], [reg1])
     NOT     reg1 reg2       -> usage ([reg2], [reg1])
     SL      _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
@@ -454,6 +457,7 @@ ppc_patchRegsOfInstr instr env
     XORIS   reg1 reg2 imm   -> XORIS (env reg1) (env reg2) imm
     EXTS    fmt reg1 reg2   -> EXTS fmt (env reg1) (env reg2)
     CNTLZ   fmt reg1 reg2   -> CNTLZ fmt (env reg1) (env reg2)
+    POPCNTD reg1 reg2       -> POPCNTD (env reg1) (env reg2)
     NEG     reg1 reg2       -> NEG (env reg1) (env reg2)
     NOT     reg1 reg2       -> NOT (env reg1) (env reg2)
     SL      fmt reg1 reg2 ri
