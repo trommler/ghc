@@ -1354,9 +1354,29 @@ genCCall target dest_regs argsAndHints
                                                    dest_regs argsAndHints
         PrimTarget MO_F64_Fabs -> fabs platform dest_regs argsAndHints
         PrimTarget MO_F32_Fabs -> fabs platform dest_regs argsAndHints
+        PrimTarget (MO_PopCnt width)
+          | havePopCnt platform -> popcnt platform width dest_regs argsAndHints
         _ -> genCCall' dflags (platformToGCP platform)
                        target dest_regs argsAndHints
-        where divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
+        where havePopCnt platform = platformArch platform == ArchPPC64 ELF_V2
+              popcnt platform width [dst] [src]
+                = do let dest_r = getRegisterReg platform (Cmmlocal dst)
+                         format = intFormat W64
+                     (src_r, src_code)  <- getSomeReg src
+                     (pre, reg) <- case width of
+                       W64 -> return (nilOL, src_r)
+                       W32 -> do
+                         reg_tmp <- getNewRegNat format
+                         return (unitOL $ CLRLI format reg_tmp src_r 32, reg_tmp)
+                       W16 -> do
+                         reg_tmp <- getNewRegNat format
+                         return (unitOL $ CLRLI format reg_tmp src_r 48, reg_tmp)
+                       W8 -> do
+                         reg_tmp <- getNewRegNat format
+                         return (unitOL $ CLRLI format reg_tmp src_r 56, reg_tmp)
+                       _ -> panic "genCall: PopCnt wrong width"
+              popcnt _ _ _ _ = panic "PopCnt: Wrong number of arguments."
+              divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
                 = do let reg_q = getRegisterReg platform (CmmLocal res_q)
                          reg_r = getRegisterReg platform (CmmLocal res_r)
                      remainderCode width signed reg_q arg_x arg_y

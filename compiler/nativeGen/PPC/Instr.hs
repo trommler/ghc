@@ -267,6 +267,8 @@ data Instr
     | NEG     Reg Reg
     | NOT     Reg Reg
 
+    | POPCNTD Reg Reg               -- Population Count Doubleword
+    
     | SL      Format Reg Reg RI            -- shift left
     | SR      Format Reg Reg RI            -- shift right
     | SRA     Format Reg Reg RI            -- shift right arithmetic
@@ -361,6 +363,7 @@ ppc_regUsageOfInstr platform instr
     CNTLZ   _  reg1 reg2    -> usage ([reg2], [reg1])
     NEG     reg1 reg2       -> usage ([reg2], [reg1])
     NOT     reg1 reg2       -> usage ([reg2], [reg1])
+    POPCNTD reg1 reg2       -> usage ([reg2], [reg1])
     SL      _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
     SR      _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
     SRA     _ reg1 reg2 ri  -> usage (reg2 : regRI ri, [reg1])
@@ -456,6 +459,7 @@ ppc_patchRegsOfInstr instr env
     CNTLZ   fmt reg1 reg2   -> CNTLZ fmt (env reg1) (env reg2)
     NEG     reg1 reg2       -> NEG (env reg1) (env reg2)
     NOT     reg1 reg2       -> NOT (env reg1) (env reg2)
+    POPCNTD reg1 reg2       -> POPCNTD (env reg1) (env reg2)
     SL      fmt reg1 reg2 ri
                             -> SL fmt (env reg1) (env reg2) (fixRI ri)
     SR      fmt reg1 reg2 ri

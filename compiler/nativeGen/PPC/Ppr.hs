@@ -757,6 +757,7 @@ pprInstr (CNTLZ fmt reg1 reg2) = hcat [
 
 pprInstr (NEG reg1 reg2) = pprUnary (sLit "neg") reg1 reg2
 pprInstr (NOT reg1 reg2) = pprUnary (sLit "not") reg1 reg2
+pprInstr (POPCNTD reg1 reg2) = pprUnary (sLit "popcntd") reg1 reg2
 
 pprInstr (SR II32 reg1 reg2 (RIImm (ImmInt i))) | i < 0  || i > 31 =
     -- Handle the case where we are asked to shift a 32 bit register by
