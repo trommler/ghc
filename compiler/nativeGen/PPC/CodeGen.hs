@@ -1358,9 +1358,9 @@ genCCall target dest_regs argsAndHints
           | havePopCnt platform -> popcnt platform width dest_regs argsAndHints
         _ -> genCCall' dflags (platformToGCP platform)
                        target dest_regs argsAndHints
-        where havePopCnt platform = platformArch platform == ArchPPC64 ELF_V2
+        where havePopCnt platform = platformArch platform == ArchPPC_64 ELF_V2
               popcnt platform width [dst] [src]
-                = do let dest_r = getRegisterReg platform (Cmmlocal dst)
+                = do let dest_r = getRegisterReg platform (CmmLocal dst)
                          format = intFormat W64
                      (src_r, src_code)  <- getSomeReg src
                      (pre, reg) <- case width of
