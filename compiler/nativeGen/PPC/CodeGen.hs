@@ -1375,7 +1375,9 @@ genCCall target dest_regs argsAndHints
                          reg_tmp <- getNewRegNat format
                          return (unitOL $ CLRLI format reg_tmp src_r 56, reg_tmp)
                        _ -> panic "genCall: PopCnt wrong width"
+                     return $ src_code `appOL` pre `snocOL` POPCNTD dest_r reg
               popcnt _ _ _ _ = panic "PopCnt: Wrong number of arguments."
+
               divOp1 platform signed width [res_q, res_r] [arg_x, arg_y]
                 = do let reg_q = getRegisterReg platform (CmmLocal res_q)
                          reg_r = getRegisterReg platform (CmmLocal res_r)
