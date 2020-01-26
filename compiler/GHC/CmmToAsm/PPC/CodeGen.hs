@@ -955,10 +955,14 @@ condIntCode' True cond W64 x y
       ChildCode64 code_y y_lo <- iselExpr64 y
       let x_hi = getHiVRegFromLo x_lo
           y_hi = getHiVRegFromLo y_lo
+      cmp_lo  <- getBlockIdNat
       end_lbl <- getBlockIdNat
       let code = code_x `appOL` code_y `appOL` toOL
                  [ CMPL II32 x_hi (RIReg y_hi)
                  , BCC NE end_lbl Nothing
+                 , BCC ALWAYS cmp_lo Nothing
+
+                 , NEWBLOCK cmp_lo
                  , CMPL II32 x_lo (RIReg y_lo)
                  , BCC ALWAYS end_lbl Nothing
 
@@ -971,15 +975,24 @@ condIntCode' True cond W64 x y
       ChildCode64 code_y y_lo <- iselExpr64 y
       let x_hi = getHiVRegFromLo x_lo
           y_hi = getHiVRegFromLo y_lo
+      cmp_xhi <- getBlockIdNat
+      cmp_xlo <- getBlockIdNat
       end_lbl <- getBlockIdNat
       cmp_lo  <- getBlockIdNat
       let code = code_x `appOL` code_y `appOL` toOL
                  [ CMP II32 x_hi (RIReg y_hi)
                  , BCC NE end_lbl Nothing
+                 , BCC ALWAYS cmp_xhi Nothing
+
+                 , NEWBLOCK cmp_xhi
                  , CMP II32 x_hi (RIImm (ImmInt 0))
                  , BCC LE cmp_lo Nothing
+                 , BCC ALWAYS cmp_xlo Nothing
+
+                 , NEWBLOCK cmp_xlo
                  , CMPL II32 x_lo (RIReg y_lo)
                  , BCC ALWAYS end_lbl Nothing
+
                  , NEWBLOCK cmp_lo
                  , CMPL II32 y_lo (RIReg x_lo)
                  , BCC ALWAYS end_lbl Nothing
