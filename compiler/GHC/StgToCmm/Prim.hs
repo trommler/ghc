@@ -2192,7 +2192,7 @@ checkVecCompatibility dflags vcat l w
 
     vecWidth = typeWidth (vecVmmType vcat l w)
 
-    checkPPC :: Width -> PrimOpVecCat -> Length -> Width -> Fcode
+    checkPPC :: Width -> PrimOpVecCat -> Length -> Width -> FCode ()
     checkPPC W256 _ _ _ = sorry $ "No 256-bit SIMD vector instructions on PPC."
     checkPPC W512 _ _ _ = sorry $ "No 512-bit SIMD vector instructions on PPC."
     checkPPC _ _ _ W64 = sorry $ "No doubles in SIMD vector instructions on PPC."
