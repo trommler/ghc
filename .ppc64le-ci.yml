@@ -70,9 +70,9 @@ stages:
     TEST_TYPE: test
     MAKE_ARGS: "-Werror"
   script:
-    - .gitlab/ci.sh configure
-    - .gitlab/ci.sh build_make
-    - .gitlab/ci.sh test_make
+    - .gitlab/myci.sh configure
+    - .gitlab/myci.sh build_make
+    - .gitlab/myci.sh test_make
   dependencies: []
   artifacts:
     reports:
