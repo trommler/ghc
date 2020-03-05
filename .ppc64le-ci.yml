@@ -69,6 +69,7 @@ stages:
   variables:
     TEST_TYPE: test
     MAKE_ARGS: "-Werror"
+    BIN_DIST_PREP_TAR_COMP: "ghc-powerpc64le-unknown-linux.tar.xz"
   script:
     - .gitlab/myci.sh configure
     - .gitlab/myci.sh build_make
