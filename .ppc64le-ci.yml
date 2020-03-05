@@ -98,7 +98,7 @@ stages:
     expire_in: 2 week
 
 master-powerpc64le-linux:
-  <<: *nightly
+  <<: *only-default
   extends: .build-powerpc64le-linux
   stage: full-build
 
