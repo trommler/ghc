@@ -777,7 +777,7 @@ pprIfaceDecl ss (IfaceData { ifName = tycon, ifCType = ctype,
                               then isIfaceTauType kind
                                       -- Even in the presence of a standalone kind signature, a non-tau
                                       -- result kind annotation cannot be discarded as it determines the arity.
-                                      -- See Note [Arity inference in kcDeclHeader_sig] in TcHsType
+                                      -- See Note [Arity inference in kcCheckDeclHeader_sig] in TcHsType
                               else isIfaceLiftedTypeKind kind)
                           (dcolon <+> ppr kind)
 
@@ -1280,7 +1280,7 @@ noParens pp = pp
 pprParendIfaceExpr :: IfaceExpr -> SDoc
 pprParendIfaceExpr = pprIfaceExpr parens
 
--- | Pretty Print an IfaceExpre
+-- | Pretty Print an IfaceExpr
 --
 -- The first argument should be a function that adds parens in context that need
 -- an atomic value (e.g. function args)
@@ -1417,7 +1417,7 @@ instance Outputable IfaceUnfolding where
 *                                                                      *
 ************************************************************************
 
-This is used for dependency analysis in GHC.Iface.Utils, so that we
+This is used for dependency analysis in GHC.Iface.Make, so that we
 fingerprint a declaration before the things that depend on it.  It
 is specific to interface-file fingerprinting in the sense that we
 don't collect *all* Names: for example, the DFun of an instance is

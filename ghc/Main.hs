@@ -28,6 +28,7 @@ import GHC.Driver.Main      ( newHscEnv )
 import GHC.Driver.Pipeline  ( oneShot, compileFile )
 import GHC.Driver.MakeFile  ( doMkDependHS )
 import GHC.Driver.Backpack  ( doBackpack )
+import GHC.Driver.Ways
 #if defined(HAVE_INTERNAL_INTERPRETER)
 import GHCi.UI          ( interactiveUI, ghciWelcomeMsg, defaultGhciSettings )
 #endif
@@ -81,6 +82,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except (throwE, runExceptT)
 import Data.Char
 import Data.List ( isPrefixOf, partition, intercalate )
+import qualified Data.Set as Set
 import Data.Maybe
 import Prelude
 
@@ -197,13 +199,13 @@ main' postLoadMode dflags0 args flagWarnings = do
   let dflags4 = case lang of
                 HscInterpreted | not (gopt Opt_ExternalInterpreter dflags3) ->
                     let platform = targetPlatform dflags3
-                        dflags3a = updateWays $ dflags3 { ways = interpWays }
+                        dflags3a = updateWays $ dflags3 { ways = hostFullWays }
                         dflags3b = foldl gopt_set dflags3a
                                  $ concatMap (wayGeneralFlags platform)
-                                             interpWays
+                                             hostFullWays
                         dflags3c = foldl gopt_unset dflags3b
                                  $ concatMap (wayUnsetGeneralFlags platform)
-                                             interpWays
+                                             hostFullWays
                     in dflags3c
                 _ ->
                     dflags3
@@ -348,12 +350,12 @@ checkOptions mode dflags srcs objs = do
    let unknown_opts = [ f | (f@('-':_), _) <- srcs ]
    when (notNull unknown_opts) (unknownFlagsErr unknown_opts)
 
-   when (notNull (filter wayRTSOnly (ways dflags))
+   when (not (Set.null (Set.filter wayRTSOnly (ways dflags)))
          && isInterpretiveMode mode) $
         hPutStrLn stderr ("Warning: -debug, -threaded and -ticky are ignored by GHCi")
 
         -- -prof and --interactive are not a good combination
-   when ((filter (not . wayRTSOnly) (ways dflags) /= interpWays)
+   when ((Set.filter (not . wayRTSOnly) (ways dflags) /= hostFullWays)
          && isInterpretiveMode mode
          && not (gopt Opt_ExternalInterpreter dflags)) $
       do throwGhcException (UsageError

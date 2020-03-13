@@ -43,6 +43,7 @@ import GHC.Driver.Packages as Packages
 import GHC.Driver.Phases
 import GHC.Driver.Finder
 import GHC.Driver.Types
+import GHC.Driver.Ways
 import Name
 import NameEnv
 import Module
@@ -65,6 +66,7 @@ import FileCleanup
 -- Standard libraries
 import Control.Monad
 
+import qualified Data.Set as Set
 import Data.Char (isSpace)
 import Data.IORef
 import Data.List (intercalate, isPrefixOf, isSuffixOf, nub, partition)
@@ -492,7 +494,7 @@ preloadLib hsc_env lib_paths framework_paths pls lib_spec = do
     preload_statics _paths names
        = do b <- or <$> mapM doesFileExist names
             if not b then return (False, pls)
-                     else if dynamicGhc
+                     else if hostIsDynamic
                              then  do pls1 <- dynLoadObjs hsc_env pls names
                                       return (True, pls1)
                              else  do mapM_ (loadObj hsc_env) names
@@ -501,7 +503,7 @@ preloadLib hsc_env lib_paths framework_paths pls lib_spec = do
     preload_static_archive _paths name
        = do b <- doesFileExist name
             if not b then return False
-                     else do if dynamicGhc
+                     else do if hostIsDynamic
                                  then throwGhcExceptionIO $
                                       CmdLineError dynamic_msg
                                  else loadArchive hsc_env name
@@ -577,22 +579,22 @@ dieWith dflags span msg = throwGhcExceptionIO (ProgramError (showSDoc dflags (mk
 
 checkNonStdWay :: HscEnv -> SrcSpan -> IO (Maybe FilePath)
 checkNonStdWay hsc_env srcspan
-  | Just (ExternalInterp _) <- hsc_interp hsc_env = return Nothing
+  | Just (ExternalInterp {}) <- hsc_interp hsc_env = return Nothing
     -- with -fexternal-interpreter we load the .o files, whatever way
     -- they were built.  If they were built for a non-std way, then
     -- we will use the appropriate variant of the iserv binary to load them.
 
-  | interpWays == haskellWays = return Nothing
+  | hostFullWays == targetFullWays = return Nothing
     -- Only if we are compiling with the same ways as GHC is built
     -- with, can we dynamically load those object files. (see #3604)
 
-  | objectSuf (hsc_dflags hsc_env) == normalObjectSuffix && not (null haskellWays)
+  | objectSuf (hsc_dflags hsc_env) == normalObjectSuffix && not (null targetFullWays)
   = failNonStd (hsc_dflags hsc_env) srcspan
 
-  | otherwise = return (Just (interpTag ++ "o"))
+  | otherwise = return (Just (hostWayTag ++ "o"))
   where
-    haskellWays = filter (not . wayRTSOnly) (ways (hsc_dflags hsc_env))
-    interpTag = case mkBuildTag interpWays of
+    targetFullWays = Set.filter (not . wayRTSOnly) (ways (hsc_dflags hsc_env))
+    hostWayTag = case waysTag hostFullWays of
                   "" -> ""
                   tag -> tag ++ "_"
 
@@ -614,8 +616,8 @@ failNonStd dflags srcspan = dieWith dflags srcspan $
             | WayProf `elem` ways dflags = text "-prof"
             | otherwise = text "normal"
           ghciWay
-            | dynamicGhc = text "with -dynamic"
-            | rtsIsProfiled = text "with -prof"
+            | hostIsDynamic = text "with -dynamic"
+            | hostIsProfiled = text "with -prof"
             | otherwise = text "the normal way"
 
 getLinkDeps :: HscEnv -> HomePackageTable
@@ -884,7 +886,7 @@ dynLinkObjs hsc_env pls objs = do
             unlinkeds                = concatMap linkableUnlinked new_objs
             wanted_objs              = map nameOfObject unlinkeds
 
-        if interpreterDynamic (hsc_dflags hsc_env)
+        if interpreterDynamic (hscInterp hsc_env)
             then do pls2 <- dynLoadObjs hsc_env pls1 wanted_objs
                     return (pls2, Succeeded)
             else do mapM_ (loadObj hsc_env) wanted_objs
@@ -948,8 +950,8 @@ dynLoadObjs hsc_env pls@PersistentLinkerState{..} objs = do
                       -- Even if we're e.g. profiling, we still want
                       -- the vanilla dynamic libraries, so we set the
                       -- ways / build tag to be just WayDyn.
-                      ways = [WayDyn],
-                      buildTag = mkBuildTag [WayDyn],
+                      ways = Set.singleton WayDyn,
+                      buildTag = waysTag (Set.singleton WayDyn),
                       outputFile = Just soFile
                   }
     -- link all "loaded packages" so symbols in those can be resolved
@@ -1141,7 +1143,7 @@ unload_wkr hsc_env keep_linkables pls@PersistentLinkerState{..}  = do
   where
     unloadObjs :: Linkable -> IO ()
     unloadObjs lnk
-      | dynamicGhc = return ()
+      | hostIsDynamic = return ()
         -- We don't do any cleanup when linking objects with the
         -- dynamic linker.  Doing so introduces extra complexity for
         -- not much benefit.
@@ -1269,7 +1271,7 @@ linkPackage hsc_env pkg
    = do
         let dflags    = hsc_dflags hsc_env
             platform  = targetPlatform dflags
-            is_dyn = interpreterDynamic dflags
+            is_dyn    = interpreterDynamic (hscInterp hsc_env)
             dirs | is_dyn    = Packages.libraryDynDirs pkg
                  | otherwise = Packages.libraryDirs pkg
 
@@ -1485,6 +1487,7 @@ locateLib hsc_env is_hs lib_dirs gcc_dirs lib
 
    where
      dflags = hsc_dflags hsc_env
+     interp = hscInterp hsc_env
      dirs   = lib_dirs ++ gcc_dirs
      gcc    = False
      user   = True
@@ -1499,8 +1502,8 @@ locateLib hsc_env is_hs lib_dirs gcc_dirs lib
                   ]
      lib_tag = if is_hs && loading_profiled_hs_libs then "_p" else ""
 
-     loading_profiled_hs_libs = interpreterProfiled dflags
-     loading_dynamic_hs_libs  = interpreterDynamic dflags
+     loading_profiled_hs_libs = interpreterProfiled interp
+     loading_dynamic_hs_libs  = interpreterDynamic  interp
 
      import_libs  = [ lib <.> "lib"           , "lib" ++ lib <.> "lib"
                     , "lib" ++ lib <.> "dll.a", lib <.> "dll.a"
@@ -1546,7 +1549,7 @@ locateLib hsc_env is_hs lib_dirs gcc_dirs lib
      assumeDll
       | is_hs
       , not loading_dynamic_hs_libs
-      , interpreterProfiled dflags
+      , interpreterProfiled interp
       = do
           warningMsg dflags
             (text "Interpreter failed to load profiled static library" <+> text lib <> char '.' $$

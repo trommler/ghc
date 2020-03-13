@@ -203,6 +203,8 @@ Library
         FieldLabel
         GHC.Driver.Monad
         GHC.Driver.Hooks
+        GHC.Driver.Flags
+        GHC.Driver.Ways
         Id
         IdInfo
         Predicate
@@ -356,7 +358,8 @@ Library
         GHC.Iface.Type
         GHC.CoreToIface
         GHC.Iface.Load
-        GHC.Iface.Utils
+        GHC.Iface.Make
+        GHC.Iface.Recomp
         GHC.IfaceToCore
         FlagChecker
         Annotations

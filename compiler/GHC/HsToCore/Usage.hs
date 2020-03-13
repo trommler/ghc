@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module GHC.HsToCore.Usage (
-    -- * Dependency/fingerprinting code (used by GHC.Iface.Utils)
+    -- * Dependency/fingerprinting code (used by GHC.Iface.Make)
     mkUsageInfo, mkUsedNames, mkDependencies
     ) where
 
@@ -14,6 +14,7 @@ module GHC.HsToCore.Usage (
 import GhcPrelude
 
 import GHC.Driver.Session
+import GHC.Driver.Ways
 import GHC.Driver.Types
 import TcRnTypes
 import Name

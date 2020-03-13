@@ -316,7 +316,7 @@ mkTransformByStmt  ss u b = emptyTransStmt { trS_form = ThenForm,  trS_stmts = s
 mkGroupUsingStmt   ss u   = emptyTransStmt { trS_form = GroupForm, trS_stmts = ss, trS_using = u }
 mkGroupByUsingStmt ss b u = emptyTransStmt { trS_form = GroupForm, trS_stmts = ss, trS_using = u, trS_by = Just b }
 
-mkLastStmt body = LastStmt noExtField body False noSyntaxExpr
+mkLastStmt body = LastStmt noExtField body Nothing noSyntaxExpr
 mkBodyStmt body
   = BodyStmt noExtField body noSyntaxExpr noSyntaxExpr
 mkBindStmt pat body
@@ -725,9 +725,10 @@ signatures in order to kind-check. Here is an example from #14579:
 The derived Eq instance for Glurp (without any kind signatures) would be:
 
   instance Eq a => Eq (Glurp a) where
+    (==) :: Glurp a -> Glurp a -> Bool
     (==) = coerce @(Wat2 P  -> Wat2 P  -> Bool)
                   @(Glurp a -> Glurp a -> Bool)
-                  (==) :: Glurp a -> Glurp a -> Bool
+                  (==)
 
 (Where the visible type applications use types produced by typeToLHsType.)
 

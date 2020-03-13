@@ -783,8 +783,8 @@ is crucial for understanding how case-of-case interacts with join points:
     "" -> True
     _  -> False
 
-The simplifier will pull the case into the join point (see Note [Case-of-case
-and join points] in Simplify):
+The simplifier will pull the case into the join point (see Note [Join points
+and case-of-case] in Simplify):
 
   join
     j :: Int -> Bool -> Bool -- changed!
@@ -879,7 +879,7 @@ transformation universally. This transformation would do:
  ===>
 
   join go @a n f x = case n of 0 -> case x of True -> e1; False -> e2
-                          n -> go @a (n-1) f (f x)
+                               n -> go @a (n-1) f (f x)
   in go @Bool n neg True
 
 but that is ill-typed, as `x` is type `a`, not `Bool`.
@@ -1276,7 +1276,7 @@ has two major consequences
    In contrast, orphans are all fingerprinted together in the
    mi_orph_hash field of the ModIface.
 
-   See GHC.Iface.Utils.addFingerprints.
+   See GHC.Iface.Recomp.addFingerprints.
 
 Orphan-hood is computed
   * For class instances:
@@ -1284,8 +1284,8 @@ Orphan-hood is computed
     (because it is needed during instance lookup)
 
   * For rules and family instances:
-       when we generate an IfaceRule (GHC.Iface.Utils.coreRuleToIfaceRule)
-                     or IfaceFamInst (GHC.Iface.Utils.instanceToIfaceInst)
+       when we generate an IfaceRule (GHC.Iface.Make.coreRuleToIfaceRule)
+                     or IfaceFamInst (GHC.Iface.Make.instanceToIfaceInst)
 -}
 
 {-
