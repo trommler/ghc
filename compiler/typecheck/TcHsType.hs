@@ -54,7 +54,6 @@ module TcHsType (
         typeLevelMode, kindLevelMode,
 
         kindGeneralizeAll, kindGeneralizeSome, kindGeneralizeNone,
-        checkExpectedKind_pp,
 
         -- Sort-checking kinds
         tcLHsKindSig, checkDataKindSig, DataSort(..),
@@ -74,7 +73,7 @@ import GhcPrelude
 import GHC.Hs
 import TcRnMonad
 import TcOrigin
-import Predicate
+import GHC.Core.Predicate
 import Constraint
 import TcEvidence
 import TcEnv
@@ -84,20 +83,20 @@ import TcUnify
 import GHC.IfaceToCore
 import TcSimplify
 import TcHsSyn
-import TyCoRep
-import TyCoPpr
+import GHC.Core.TyCo.Rep
+import GHC.Core.TyCo.Ppr
 import TcErrors ( reportAllUnsolved )
 import TcType
 import Inst   ( tcInstInvisibleTyBinders, tcInstInvisibleTyBinder )
-import Type
+import GHC.Core.Type
 import TysPrim
 import RdrName( lookupLocalRdrOcc )
 import Var
 import VarSet
-import TyCon
-import ConLike
-import DataCon
-import Class
+import GHC.Core.TyCon
+import GHC.Core.ConLike
+import GHC.Core.DataCon
+import GHC.Core.Class
 import Name
 -- import NameSet
 import VarEnv
@@ -400,7 +399,7 @@ tcHsTypeApp wc_ty kind
                setXOptM LangExt.PartialTypeSignatures $
                -- See Note [Wildcards in visible type application]
                tcNamedWildCardBinders sig_wcs $ \ _ ->
-               tcCheckLHsType hs_ty kind
+               tcCheckLHsType hs_ty (TheKind kind)
        -- We do not kind-generalize type applications: we just
        -- instantiate with exactly what the user says.
        -- See Note [No generalization in type application]
@@ -466,10 +465,11 @@ tcHsOpenTypeNC   ty = do { ek <- newOpenTypeKind
 tcHsLiftedTypeNC ty = tc_lhs_type typeLevelMode ty liftedTypeKind
 
 -- Like tcHsType, but takes an expected kind
-tcCheckLHsType :: LHsType GhcRn -> Kind -> TcM TcType
+tcCheckLHsType :: LHsType GhcRn -> ContextKind -> TcM TcType
 tcCheckLHsType hs_ty exp_kind
   = addTypeCtxt hs_ty $
-    tc_lhs_type typeLevelMode hs_ty exp_kind
+    do { ek <- newExpectedKind exp_kind
+       ; tc_lhs_type typeLevelMode hs_ty ek }
 
 tcLHsType :: LHsType GhcRn -> TcM (TcType, TcKind)
 -- Called from outside: set the context
@@ -969,7 +969,7 @@ finish_tuple rn_ty tup_sort tau_tys tau_kinds exp_kind = do
     UnboxedTuple ->
       let tycon    = tupleTyCon Unboxed arity
           tau_reps = map kindRep tau_kinds
-          -- See also Note [Unboxed tuple RuntimeRep vars] in TyCon
+          -- See also Note [Unboxed tuple RuntimeRep vars] in GHC.Core.TyCon
           arg_tys  = tau_reps ++ tau_tys
           res_kind = unboxedTupleKind tau_reps in
       check_expected_kind (mkTyConApp tycon arg_tys) res_kind
@@ -1431,27 +1431,18 @@ checkExpectedKind :: HasDebugCallStack
                   -> TcKind             -- ^ the expected kind
                   -> TcM TcType
 -- Just a convenience wrapper to save calls to 'ppr'
-checkExpectedKind hs_ty ty act exp
-  = checkExpectedKind_pp (ppr hs_ty) ty act exp
-
-checkExpectedKind_pp :: HasDebugCallStack
-                     => SDoc               -- ^ The thing we are checking
-                     -> TcType             -- ^ type we're checking
-                     -> TcKind             -- ^ the known kind of that type
-                     -> TcKind             -- ^ the expected kind
-                     -> TcM TcType
-checkExpectedKind_pp pp_hs_ty ty act_kind exp_kind
+checkExpectedKind hs_ty ty act_kind exp_kind
   = do { traceTc "checkExpectedKind" (ppr ty $$ ppr act_kind)
 
        ; (new_args, act_kind') <- tcInstInvisibleTyBinders n_to_inst act_kind
 
        ; let origin = TypeEqOrigin { uo_actual   = act_kind'
                                    , uo_expected = exp_kind
-                                   , uo_thing    = Just pp_hs_ty
+                                   , uo_thing    = Just (ppr hs_ty)
                                    , uo_visible  = True } -- the hs_ty is visible
 
        ; traceTc "checkExpectedKindX" $
-         vcat [ pp_hs_ty
+         vcat [ ppr hs_ty
               , text "act_kind':" <+> ppr act_kind'
               , text "exp_kind:" <+> ppr exp_kind ]
 
@@ -1472,7 +1463,6 @@ checkExpectedKind_pp pp_hs_ty ty act_kind exp_kind
       n_exp_invis_bndrs = invisibleTyBndrCount exp_kind
       n_act_invis_bndrs = invisibleTyBndrCount act_kind
       n_to_inst         = n_act_invis_bndrs - n_exp_invis_bndrs
-
 
 ---------------------------
 tcHsMbContext :: Maybe (LHsContext GhcRn) -> TcM [PredType]
@@ -1541,7 +1531,7 @@ tcTyVar mode name         -- Could be a tyvar, a tycon, or a datacon
 
     -- We cannot promote a data constructor with a context that contains
     -- constraints other than equalities, so error if we find one.
-    -- See Note [Constraints in kinds] in TyCoRep
+    -- See Note [Constraints in kinds] in GHC.Core.TyCo.Rep
     dc_theta_illegal_constraint :: ThetaType -> Maybe PredType
     dc_theta_illegal_constraint = find (not . isEqPred)
 
@@ -2467,7 +2457,7 @@ kcLHsQTyVarBndrs:
   * The use of tcImplicitQTKBndrs
   * The tcLookupLocal_maybe code in kc_hs_tv
 
-See Note [Associated type tyvar names] in Class and
+See Note [Associated type tyvar names] in GHC.Core.Class and
     Note [TyVar binders for associated decls] in GHC.Hs.Decls
 
 We must do the same for family instance decls, where the in-scope
@@ -2909,7 +2899,7 @@ Hence using zonked_kinds when forming tvs'.
 
 -----------------------------------
 etaExpandAlgTyCon :: [TyConBinder]
-                  -> Kind
+                  -> Kind   -- must be zonked
                   -> TcM ([TyConBinder], Kind)
 -- GADT decls can have a (perhaps partial) kind signature
 --      e.g.  data T a :: * -> * -> * where ...
@@ -2919,6 +2909,7 @@ etaExpandAlgTyCon :: [TyConBinder]
 -- Never emits constraints.
 -- It's a little trickier than you might think: see
 -- Note [TyConBinders for the result kind signature of a data type]
+-- See Note [Datatype return kinds] in TcTyClsDecls
 etaExpandAlgTyCon tc_bndrs kind
   = do  { loc     <- getSrcSpanM
         ; uniqs   <- newUniqueSupply
@@ -2987,6 +2978,8 @@ data DataSort
 -- 1. @TYPE r@ (for some @r@), or
 --
 -- 2. @k@ (where @k@ is a bare kind variable; see #12369)
+--
+-- See also Note [Datatype return kinds] in TcTyClsDecls
 checkDataKindSig :: DataSort -> Kind -> TcM ()
 checkDataKindSig data_sort kind = do
   dflags <- getDynFlags
@@ -2995,11 +2988,11 @@ checkDataKindSig data_sort kind = do
     pp_dec :: SDoc
     pp_dec = text $
       case data_sort of
-        DataDeclSort     DataType -> "data type"
-        DataDeclSort     NewType  -> "newtype"
-        DataInstanceSort DataType -> "data instance"
-        DataInstanceSort NewType  -> "newtype instance"
-        DataFamilySort            -> "data family"
+        DataDeclSort     DataType -> "Data type"
+        DataDeclSort     NewType  -> "Newtype"
+        DataInstanceSort DataType -> "Data instance"
+        DataInstanceSort NewType  -> "Newtype instance"
+        DataFamilySort            -> "Data family"
 
     is_newtype :: Bool
     is_newtype =
@@ -3042,8 +3035,8 @@ checkDataKindSig data_sort kind = do
 
     err_msg :: DynFlags -> SDoc
     err_msg dflags =
-      sep [ (sep [ text "Kind signature on" <+> pp_dec <+>
-                   text "declaration has non-" <>
+      sep [ (sep [ pp_dec <+>
+                   text "has non-" <>
                    (if tYPE_ok dflags then text "TYPE" else ppr liftedTypeKind)
                  , (if is_data_family then text "and non-variable" else empty) <+>
                    text "return kind" <+> quotes (ppr kind) ])

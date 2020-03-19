@@ -97,15 +97,15 @@ module TcMType (
 -- friends:
 import GhcPrelude
 
-import TyCoRep
-import TyCoPpr
+import GHC.Core.TyCo.Rep
+import GHC.Core.TyCo.Ppr
 import TcType
-import Type
-import TyCon
-import Coercion
-import Class
+import GHC.Core.Type
+import GHC.Core.TyCon
+import GHC.Core.Coercion
+import GHC.Core.Class
 import Var
-import Predicate
+import GHC.Core.Predicate
 import TcOrigin
 
 -- others:
@@ -1432,7 +1432,7 @@ against any specification -- just suboptimal and confounding to users.
 
 Note [Recurring into kinds for candidateQTyVars]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-First, read Note [Closing over free variable kinds] in TyCoFVs, paying
+First, read Note [Closing over free variable kinds] in GHC.Core.TyCo.FVs, paying
 attention to the end of the Note about using an empty bound set when
 traversing a variable's kind.
 
@@ -1449,7 +1449,7 @@ type inference, which is seeded by the renamer and its insistence to
 use different Uniques for different variables. (In contrast, the Core
 functions work on the output of optimizations, which may introduce
 shadowing.) Without shadowing, the problem studied by
-Note [Closing over free variable kinds] in TyCoFVs cannot happen.
+Note [Closing over free variable kinds] in GHC.Core.TyCo.FVs cannot happen.
 
 Why it is necessary:
 Wiping the bound set would be just plain wrong here. Consider
@@ -1460,7 +1460,7 @@ We really don't want to think k1 and k2 are free here. (It's true that we'll
 never be able to fill in `hole`, but we don't want to go off the rails just
 because we have an insoluble coercion hole.) So: why is it wrong to wipe
 the bound variables here but right in Core? Because the final statement
-in Note [Closing over free variable kinds] in TyCoFVs is wrong: not
+in Note [Closing over free variable kinds] in GHC.Core.TyCo.FVs is wrong: not
 every variable is either free or bound. A variable can be a hole, too!
 The reasoning in that Note then breaks down.
 
@@ -1974,9 +1974,6 @@ zonkTyCoVarKind :: TyCoVar -> TcM TyCoVar
 zonkTyCoVarKind tv = do { kind' <- zonkTcType (tyVarKind tv)
                         ; return (setTyVarKind tv kind') }
 
-zonkTcTypes :: [TcType] -> TcM [TcType]
-zonkTcTypes tys = mapM zonkTcType tys
-
 {-
 ************************************************************************
 *                                                                      *
@@ -2110,14 +2107,15 @@ zonkSkolemInfo skol_info = return skol_info
 
 -}
 
--- zonkId is used *during* typechecking just to zonk the Id's type
-zonkId :: TcId -> TcM TcId
-zonkId id
-  = do { ty' <- zonkTcType (idType id)
-       ; return (Id.setIdType id ty') }
+-- For unbound, mutable tyvars, zonkType uses the function given to it
+-- For tyvars bound at a for-all, zonkType zonks them to an immutable
+--      type variable and zonks the kind too
+zonkTcType  :: TcType -> TcM TcType
+zonkTcTypes :: [TcType] -> TcM [TcType]
+zonkCo      :: Coercion -> TcM Coercion
 
-zonkCoVar :: CoVar -> TcM CoVar
-zonkCoVar = zonkId
+(zonkTcType, zonkTcTypes, zonkCo, _)
+  = mapTyCo zonkTcTypeMapper
 
 -- | A suitable TyCoMapper for zonking a type during type-checking,
 -- before all metavars are filled in.
@@ -2146,16 +2144,6 @@ zonkTcTyCon tc
  | tcTyConIsPoly tc = return tc
  | otherwise        = do { tck' <- zonkTcType (tyConKind tc)
                          ; return (setTcTyConKind tc tck') }
-
--- For unbound, mutable tyvars, zonkType uses the function given to it
--- For tyvars bound at a for-all, zonkType zonks them to an immutable
---      type variable and zonks the kind too
-zonkTcType :: TcType -> TcM TcType
-zonkTcType = mapType zonkTcTypeMapper ()
-
--- | "Zonk" a coercion -- really, just zonk any types in the coercion
-zonkCo :: Coercion -> TcM Coercion
-zonkCo = mapCoercion zonkTcTypeMapper ()
 
 zonkTcTyVar :: TcTyVar -> TcM TcType
 -- Simply look through all Flexis
@@ -2196,6 +2184,15 @@ zonkTyVarTyVarPairs prs
   where
     do_one (nm, tv) = do { tv' <- zonkTcTyVarToTyVar tv
                          ; return (nm, tv') }
+
+-- zonkId is used *during* typechecking just to zonk the Id's type
+zonkId :: TcId -> TcM TcId
+zonkId id
+  = do { ty' <- zonkTcType (idType id)
+       ; return (Id.setIdType id ty') }
+
+zonkCoVar :: CoVar -> TcM CoVar
+zonkCoVar = zonkId
 
 {- Note [Sharing in zonking]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

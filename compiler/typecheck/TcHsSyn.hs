@@ -53,7 +53,7 @@ import GhcPrelude
 import GHC.Hs
 import Id
 import IdInfo
-import Predicate
+import GHC.Core.Predicate
 import TcRnMonad
 import PrelNames
 import BuildTyCl ( TcMethInfo, MethInfo )
@@ -61,14 +61,14 @@ import TcType
 import TcMType
 import TcEnv   ( tcLookupGlobalOnly )
 import TcEvidence
-import TyCoPpr ( pprTyVar )
+import GHC.Core.TyCo.Ppr ( pprTyVar )
 import TysPrim
-import TyCon
+import GHC.Core.TyCon
 import TysWiredIn
-import Type
-import Coercion
-import ConLike
-import DataCon
+import GHC.Core.Type
+import GHC.Core.Coercion
+import GHC.Core.ConLike
+import GHC.Core.DataCon
 import GHC.Driver.Types
 import Name
 import NameEnv
@@ -1865,17 +1865,14 @@ zonkTcTyConToTyCon tc
 zonkTcTypeToType :: TcType -> TcM Type
 zonkTcTypeToType ty = initZonkEnv $ \ ze -> zonkTcTypeToTypeX ze ty
 
-zonkTcTypeToTypeX :: ZonkEnv -> TcType -> TcM Type
-zonkTcTypeToTypeX = mapType zonk_tycomapper
-
 zonkTcTypesToTypes :: [TcType] -> TcM [Type]
 zonkTcTypesToTypes tys = initZonkEnv $ \ ze -> zonkTcTypesToTypesX ze tys
 
+zonkTcTypeToTypeX   :: ZonkEnv -> TcType   -> TcM Type
 zonkTcTypesToTypesX :: ZonkEnv -> [TcType] -> TcM [Type]
-zonkTcTypesToTypesX env tys = mapM (zonkTcTypeToTypeX env) tys
-
-zonkCoToCo :: ZonkEnv -> Coercion -> TcM Coercion
-zonkCoToCo = mapCoercion zonk_tycomapper
+zonkCoToCo          :: ZonkEnv -> Coercion -> TcM Coercion
+(zonkTcTypeToTypeX, zonkTcTypesToTypesX, zonkCoToCo, _)
+  = mapTyCoX zonk_tycomapper
 
 zonkTcMethInfoToMethInfoX :: ZonkEnv -> TcMethInfo -> TcM MethInfo
 zonkTcMethInfoToMethInfoX ze (name, ty, gdm_spec)

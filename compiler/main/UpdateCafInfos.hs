@@ -7,10 +7,11 @@ module UpdateCafInfos
 import GhcPrelude
 
 import GHC.Core
+import GHC.Driver.Session
 import GHC.Driver.Types
 import Id
 import IdInfo
-import InstEnv
+import GHC.Core.InstEnv
 import NameEnv
 import NameSet
 import Util
@@ -21,10 +22,16 @@ import Outputable
 
 -- | Update CafInfos of all occurences (in rules, unfoldings, class instances)
 updateModDetailsCafInfos
-  :: NameSet -- ^ Non-CAFFY names in the module. Names not in this set are CAFFY.
+  :: DynFlags
+  -> NameSet -- ^ Non-CAFFY names in the module. Names not in this set are CAFFY.
   -> ModDetails -- ^ ModDetails to update
   -> ModDetails
-updateModDetailsCafInfos non_cafs mod_details =
+
+updateModDetailsCafInfos dflags _ mod_details
+  | gopt Opt_OmitInterfacePragmas dflags
+  = mod_details
+
+updateModDetailsCafInfos _ non_cafs mod_details =
   {- pprTrace "updateModDetailsCafInfos" (text "non_cafs:" <+> ppr non_cafs) $ -}
   let
     ModDetails{ md_types = type_env -- for unfoldings

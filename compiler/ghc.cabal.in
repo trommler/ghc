@@ -167,11 +167,7 @@ Library
         parser
         prelude
         profiling
-        simplCore
-        specialise
-        stranal
         typecheck
-        types
         utils
 
     -- we use an explicit Prelude
@@ -193,9 +189,9 @@ Library
         Avail
         AsmUtils
         BasicTypes
-        ConLike
-        DataCon
-        PatSyn
+        GHC.Core.ConLike
+        GHC.Core.DataCon
+        GHC.Core.PatSyn
         Demand
         Cpr
         GHC.Cmm.DebugBlock
@@ -207,7 +203,7 @@ Library
         GHC.Driver.Ways
         Id
         IdInfo
-        Predicate
+        GHC.Core.Predicate
         Lexeme
         Literal
         GHC.Llvm
@@ -407,7 +403,7 @@ Library
         Ctype
         HaddockUtils
         Lexer
-        OptCoercion
+        GHC.Core.Coercion.Opt
         Parser
         RdrHsSyn
         ApiAnnotation
@@ -415,7 +411,7 @@ Library
         KnownUniques
         PrelInfo
         PrelNames
-        PrelRules
+        GHC.Core.Op.ConstantFold
         PrimOp
         ToolSettings
         TysPrim
@@ -435,19 +431,19 @@ Library
         GHC.Rename.Fixity
         GHC.Rename.Utils
         GHC.Rename.Unbound
-        CoreMonad
-        CSE
-        FloatIn
-        FloatOut
-        LiberateCase
-        OccurAnal
-        SAT
-        SetLevels
-        SimplCore
-        SimplEnv
-        SimplMonad
-        SimplUtils
-        Simplify
+        GHC.Core.Op.Monad
+        GHC.Core.Op.CSE
+        GHC.Core.Op.FloatIn
+        GHC.Core.Op.FloatOut
+        GHC.Core.Op.LiberateCase
+        GHC.Core.Op.OccurAnal
+        GHC.Core.Op.StaticArgs
+        GHC.Core.Op.SetLevels
+        GHC.Core.Op.Simplify.Driver
+        GHC.Core.Op.Simplify.Env
+        GHC.Core.Op.Simplify.Monad
+        GHC.Core.Op.Simplify.Utils
+        GHC.Core.Op.Simplify
         GHC.Stg.Pipeline
         GHC.Stg.Stats
         GHC.Stg.CSE
@@ -464,14 +460,14 @@ Library
         GHC.CoreToStg.Prep
         GHC.Types.RepType
         GHC.Core.Rules
-        SpecConstr
-        Specialise
-        CallArity
-        DmdAnal
-        CprAnal
-        Exitify
-        WorkWrap
-        WwLib
+        GHC.Core.Op.SpecConstr
+        GHC.Core.Op.Specialise
+        GHC.Core.Op.CallArity
+        GHC.Core.Op.DmdAnal
+        GHC.Core.Op.CprAnal
+        GHC.Core.Op.Exitify
+        GHC.Core.Op.WorkWrap
+        GHC.Core.Op.WorkWrap.Lib
         FamInst
         ClsInst
         Inst
@@ -523,22 +519,22 @@ Library
         TcSMonad
         TcTypeNats
         TcSplice
-        Class
-        Coercion
+        GHC.Core.Class
+        GHC.Core.Coercion
         GHC.HsToCore.Quote
         THNames
-        FamInstEnv
+        GHC.Core.FamInstEnv
         FunDeps
-        InstEnv
-        TyCon
-        CoAxiom
-        Type
-        TyCoRep
-        TyCoFVs
-        TyCoSubst
-        TyCoPpr
-        TyCoTidy
-        Unify
+        GHC.Core.InstEnv
+        GHC.Core.TyCon
+        GHC.Core.Coercion.Axiom
+        GHC.Core.Type
+        GHC.Core.TyCo.Rep
+        GHC.Core.TyCo.FVs
+        GHC.Core.TyCo.Subst
+        GHC.Core.TyCo.Ppr
+        GHC.Core.TyCo.Tidy
+        GHC.Core.Unify
         Bag
         Binary
         BooleanFormula

@@ -29,10 +29,10 @@ import GHC.Core
 import GHC.Core.FVs
 import GHC.Core.Utils
 import GHC.Core.Stats ( coreBindsStats )
-import CoreMonad
+import GHC.Core.Op.Monad
 import Bag
 import Literal
-import DataCon
+import GHC.Core.DataCon
 import TysWiredIn
 import TysPrim
 import TcType ( isFloatingTy )
@@ -45,16 +45,16 @@ import Id
 import IdInfo
 import GHC.Core.Ppr
 import ErrUtils
-import Coercion
+import GHC.Core.Coercion
 import SrcLoc
-import Type
+import GHC.Core.Type as Type
 import GHC.Types.RepType
-import TyCoRep       -- checks validity of types/coercions
-import TyCoSubst
-import TyCoFVs
-import TyCoPpr ( pprTyVar )
-import TyCon
-import CoAxiom
+import GHC.Core.TyCo.Rep   -- checks validity of types/coercions
+import GHC.Core.TyCo.Subst
+import GHC.Core.TyCo.FVs
+import GHC.Core.TyCo.Ppr ( pprTyVar )
+import GHC.Core.TyCon as TyCon
+import GHC.Core.Coercion.Axiom
 import BasicTypes
 import ErrUtils as Err
 import ListSetOps
@@ -62,9 +62,9 @@ import PrelNames
 import Outputable
 import FastString
 import Util
-import InstEnv     ( instanceDFunId )
-import OptCoercion ( checkAxInstCo )
-import GHC.Core.Arity ( typeArity )
+import GHC.Core.InstEnv      ( instanceDFunId )
+import GHC.Core.Coercion.Opt ( checkAxInstCo )
+import GHC.Core.Arity        ( typeArity )
 import Demand ( splitStrictSig, isBotDiv )
 
 import GHC.Driver.Types
@@ -167,7 +167,7 @@ In the desugarer, it's very very convenient to be able to say (in effect)
         let x::a = True in <body>
 That is, use a type let.   See Note [Type let] in CoreSyn.
 One place it is used is in mkWwArgs; see Note [Join points and beta-redexes]
-in WwLib.  (Maybe there are other "clients" of this feature; I'm not sure).
+in GHC.Core.Op.WorkWrap.Lib.  (Maybe there are other "clients" of this feature; I'm not sure).
 
 * Hence when linting <body> we need to remember that a=Int, else we
   might reject a correct program.  So we carry a type substitution (in
@@ -639,7 +639,7 @@ lintSingleBinding top_lvl_flag rec_flag (binder,rhs)
 
        -- We used to check that the dmdTypeDepth of a demand signature never
        -- exceeds idArity, but that is an unnecessary complication, see
-       -- Note [idArity varies independently of dmdTypeDepth] in DmdAnal
+       -- Note [idArity varies independently of dmdTypeDepth] in GHC.Core.Op.DmdAnal
 
        -- Check that the binder's arity is within the bounds imposed by
        -- the type and the strictness signature. See Note [exprArity invariant]
@@ -1087,7 +1087,7 @@ lintTyApp fun_ty arg_ty
         ; in_scope <- getInScope
         -- substTy needs the set of tyvars in scope to avoid generating
         -- uniques that are already in scope.
-        -- See Note [The substitution invariant] in TyCoSubst
+        -- See Note [The substitution invariant] in GHC.Core.TyCo.Subst
         ; return (substTyWithInScope in_scope [tv] [arg_ty] body_ty) }
 
   | otherwise
@@ -1146,7 +1146,7 @@ lintCaseExpr scrut var alt_ty alts =
      -- Check that the scrutinee is not a floating-point type
      -- if there are any literal alternatives
      -- See GHC.Core Note [Case expression invariants] item (5)
-     -- See Note [Rules for floating-point comparisons] in PrelRules
+     -- See Note [Rules for floating-point comparisons] in GHC.Core.Op.ConstantFold
      ; let isLitPat (LitAlt _, _ , _) = True
            isLitPat _                 = False
      ; checkL (not $ isFloatingTy scrut_ty && any isLitPat alts)
@@ -1388,7 +1388,8 @@ lintInTy ty
   = addLoc (InType ty) $
     do  { ty' <- applySubstTy ty
         ; k  <- lintType ty'
-        ; lintKind k  -- The kind returned by lintType is already
+        ; addLoc (InKind ty' k) $
+          lintKind k  -- The kind returned by lintType is already
                       -- a LintedKind but we also want to check that
                       -- k :: *, which lintKind does
         ; return (ty', k) }
@@ -1466,7 +1467,7 @@ lintType t@(ForAllTy (Bndr cv _vis) ty)
        ; checkValueKind k (text "the body of forall:" <+> ppr t)
        ; return liftedTypeKind
            -- We don't check variable escape here. Namely, k could refer to cv'
-           -- See Note [NthCo and newtypes] in TyCoRep
+           -- See Note [NthCo and newtypes] in GHC.Core.TyCo.Rep
     }}
 
 lintType ty@(LitTy l) = lintTyLit l >> return (typeKind ty)
@@ -1585,7 +1586,7 @@ lint_app :: SDoc -> LintedKind -> [(LintedType,LintedKind)] -> LintM Kind
 lint_app doc kfn kas
     = do { in_scope <- getInScope
          -- We need the in_scope set to satisfy the invariant in
-         -- Note [The substitution invariant] in TyCoSubst
+         -- Note [The substitution invariant] in GHC.Core.TyCo.Subst
          ; foldlM (go_app in_scope) kfn kas }
   where
     fail_msg extra = vcat [ hang (text "Kind application error in") 2 doc
@@ -1807,7 +1808,7 @@ lintCoercion (ForAllCo tv1 kind_co co)
                      -- scope. All the free vars of `t2` and `kind_co` should
                      -- already be in `in_scope`, because they've been
                      -- linted and `tv2` has the same unique as `tv1`.
-                     -- See Note [The substitution invariant] in TyCoSubst.
+                     -- See Note [The substitution invariant] in GHC.Core.TyCo.Subst.
                      unitVarEnv tv1 (TyVarTy tv2 `mkCastTy` mkSymCo kind_co)
              tyr = mkInvForAllTy tv2 $
                    substTy subst t2
@@ -1825,7 +1826,7 @@ lintCoercion (ForAllCo cv1 kind_co co)
        ; (k3, k4, t1, t2, r) <- lintCoercion co
        ; checkValueKind k3 (text "the body of a ForAllCo over covar:" <+> ppr co)
        ; checkValueKind k4 (text "the body of a ForAllCo over covar:" <+> ppr co)
-           -- See Note [Weird typing rule for ForAllTy] in Type
+           -- See Note [Weird typing rule for ForAllTy] in GHC.Core.Type
        ; in_scope <- getInScope
        ; let tyl   = mkTyCoInvForAllTy cv1 t1
              r2    = coVarRole cv1
@@ -1838,13 +1839,13 @@ lintCoercion (ForAllCo cv1 kind_co co)
                      -- scope. All the free vars of `t2` and `kind_co` should
                      -- already be in `in_scope`, because they've been
                      -- linted and `cv2` has the same unique as `cv1`.
-                     -- See Note [The substitution invariant] in TyCoSubst.
+                     -- See Note [The substitution invariant] in GHC.Core.TyCo.Subst.
                      unitVarEnv cv1 (eta1 `mkTransCo` (mkCoVarCo cv2)
                                           `mkTransCo` (mkSymCo eta2))
              tyr = mkTyCoInvForAllTy cv2 $
                    substTy subst t2
        ; return (liftedTypeKind, liftedTypeKind, tyl, tyr, r) } }
-                   -- See Note [Weird typing rule for ForAllTy] in Type
+                   -- See Note [Weird typing rule for ForAllTy] in GHC.Core.Type
 
 lintCoercion co@(FunCo r co1 co2)
   = do { (k1,k'1,s1,t1,r1) <- lintCoercion co1
@@ -1964,7 +1965,7 @@ lintCoercion the_co@(NthCo r0 n co)
          { (Just (tc_s, tys_s), Just (tc_t, tys_t))
              | tc_s == tc_t
              , isInjectiveTyCon tc_s r
-                 -- see Note [NthCo and newtypes] in TyCoRep
+                 -- see Note [NthCo and newtypes] in GHC.Core.TyCo.Rep
              , tys_s `equalLength` tys_t
              , tys_s `lengthExceeds` n
              -> do { lintRole the_co tr r0
@@ -2018,7 +2019,7 @@ lintCoercion (InstCo co arg)
              , CoercionTy s2' <- s2
              -> do { return $
                        (liftedTypeKind, liftedTypeKind
-                          -- See Note [Weird typing rule for ForAllTy] in Type
+                          -- See Note [Weird typing rule for ForAllTy] in GHC.Core.Type
                        , substTy (mkCvSubst in_scope $ unitVarEnv cv1 s1') t1
                        , substTy (mkCvSubst in_scope $ unitVarEnv cv2 s2') t2
                        , r) }
@@ -2278,6 +2279,7 @@ data LintLocInfo
   | ImportedUnfolding SrcLoc -- Some imported unfolding (ToDo: say which)
   | TopLevelBindings
   | InType Type         -- Inside a type
+  | InKind Type Kind    -- Inside a kind
   | InCo   Coercion     -- Inside a coercion
 
 initL :: DynFlags -> LintFlags -> [Var]
@@ -2533,6 +2535,8 @@ dumpLoc TopLevelBindings
   = (noSrcLoc, Outputable.empty)
 dumpLoc (InType ty)
   = (noSrcLoc, text "In the type" <+> quotes (ppr ty))
+dumpLoc (InKind ty ki)
+  = (noSrcLoc, text "In the kind of" <+> parens (ppr ty <+> dcolon <+> ppr ki))
 dumpLoc (InCo co)
   = (noSrcLoc, text "In the coercion" <+> quotes (ppr co))
 
@@ -2834,7 +2838,7 @@ lintAnnots pname pass guts = do
     let binds = flattenBinds $ mg_binds nguts
         binds' = flattenBinds $ mg_binds nguts'
         (diffs,_) = diffBinds True (mkRnEnv2 emptyInScopeSet) binds binds'
-    when (not (null diffs)) $ CoreMonad.putMsg $ vcat
+    when (not (null diffs)) $ GHC.Core.Op.Monad.putMsg $ vcat
       [ lint_banner "warning" pname
       , text "Core changes with annotations:"
       , withPprStyle (defaultDumpStyle dflags) $ nest 2 $ vcat diffs

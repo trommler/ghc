@@ -17,10 +17,11 @@
 --
 -- * 'Name.Name': see "Name#name_types"
 --
--- * 'Id.Id' represents names that not only have a 'Name.Name' but also a 'TyCoRep.Type' and some additional
---   details (a 'IdInfo.IdInfo' and one of 'Var.LocalIdDetails' or 'IdInfo.GlobalIdDetails') that
---   are added, modified and inspected by various compiler passes. These 'Var.Var' names may either
---   be global or local, see "Var#globalvslocal"
+-- * 'Id.Id' represents names that not only have a 'Name.Name' but also a
+--   'GHC.Core.TyCo.Rep.Type' and some additional details (a 'IdInfo.IdInfo' and
+--   one of 'Var.LocalIdDetails' or 'IdInfo.GlobalIdDetails') that are added,
+--   modified and inspected by various compiler passes. These 'Var.Var' names
+--   may either be global or local, see "Var#globalvslocal"
 --
 -- * 'Var.Var': see "Var#name_types"
 
@@ -134,15 +135,15 @@ import Var( Id, CoVar, JoinId,
             isId, isLocalId, isGlobalId, isExportedId )
 import qualified Var
 
-import Type
+import GHC.Core.Type
 import GHC.Types.RepType
 import TysPrim
-import DataCon
+import GHC.Core.DataCon
 import Demand
 import Cpr
 import Name
 import Module
-import Class
+import GHC.Core.Class
 import {-# SOURCE #-} PrimOp (PrimOp)
 import ForeignCall
 import Maybes
@@ -487,7 +488,7 @@ isDataConId_maybe id = case Var.idDetails id of
                          _                 -> Nothing
 
 isJoinId :: Var -> Bool
--- It is convenient in SetLevels.lvlMFE to apply isJoinId
+-- It is convenient in GHC.Core.Op.SetLevels.lvlMFE to apply isJoinId
 -- to the free vars of an expression, so it's convenient
 -- if it returns False for type variables
 isJoinId id
@@ -893,7 +894,7 @@ Note [transferPolyIdInfo]
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 This transfer is used in three places:
         FloatOut (long-distance let-floating)
-        SimplUtils.abstractFloats (short-distance let-floating)
+        GHC.Core.Op.Simplify.Utils.abstractFloats (short-distance let-floating)
         StgLiftLams (selectively lambda-lift local functions to top-level)
 
 Consider the short-distance let-floating:

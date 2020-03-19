@@ -1197,7 +1197,7 @@ runPhase (HscOut src_flavour mod_name result) _ dflags = do
 
                     final_iface <- liftIO (mkFullIface hsc_env'{hsc_dflags=iface_dflags} partial_iface (Just caf_infos))
                     let final_mod_details = {-# SCC updateModDetailsCafInfos #-}
-                                            updateModDetailsCafInfos caf_infos mod_details
+                                            updateModDetailsCafInfos iface_dflags caf_infos mod_details
                     setIface final_iface final_mod_details
 
                     -- See Note [Writing interface files]
@@ -2140,7 +2140,7 @@ joinObjectFiles dflags o_files output_fn = do
                        SysTools.Option "-nostdlib",
                        SysTools.Option "-Wl,-r"
                      ]
-                        -- See Note [No PIE while linking] in DynFlags
+                        -- See Note [No PIE while linking] in GHC.Driver.Session
                      ++ (if toolSettings_ccSupportsNoPie toolSettings'
                           then [SysTools.Option "-no-pie"]
                           else [])

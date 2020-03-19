@@ -30,8 +30,8 @@ import TcRnDriver ( runTcInteractive )
 import Id
 import IdInfo
 import Name
-import Type
-import TyCon       ( tyConDataCons )
+import GHC.Core.Type
+import GHC.Core.TyCon     ( tyConDataCons )
 import Avail
 import GHC.Core
 import GHC.Core.FVs       ( exprsSomeFreeVarsList )
@@ -45,17 +45,17 @@ import GHC.HsToCore.Binds
 import GHC.HsToCore.Foreign.Decl
 import PrelNames
 import TysPrim
-import Coercion
+import GHC.Core.Coercion
 import TysWiredIn
-import DataCon     ( dataConWrapId )
+import GHC.Core.DataCon ( dataConWrapId )
 import GHC.Core.Make
 import Module
 import NameSet
 import NameEnv
 import GHC.Core.Rules
 import BasicTypes
-import CoreMonad        ( CoreToDo(..) )
-import GHC.Core.Lint    ( endPassIO )
+import GHC.Core.Op.Monad ( CoreToDo(..) )
+import GHC.Core.Lint     ( endPassIO )
 import VarSet
 import FastString
 import ErrUtils

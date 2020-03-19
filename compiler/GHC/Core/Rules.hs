@@ -40,11 +40,12 @@ import GHC.Core.Utils   ( exprType, eqExpr, mkTick, mkTicks
                         , stripTicksTopT, stripTicksTopE
                         , isJoinBind )
 import GHC.Core.Ppr     ( pprRules )
-import Type             ( Type, TCvSubst, extendTvSubst, extendCvSubst
-                        , mkEmptyTCvSubst, substTy )
+import GHC.Core.Type as Type
+   ( Type, TCvSubst, extendTvSubst, extendCvSubst
+   , mkEmptyTCvSubst, substTy )
 import TcType           ( tcSplitTyConApp_maybe )
 import TysWiredIn       ( anyTypeOfKind )
-import Coercion
+import GHC.Core.Coercion as Coercion
 import GHC.Core.Op.Tidy ( tidyRules )
 import Id
 import IdInfo           ( RuleInfo( RuleInfo ) )
@@ -55,7 +56,7 @@ import Name             ( Name, NamedThing(..), nameIsLocalOrFrom )
 import NameSet
 import NameEnv
 import UniqFM
-import Unify            ( ruleMatchTyKiX )
+import GHC.Core.Unify as Unify ( ruleMatchTyKiX )
 import BasicTypes
 import GHC.Driver.Session         ( DynFlags )
 import Outputable
@@ -113,7 +114,7 @@ Note [Overall plumbing for rules]
     (d) Rules in the ExternalPackageTable. These can grow in response
         to lazy demand-loading of interfaces.
 
-* At the moment (c) is carried in a reader-monad way by the CoreMonad.
+* At the moment (c) is carried in a reader-monad way by the GHC.Core.Op.Monad.
   The HomePackageTable doesn't have a single RuleBase because technically
   we should only be able to "see" rules "below" this module; so we
   generate a RuleBase for (c) by combing rules from all the modules
@@ -126,7 +127,7 @@ Note [Overall plumbing for rules]
 * So in the outer simplifier loop, we combine (b-d) into a single
   RuleBase, reading
      (b) from the ModGuts,
-     (c) from the CoreMonad, and
+     (c) from the GHC.Core.Op.Monad, and
      (d) from its mutable variable
   [Of course this means that we won't see new EPS rules that come in
   during a single simplifier iteration, but that probably does not
@@ -181,7 +182,7 @@ mkRule this_mod is_auto is_local name act fn bndrs args rhs
            ru_orphan = orph,
            ru_auto = is_auto, ru_local = is_local }
   where
-        -- Compute orphanhood.  See Note [Orphans] in InstEnv
+        -- Compute orphanhood.  See Note [Orphans] in GHC.Core.InstEnv
         -- A rule is an orphan only if none of the variables
         -- mentioned on its left-hand side are locally defined
     lhs_names = extendNameSet (exprsOrphNames args) fn
@@ -329,7 +330,7 @@ but that isn't quite right:
      - PrimOps and ClassOps are born with a bunch of rules inside the Id,
        even when they are imported
 
-     - The rules in PrelRules.builtinRules should be active even
+     - The rules in GHC.Core.Op.ConstantFold.builtinRules should be active even
        in the module defining the Id (when it's a LocalId), but
        the rules are kept in the global RuleBase
 
@@ -734,7 +735,7 @@ match _ _ e@Tick{} _
 -- might substitute [a/b] in the template, and then erroneously
 -- succeed in matching what looks like the template variable 'a' against 3.
 
--- The Var case follows closely what happens in Unify.match
+-- The Var case follows closely what happens in GHC.Core.Unify.match
 match renv subst (Var v1) e2
   = match_var renv subst v1 e2
 
@@ -1022,7 +1023,7 @@ these cases.
 On the other hand, where we are allowed to insert new cost into the
 tick scope, we can float them upwards to the rule application site.
 
-cf Note [Notes in call patterns] in SpecConstr
+cf Note [Notes in call patterns] in GHC.Core.Op.SpecConstr
 
 Note [Matching lets]
 ~~~~~~~~~~~~~~~~~~~~

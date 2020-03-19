@@ -28,7 +28,7 @@
 --
 -- The linker must find the definitions matching the @extern StgPtr <name>@
 -- declarations. For this to work, the identifiers of static pointers need to be
--- exported. This is done in SetLevels.newLvlVar.
+-- exported. This is done in GHC.Core.Op.SetLevels.newLvlVar.
 --
 -- There is also a finalization function for the time when the module is
 -- unloaded.
@@ -127,7 +127,7 @@ import GhcPrelude
 import GHC.Cmm.CLabel
 import GHC.Core
 import GHC.Core.Utils (collectMakeStaticArgs)
-import DataCon
+import GHC.Core.DataCon
 import GHC.Driver.Session
 import GHC.Driver.Types
 import Id
@@ -138,7 +138,7 @@ import Outputable
 import GHC.Platform
 import PrelNames
 import TcEnv (lookupGlobal)
-import Type
+import GHC.Core.Type
 
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State

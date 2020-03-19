@@ -2,16 +2,16 @@
 module Main where
 
 import GHC.ByteCode.Linker
-import CoreMonad
+import GHC.Core.Op.Monad
 import Data.Array
-import DataCon
+import GHC.Core.DataCon
 import GHC
 import GHC.Exts.Heap
 import GHC.Driver.Types
 import GHC.Runtime.Linker
 import GHC.Runtime.Heap.Inspect
 import TcEnv
-import Type
+import GHC.Core.Type
 import TcRnMonad
 import TcType
 import Control.Applicative

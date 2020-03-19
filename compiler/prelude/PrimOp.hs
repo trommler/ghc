@@ -36,9 +36,9 @@ import Id               ( Id, mkVanillaGlobalWithInfo )
 import IdInfo           ( vanillaIdInfo, setCafInfo, CafInfo(NoCafRefs) )
 import Name
 import PrelNames        ( gHC_PRIMOPWRAPPERS )
-import TyCon            ( TyCon, isPrimTyCon, PrimRep(..) )
-import Type
-import GHC.Types.RepType          ( typePrimRep1, tyConPrimRep1 )
+import GHC.Core.TyCon    ( TyCon, isPrimTyCon, PrimRep(..) )
+import GHC.Core.Type
+import GHC.Types.RepType ( typePrimRep1, tyConPrimRep1 )
 import BasicTypes       ( Arity, Fixity(..), FixityDirection(..), Boxity(..),
                           SourceText(..) )
 import SrcLoc           ( wiredInSrcSpan )
@@ -498,7 +498,8 @@ primOpOkForSideEffects op
 {-
 Note [primOpIsCheap]
 ~~~~~~~~~~~~~~~~~~~~
-@primOpIsCheap@, as used in \tr{SimplUtils.hs}.  For now (HACK
+
+@primOpIsCheap@, as used in GHC.Core.Op.Simplify.Utils.  For now (HACK
 WARNING), we just borrow some other predicates for a
 what-should-be-good-enough test.  "Cheap" means willing to call it more
 than once, and/or push it inside a lambda.  The latter could change the

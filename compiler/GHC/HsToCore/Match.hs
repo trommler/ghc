@@ -43,14 +43,14 @@ import GHC.HsToCore.Binds
 import GHC.HsToCore.GuardedRHSs
 import GHC.HsToCore.Utils
 import Id
-import ConLike
-import DataCon
-import PatSyn
+import GHC.Core.ConLike
+import GHC.Core.DataCon
+import GHC.Core.PatSyn
 import GHC.HsToCore.Match.Constructor
 import GHC.HsToCore.Match.Literal
-import Type
-import Coercion ( eqCoercion )
-import TyCon( isNewTyCon )
+import GHC.Core.Type
+import GHC.Core.Coercion ( eqCoercion )
+import GHC.Core.TyCon    ( isNewTyCon )
 import TysWiredIn
 import SrcLoc
 import Maybes
@@ -337,7 +337,7 @@ We do *not* desugar simply to
    error "empty case"
 or some such, because 'x' might be bound to (error "hello"), in which
 case we want to see that "hello" exception, not (error "empty case").
-See also Note [Case elimination: lifted case] in Simplify.
+See also Note [Case elimination: lifted case] in GHC.Core.Op.Simplify.
 
 
 ************************************************************************
