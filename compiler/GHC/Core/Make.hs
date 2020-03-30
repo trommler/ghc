@@ -56,31 +56,31 @@ module GHC.Core.Make (
 
 import GhcPrelude
 
-import Id
-import Var      ( EvVar, setTyVarUnique )
+import GHC.Types.Id
+import GHC.Types.Var  ( EvVar, setTyVarUnique )
 
 import GHC.Core
 import GHC.Core.Utils ( exprType, needsCaseBinding, mkSingleAltCase, bindNonRec )
-import Literal
+import GHC.Types.Literal
 import GHC.Driver.Types
 import GHC.Platform
 
 import TysWiredIn
 import PrelNames
 
-import GHC.Hs.Utils     ( mkChunkified, chunkify )
+import GHC.Hs.Utils      ( mkChunkified, chunkify )
 import GHC.Core.Type
 import GHC.Core.Coercion ( isCoVar )
 import GHC.Core.DataCon  ( DataCon, dataConWorkId )
 import TysPrim
-import IdInfo
-import Demand
-import Cpr
-import Name      hiding ( varName )
+import GHC.Types.Id.Info
+import GHC.Types.Demand
+import GHC.Types.Cpr
+import GHC.Types.Name      hiding ( varName )
 import Outputable
 import FastString
-import UniqSupply
-import BasicTypes
+import GHC.Types.Unique.Supply
+import GHC.Types.Basic
 import Util
 import Data.List
 
@@ -101,7 +101,7 @@ sortQuantVars :: [Var] -> [Var]
 -- and then other Ids
 -- It is a deterministic sort, meaining it doesn't look at the values of
 -- Uniques. For explanation why it's important See Note [Unique Determinism]
--- in Unique.
+-- in GHC.Types.Unique.
 sortQuantVars vs = sorted_tcvs ++ ids
   where
     (tcvs, ids) = partition (isTyVar <||> isCoVar) vs
@@ -647,7 +647,7 @@ mkBuildExpr :: (MonadFail.MonadFail m, MonadThings m, MonadUnique m)
                                                         -- the body of that worker
             -> m CoreExpr
 mkBuildExpr elt_ty mk_build_inside = do
-    [n_tyvar] <- newTyVars [alphaTyVar]
+    n_tyvar <- newTyVar alphaTyVar
     let n_ty = mkTyVarTy n_tyvar
         c_ty = mkVisFunTys [elt_ty, n_ty] n_ty
     [c, n] <- sequence [mkSysLocalM (fsLit "c") c_ty, mkSysLocalM (fsLit "n") n_ty]
@@ -657,9 +657,9 @@ mkBuildExpr elt_ty mk_build_inside = do
     build_id <- lookupId buildName
     return $ Var build_id `App` Type elt_ty `App` mkLams [n_tyvar, c, n] build_inside
   where
-    newTyVars tyvar_tmpls = do
-      uniqs <- getUniquesM
-      return (zipWith setTyVarUnique tyvar_tmpls uniqs)
+    newTyVar tyvar_tmpl = do
+      uniq <- getUniqueM
+      return (setTyVarUnique tyvar_tmpl uniq)
 
 {-
 ************************************************************************
