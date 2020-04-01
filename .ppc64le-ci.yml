@@ -29,6 +29,7 @@ stages:
     - merge_requests
     - tags
     - web
+    - T11261
 
 .nightly: &nightly
   only:
@@ -102,4 +103,3 @@ master-powerpc64le-linux:
   <<: *only-default
   extends: .build-powerpc64le-linux
   stage: full-build
-
