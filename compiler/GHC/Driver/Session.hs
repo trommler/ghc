@@ -699,7 +699,6 @@ data DynFlags = DynFlags {
   ufUseThreshold        :: Int,
   ufFunAppDiscount      :: Int,
   ufDictDiscount        :: Int,
-  ufKeenessFactor       :: Float,
   ufDearOp              :: Int,
   ufVeryAggressive      :: Bool,
 
@@ -1430,12 +1429,11 @@ defaultDynFlags mySettings llvmConfig =
         -- into Csg.calc (The unfolding for sqr never makes it into the
         -- interface file.)
         ufCreationThreshold = 750,
-        ufUseThreshold      = 60,
+        ufUseThreshold      = 80,
         ufFunAppDiscount    = 60,
         -- Be fairly keen to inline a function if that means
         -- we'll be able to pick the right method from a dictionary
         ufDictDiscount      = 30,
-        ufKeenessFactor     = 1.5,
         ufDearOp            = 40,
         ufVeryAggressive    = False,
 
@@ -3023,8 +3021,9 @@ dynamic_flags_deps = [
       (intSuffix   (\n d -> d {ufFunAppDiscount = n}))
   , make_ord_flag defFlag "funfolding-dict-discount"
       (intSuffix   (\n d -> d {ufDictDiscount = n}))
-  , make_ord_flag defFlag "funfolding-keeness-factor"
-      (floatSuffix (\n d -> d {ufKeenessFactor = n}))
+  , make_dep_flag defFlag "funfolding-keeness-factor"
+      (floatSuffix (\_ d -> d))
+      "-funfolding-keeness-factor is no longer respected as of GHC 8.12"
   , make_ord_flag defFlag "fmax-worker-args"
       (intSuffix (\n d -> d {maxWorkerArgs = n}))
   , make_ord_flag defGhciFlag "fghci-hist-size"
@@ -3631,7 +3630,7 @@ fFlagsDeps = [
 
 -- | These @-f\<blah\>@ flags have to do with the typed-hole error message or
 -- the valid hole fits in that message. See Note [Valid hole fits include ...]
--- in the TcHoleErrors module. These flags can all be reversed with
+-- in the GHC.Tc.Errors.Hole module. These flags can all be reversed with
 -- @-fno-\<blah\>@
 fHoleFlags :: [(Deprecation, FlagSpec GeneralFlag)]
 fHoleFlags = [
@@ -3926,7 +3925,7 @@ defaultFlags settings
 
 -- | These are the default settings for the display and sorting of valid hole
 --  fits in typed-hole error messages. See Note [Valid hole fits include ...]
- -- in the TcHoleErrors module.
+ -- in the GHC.Tc.Errors.Hole module.
 validHoleFitDefaults :: [GeneralFlag]
 validHoleFitDefaults
   =  [ Opt_ShowTypeAppOfHoleFits
