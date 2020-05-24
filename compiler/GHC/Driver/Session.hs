@@ -246,12 +246,12 @@ import GHC.Unit.Parser
 import GHC.Unit.Module
 import {-# SOURCE #-} GHC.Driver.Plugins
 import {-# SOURCE #-} GHC.Driver.Hooks
-import {-# SOURCE #-} GHC.Builtin.Names ( mAIN )
+import GHC.Builtin.Names ( mAIN )
 import {-# SOURCE #-} GHC.Unit.State (PackageState, emptyPackageState, PackageDatabase, mkIndefUnitId, updateIndefUnitId)
 import GHC.Driver.Phases ( Phase(..), phaseInputExt )
 import GHC.Driver.Flags
 import GHC.Driver.Ways
-import Config
+import GHC.Settings.Config
 import GHC.Utils.CliOption
 import GHC.Driver.CmdLine hiding (WarnReason(..))
 import qualified GHC.Driver.CmdLine as Cmd
