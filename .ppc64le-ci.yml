@@ -92,6 +92,7 @@ stages:
   extends: .validate
   tags:
     - ppc64le-linux
+    - ghc
   allow_failure: false
   variables:
     BUILD_FLAVOUR: "validate"
