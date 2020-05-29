@@ -11,11 +11,21 @@
 
   * Add `singleton` function for `Data.List.NonEmpty`.
 
+  * The planned deprecation of `Data.Monoid.First` and `Data.Monoid.Last`
+    is scrapped due to difficulties with the suggested migration path.
+
   * Add `Generic` instances to `Fingerprint`, `GiveGCStats`, `GCFlags`,
     `ConcFlags`, `DebugFlags`, `CCFlags`, `DoHeapProfile`, `ProfFlags`,
     `DoTrace`, `TraceFlags`, `TickyFlags`, `ParFlags`, `RTSFlags`, `RTSStats`,
     `GCStats`, `ByteOrder`, `GeneralCategory`, `SrcLoc`
+    
+  * Add rules `unpackUtf8`, `unpack-listUtf8` and `unpack-appendUtf8` to `GHC.Base`.
+    They correspond to their ascii versions and hopefully make it easier
+    for libraries to handle utf8 encoded strings efficiently.
 
+  * An issue with list fusion and `elem` was fixed. `elem` applied to known
+    small lists will now compile to a simple case statement more often.
+   
 ## 4.14.0.0 *TBA*
   * Bundled with GHC 8.10.1
 
