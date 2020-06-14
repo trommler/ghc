@@ -30,6 +30,7 @@ import GHC.Cmm.BlockId
 import GHC.Cmm.CLabel
 import GHC.Cmm.Ppr.Expr () -- For Outputable instances
 
+import GHC.Types.Basic (Alignment)
 import GHC.Types.Unique ( pprUniqueAlways, getUnique )
 import GHC.Platform
 import GHC.Data.FastString
@@ -43,7 +44,7 @@ import Data.Bits
 -- -----------------------------------------------------------------------------
 -- Printing this stuff out
 
-pprNatCmmDecl :: NCGConfig -> NatCmmDecl RawCmmStatics Instr -> SDoc
+pprNatCmmDecl :: NCGConfig -> NatCmmDecl (Alignment, RawCmmStatics) Instr -> SDoc
 pprNatCmmDecl config (CmmData section dats) =
   pprSectionAlign config section
   $$ pprDatas (ncgPlatform config) dats
@@ -144,9 +145,9 @@ pprBasicBlock config info_env (BasicBlock blockid instrs)
 
 
 
-pprDatas :: Platform -> RawCmmStatics -> SDoc
+pprDatas :: Platform -> (Alignment, RawCmmStatics) -> SDoc
 -- See note [emit-time elimination of static indirections] in "GHC.Cmm.CLabel".
-pprDatas _platform (CmmStaticsRaw alias [CmmStaticLit (CmmLabel lbl), CmmStaticLit ind, _, _])
+pprDatas _platform (_align, (CmmStaticsRaw alias [CmmStaticLit (CmmLabel lbl), CmmStaticLit ind, _, _]))
   | lbl == mkIndStaticInfoLabel
   , let labelInd (CmmLabelOff l _) = Just l
         labelInd (CmmLabel l) = Just l
@@ -155,7 +156,7 @@ pprDatas _platform (CmmStaticsRaw alias [CmmStaticLit (CmmLabel lbl), CmmStaticL
   , alias `mayRedirectTo` ind'
   = pprGloblDecl alias
     $$ text ".equiv" <+> ppr alias <> comma <> ppr (CmmLabel ind')
-pprDatas platform (CmmStaticsRaw lbl dats) = vcat (pprLabel platform lbl : map (pprData platform) dats)
+pprDatas platform (_align, CmmStaticsRaw lbl dats) = vcat (pprLabel platform lbl : map (pprData platform) dats)
 
 pprData :: Platform -> CmmStatic -> SDoc
 pprData platform d = case d of
