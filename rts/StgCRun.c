@@ -725,17 +725,30 @@ StgRunIsImplementedInAssembler(void)
    -------------------------------------------------------------------------- */
 
 #if defined(powerpc64_HOST_ARCH)
-
+/* 64-bit PowerPC ELF ABI 1.9
+ *
+ * Stack frame organization (see Figure 3-17, ELF ABI 1.9, p 14)
+ *
+ * +-> Back Chain (points to the prevoius stack frame)
+ * |   Floating point register save area (f14-f31)
+ * |   General register save area (r14-r31)
+ * |   ... ununsed save areas (size 0)
+ * |   Local variable space
+ * |   Parameter save area
+ * |   ... stack header (TOC, link editor, compiler, LR, CR)
+ * +-- Back chain           <---- SP (r1)
+ *
+ * We save all callee-saves general purpose registers (r14-r31) and
+ * all callee-saves floating point registers (f14-31) and the return
+ * address of the caller (LR).
+ * There is no need to save the TOC register (r2) because we will return
+ * through StgReturn and the calling convention requires that we load
+ * the TOC pointer from the function descriptor upon a call to StgReturn.
+ * That TOC ponter is the same as the TOC pointer in StgRun.
+ */
 static void GNUC3_ATTRIBUTE(used)
 StgRunIsImplementedInAssembler(void)
 {
-        // r0 volatile
-        // r1 stack pointer
-        // r2 toc - needs to be saved
-        // r3-r10 argument passing, volatile
-        // r11, r12 very volatile (not saved across cross-module calls)
-        // r13 thread local state (never modified, don't need to save)
-        // r14-r31 callee-save
         __asm__ volatile (
                 ".section \".opd\",\"aw\"\n"
                 ".align 3\n"
@@ -743,11 +756,11 @@ StgRunIsImplementedInAssembler(void)
                 ".hidden StgRun\n"
                 "StgRun:\n"
                 "\t.quad\t.StgRun,.TOC.@tocbase,0\n"
-                "\t.size StgRun,24\n"
+                "\t.size StgRun,.-StgRun\n"
                 ".globl StgReturn\n"
                 "StgReturn:\n"
                 "\t.quad\t.StgReturn,.TOC.@tocbase,0\n"
-                "\t.size StgReturn,24\n"
+                "\t.size StgReturn,.-StgReturn\n"
                 ".previous\n"
                 ".type StgRun,@function\n"
                 ".StgRun:\n"
