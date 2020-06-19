@@ -55,13 +55,10 @@ module GHC.Settings
   , sOpt_i
   , sExtraGccViaCFlags
   , sTargetPlatformString
-  , sIntegerLibrary
-  , sIntegerLibraryType
   , sGhcWithInterpreter
   , sGhcWithNativeCodeGen
   , sGhcWithSMP
   , sGhcRTSWays
-  , sTablesNextToCode
   , sLibFFI
   , sGhcThreaded
   , sGhcDebugged
@@ -262,10 +259,6 @@ sExtraGccViaCFlags = toolSettings_extraGccViaCFlags . sToolSettings
 
 sTargetPlatformString :: Settings -> String
 sTargetPlatformString = platformMisc_targetPlatformString . sPlatformMisc
-sIntegerLibrary :: Settings -> String
-sIntegerLibrary = platformMisc_integerLibrary . sPlatformMisc
-sIntegerLibraryType :: Settings -> IntegerLibrary
-sIntegerLibraryType = platformMisc_integerLibraryType . sPlatformMisc
 sGhcWithInterpreter :: Settings -> Bool
 sGhcWithInterpreter = platformMisc_ghcWithInterpreter . sPlatformMisc
 sGhcWithNativeCodeGen :: Settings -> Bool
@@ -274,8 +267,6 @@ sGhcWithSMP :: Settings -> Bool
 sGhcWithSMP = platformMisc_ghcWithSMP . sPlatformMisc
 sGhcRTSWays :: Settings -> String
 sGhcRTSWays = platformMisc_ghcRTSWays . sPlatformMisc
-sTablesNextToCode :: Settings -> Bool
-sTablesNextToCode = platformMisc_tablesNextToCode . sPlatformMisc
 sLibFFI :: Settings -> Bool
 sLibFFI = platformMisc_libFFI . sPlatformMisc
 sGhcThreaded :: Settings -> Bool

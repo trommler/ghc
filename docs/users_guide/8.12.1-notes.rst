@@ -10,6 +10,15 @@ following sections.
 Highlights
 ----------
 
+* The :extension:`LinearTypes` extension enables linear function syntax
+  ``a #-> b``, as described in the `Linear Types GHC proposal
+  <https://github.com/ghc-proposals/ghc-proposals/blob/master/proposals/0111-linear-types.rst>`__.
+
+  The GADT syntax can be used to define data types with linear and nonlinear fields.
+
+  This extension is considered experimental: it doesn't implement the full proposal yet and the details
+  are subject to change.
+
 * NCG
 
   - The linear register allocator saw improvements reducing the number
@@ -21,11 +30,10 @@ Highlights
 
 * Pattern-Match Coverage Checking
 
-  - The revamp of the pattern-match coverage checker that started in 8.10 concludes with this release and implements the 
+  - The revamp of the pattern-match coverage checker that started in 8.10 concludes with this release and implements the
     novel `*Lower Your Guards* <https://www.microsoft.com/en-us/research/uploads/prod/2020/03/lyg.pdf>`_ algorithm.
-  - Compared to 8.10, end users might notice improvements to "long-distance information": :: haskell
+  - Compared to 8.10, end users might notice improvements to "long-distance information": ::
 
-      :linenos:   
       f True = 1
       f x    = ... case x of { False -> 2; True -> 3 } ...
 
@@ -40,7 +48,7 @@ Language
 
 * Record field selectors are now given type signatures that preserve the
   user-written order of quantified type variables. Moreover, field selector
-  type signatures no longer make inferred type variables avaiable for explicit
+  type signatures no longer make inferred type variables available for explicit
   type application. See :ref:`field-selectors-and-type-applications` for more
   details.
 
@@ -103,7 +111,7 @@ Language
   <https://gitlab.haskell.org/ghc/ghc/issues/18126>`_.
 
 * GHC now implements simplified subsumption, as described in `GHC Proposal #287 <https://github.com/ghc-proposals/ghc-proposals/blob/master/proposals/0287-simplify-subsumption.rst>`__.
-  This change simplifies the type system, and prevents the possiblity of GHC
+  This change simplifies the type system, and prevents the possibility of GHC
   silently changing the semantics of user programs, but it does mean that some libraries
   may need eta-expansion to typecheck.  More info here: :ref:`simple-subsumption`.
 
@@ -125,14 +133,14 @@ Language
       MkT2 :: (forall a. a -> T)
 
   ``MkT1`` and ``MkT2`` are rejected because the lack of an outermost
-  ``forall`` triggers implicit quantification, making the explicit ``forall``s
+  ``forall`` triggers implicit quantification, making the explicit ``forall``\ s
   nested. Furthermore, GADT constructors do not permit the use of nested
-  ``forall``s, as explained in :ref:`formal-gadt-syntax`.
+  ``forall``\ s, as explained in :ref:`formal-gadt-syntax`.
 
-  In addition to rejecting nested ``forall``s, GHC is now more stringent about
+  In addition to rejecting nested ``forall``\ s, GHC is now more stringent about
   rejecting uses of nested *contexts* in GADT constructors. For example, the
   following example, which previous versions of GHC would accept, is now
-  rejected:
+  rejected: ::
 
     data U a where
       MkU :: (Show a => U a)

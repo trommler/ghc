@@ -78,7 +78,6 @@ initSettings top_dir = do
       getBooleanSetting key = either pgmError pure $
         getBooleanSetting0 settingsFile mySettings key
   targetPlatformString <- getSetting "target platform string"
-  tablesNextToCode <- getBooleanSetting "Tables next to code"
   myExtraGccViaCFlags <- getSetting "GCC extra via C opts"
   -- On Windows, mingw is distributed with GHC,
   -- so we look in TopDir/../mingw/bin,
@@ -149,19 +148,6 @@ initSettings top_dir = do
 
   let iserv_prog = libexec "ghc-iserv"
 
-  integerLibrary <- getSetting "integer library"
-  integerLibraryType <- case integerLibrary of
-    "integer-gmp" -> pure IntegerGMP
-    "integer-simple" -> pure IntegerSimple
-    _ -> pgmError $ unwords
-      [ "Entry for"
-      , show "integer library"
-      , "must be one of"
-      , show "integer-gmp"
-      , "or"
-      , show "integer-simple"
-      ]
-
   ghcWithInterpreter <- getBooleanSetting "Use interpreter"
   ghcWithNativeCodeGen <- getBooleanSetting "Use native code generator"
   ghcWithSMP <- getBooleanSetting "Support SMP"
@@ -229,13 +215,10 @@ initSettings top_dir = do
     , sTargetPlatform = platform
     , sPlatformMisc = PlatformMisc
       { platformMisc_targetPlatformString = targetPlatformString
-      , platformMisc_integerLibrary = integerLibrary
-      , platformMisc_integerLibraryType = integerLibraryType
       , platformMisc_ghcWithInterpreter = ghcWithInterpreter
       , platformMisc_ghcWithNativeCodeGen = ghcWithNativeCodeGen
       , platformMisc_ghcWithSMP = ghcWithSMP
       , platformMisc_ghcRTSWays = ghcRTSWays
-      , platformMisc_tablesNextToCode = tablesNextToCode
       , platformMisc_libFFI = useLibFFI
       , platformMisc_ghcThreaded = ghcThreaded
       , platformMisc_ghcDebugged = ghcDebugged

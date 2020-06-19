@@ -197,7 +197,7 @@ module GHC (
         -- ** Data constructors
         DataCon,
         dataConType, dataConTyCon, dataConFieldLabels,
-        dataConIsInfix, isVanillaDataCon, dataConUserType,
+        dataConIsInfix, isVanillaDataCon, dataConWrapperType,
         dataConSrcBangs,
         StrictnessMark(..), isMarkedStrict,
 
@@ -545,7 +545,7 @@ checkBrokenTablesNextToCode' :: MonadIO m => DynFlags -> m Bool
 checkBrokenTablesNextToCode' dflags
   | not (isARM arch)                 = return False
   | WayDyn `S.notMember` ways dflags = return False
-  | not (tablesNextToCode dflags)    = return False
+  | not tablesNextToCode             = return False
   | otherwise                        = do
     linkerInfo <- liftIO $ getLinkerInfo dflags
     case linkerInfo of
@@ -553,6 +553,7 @@ checkBrokenTablesNextToCode' dflags
       _        -> return False
   where platform = targetPlatform dflags
         arch = platformArch platform
+        tablesNextToCode = platformTablesNextToCode platform
 
 
 -- %************************************************************************
