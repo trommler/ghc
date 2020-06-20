@@ -96,7 +96,6 @@ stages:
     BUILD_FLAVOUR: "validate"
   artifacts:
     when: always
-    expire-in: 2 week
 
 master-powerpc64le-linux:
   <<: *nightly
