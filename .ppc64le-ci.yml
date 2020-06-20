@@ -91,13 +91,15 @@ stages:
   extends: .validate
   tags:
     - ppc64le-linux
+    -ghc
   allow_failure: false
   variables:
     BUILD_FLAVOUR: "validate"
   artifacts:
     when: always
+    expire_in: 2 week
 
 master-powerpc64le-linux:
-  <<: *nightly
+  <<: *only-default
   extends: .build-powerpc64le-linux
   stage: full-build
