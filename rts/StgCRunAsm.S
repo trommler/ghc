@@ -7,6 +7,33 @@
 
 #if defined(powerpc64le_HOST_ARCH)
 # if defined(linux_HOST_OS)
+/* 64-bit PowerPC ELF V2 ABI Revision 1.4
+ *
+ * Stack frame organization (see Figure 2.18, ELF V2 ABI Revision 1.4, p 31)
+ *
+ * +-> Back Chain (points to the prevoius stack frame)
+ * |   Floating point register save area (f14-f31)
+ * |   General register save area (r14-r31)
+ * |   ... unused (optional) save areas (size 0)
+ * |   Local variable space
+ * |   Parameter save area (8 doublewords)
+ * |   ... stack header (TOC, LR, CR)
+ * +-- Back chain           <---- SP (r1)
+ *
+ * We save all callee-saves general purpose registers (r14-r31, _savegpr1_14)
+ * and all callee-saves floating point registers (f14-31, _savefpr14) and
+ * the return address of the caller (LR), which is saved in the caller's
+ * stack frame as required by the ABI. We only modify the CR0 and CR1 fields
+ * of the condition register and those are caller-saves, so we don't save CR.
+ *
+ * StgReturn restores all saved registers from their respective locations
+ * on the stack before returning to the caller.
+ *
+ * There is no need to save the TOC register (r2) because we will return
+ * through StgReturn. All calls to StgReturn will be to the global entry
+ * point and we compute the TOC from the entry address of StgReturn, which
+ * is required to be in r12 by the ABI.
+ */
 # define STACK_FRAME_SIZE (RESERVED_C_STACK_BYTES+288+15) & ~15
 	.file	"StgCRun.c"
 	.abiversion 2

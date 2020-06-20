@@ -732,19 +732,25 @@ StgRunIsImplementedInAssembler(void)
  * +-> Back Chain (points to the prevoius stack frame)
  * |   Floating point register save area (f14-f31)
  * |   General register save area (r14-r31)
- * |   ... ununsed save areas (size 0)
+ * |   ... unused save areas (size 0)
  * |   Local variable space
  * |   Parameter save area
  * |   ... stack header (TOC, link editor, compiler, LR, CR)
  * +-- Back chain           <---- SP (r1)
  *
- * We save all callee-saves general purpose registers (r14-r31) and
- * all callee-saves floating point registers (f14-31) and the return
- * address of the caller (LR).
+ * We save all callee-saves general purpose registers (r14-r31, _savegpr1_14)
+ * and all callee-saves floating point registers (f14-31, _savefpr14) and
+ * the return address of the caller (LR), which is saved in the caller's
+ * stack frame as required by the ABI. We only modify the CR0 and CR1 fields
+ * of the condition register and those are caller-saves, so we don't save CR.
+ *
+ * StgReturn restores all saved registers from their respective locations
+ * on the stack before returning to the caller.
+ *
  * There is no need to save the TOC register (r2) because we will return
  * through StgReturn and the calling convention requires that we load
  * the TOC pointer from the function descriptor upon a call to StgReturn.
- * That TOC ponter is the same as the TOC pointer in StgRun.
+ * That TOC pointer is the same as the TOC pointer in StgRun.
  */
 static void GNUC3_ATTRIBUTE(used)
 StgRunIsImplementedInAssembler(void)
