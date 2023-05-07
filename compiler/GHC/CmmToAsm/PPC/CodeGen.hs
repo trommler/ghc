@@ -1216,7 +1216,7 @@ genCCall (PrimTarget (MO_Prefetch_Data _)) _ _
  = return $ nilOL
 
 genCCall (PrimTarget (MO_AtomicRMW width amop)) [dst] [addr, n]
- = do let fmt      = intFormat width
+ = do let fmt      = intFormat (max width W32)
           reg_dst  = getLocalRegReg dst
       (instr, n_code) <- case amop of
             AMO_Add  -> getSomeRegOrImm ADD True reg_dst
@@ -1242,8 +1242,9 @@ genCCall (PrimTarget (MO_AtomicRMW width amop)) [dst] [addr, n]
 
                      , NEWBLOCK lbl_retry
                      , LDR fmt reg_dst addr_reg
-                     , instr
-                     , STC fmt reg_dst addr_reg
+                     ]
+        `appOL` unitOL instr
+        `appOL` toOL [ STC fmt reg_dst addr_reg
                      , BCC NE lbl_retry (Just False)
                      , BCC ALWAYS lbl_done Nothing
 
