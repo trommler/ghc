@@ -86,7 +86,9 @@ module GHC.Driver.DynFlags (
         isAvx512pfEnabled,
         isFmaEnabled,
         isBmiEnabled,
-        isBmi2Enabled
+        isBmi2Enabled,
+
+        isAltivecEnabled
 ) where
 
 import GHC.Prelude
@@ -454,6 +456,7 @@ data DynFlags = DynFlags {
   avx512f               :: Bool, -- Enable AVX-512 instructions.
   avx512pf              :: Bool, -- Enable AVX-512 PreFetch Instructions.
   fma                   :: Bool, -- ^ Enable FMA instructions.
+  altivec               :: Bool, -- ^ Enable Altivec SIMD on POWER/PowerPC
 
   -- Constants used to control the amount of optimization done.
 
@@ -737,6 +740,7 @@ defaultDynFlags mySettings =
         avx512pf = False,
         -- Use FMA by default on AArch64
         fma = (platformArch . sTargetPlatform $ mySettings) == ArchAArch64,
+        altivec = False,
 
         maxInlineAllocSize = 128,
         maxInlineMemcpyInsns = 32,
@@ -1641,3 +1645,9 @@ isBmi2Enabled dflags = case platformArch (targetPlatform dflags) of
     ArchX86_64 -> bmiVersion dflags >= Just BMI2
     ArchX86    -> bmiVersion dflags >= Just BMI2
     _          -> False
+
+-- -----------------------------------------------------------------------------
+-- Altivec/VMX
+
+isAltivecEnabled :: DynFlags -> Bool
+isAltivecEnabled dflags = altivec dflags

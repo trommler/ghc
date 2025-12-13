@@ -2609,6 +2609,7 @@ checkVecCompatibility cfg vcat l w =
   case stgToCmmVecInstrsErr cfg of
     Nothing | isX86 -> checkX86 vecWidth vcat l w
             | platformArch platform == ArchAArch64 -> checkAArch64 vecWidth
+            | isPPC $ platformArch platform -> checkPPC vecWidth w
             | otherwise -> sorry "SIMD vector instructions are not supported on this architecture."
     Just err -> sorry err  -- incompatible backend, do panic
   where
@@ -2641,6 +2642,12 @@ checkVecCompatibility cfg vcat l w =
     checkAArch64 W256 = sorry $ "256-bit wide SIMD vector instructions are not supported."
     checkAArch64 W512 = sorry $ "512-bit wide SIMD vector instructions are not supported."
     checkAArch64 _ = return ()
+
+    checkPPC :: Width -> Width -> FCode ()
+    checkPPC W256 _   = sorry $ "No 256-bit SIMD vector instructions on PPC."
+    checkPPC W512 _   = sorry $ "No 512-bit SIMD vector instructions on PPC."
+    checkPPC _    W64 = sorry $ "No doubles in SIMD vector instructions on PPC."
+    checkPPC _    _   = return ()
 
     vecWidth = typeWidth (vecCmmType vcat l w)
 

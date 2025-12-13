@@ -1023,6 +1023,9 @@ llvmOptions llvm_config llvm_version dflags =
               ++ ["+bmi"     | isBmiEnabled dflags      ]
               ++ ["+bmi2"    | isBmi2Enabled dflags     ]
 
+              -- Altivec/VMX for POWER/PowerPC
+              ++ ["+altivec" | isAltivecEnabled dflags  ]
+
         abi :: String
         abi = case platformArch (targetPlatform dflags) of
                 ArchRISCV64 -> "lp64d"
