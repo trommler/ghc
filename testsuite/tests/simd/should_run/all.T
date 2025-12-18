@@ -2,13 +2,13 @@ setTestOpts(
   # Currently, the only GHC backends to support SIMD are:
   #   - the X86 NCG
   #   - LLVM (any architecture)
-  [ unless(arch('x86_64'), only_ways(llvm_ways))
+  [ unless(arch('x86_64') or arch('powerpc64'), only_ways(llvm_ways))
 
   # Architectures which support at least 128 bit wide SIMD vectors:
   #  - X86 with SSE2
   #  - AArch64 (which includes NEON)
   #  - PowerPC with AltiVec (not currently supported)
-  , unless(arch('aarch64') or have_cpu_feature('sse2'), skip)
+  , unless(arch('aarch64') or have_cpu_feature('sse2') or arch('powerpc64'), skip)
   , when(unregisterised(), skip)
   , when(arch('wasm32'), skip)
   , js_skip
@@ -66,6 +66,7 @@ setTestOpts(
   , when(have_cpu_feature('avx'), extra_hc_opts('-mavx'))
   , when(have_cpu_feature('avx2'), extra_hc_opts('-mavx2'))
   , when(have_cpu_feature('avx512f'), extra_hc_opts('-mavx512f'))
+  , when(arch('powerpc64'), extra_hc_opts('-maltivec'))
   ])
 
 test('simd000', [], compile_and_run, [''])
