@@ -218,7 +218,9 @@ pprFormat x
                 II64 -> text "d"
                 FF32 -> text "fs"
                 FF64 -> text "fd"
-                VecFormat {} -> panic "PPC pprFormat: VecFormat"
+                VecFormat {}
+                  | formatToWidth x == W128 -> text "v"
+                  | otherwise -> panic "PPC pprFormat: VecFormat"
 
 pprCond :: IsLine doc => Cond -> doc
 pprCond c
@@ -383,7 +385,9 @@ pprInstr platform instr = case instr of
                II64 -> text "d"
                FF32 -> text "fs"
                FF64 -> text "fd"
-               VecFormat {} -> panic "PPC pprInstr: VecFormat"
+               VecFormat {}
+                 | formatToWidth fmt == W128 -> text "v"
+                 | otherwise -> panic "PPC pprInstr: VecFormat"
                ),
            case addr of AddrRegImm _ _ -> empty
                         AddrRegReg _ _ -> char 'x',
