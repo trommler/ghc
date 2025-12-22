@@ -7,7 +7,7 @@ setTestOpts(
   # Architectures which support at least 128 bit wide SIMD vectors:
   #  - X86 with SSE2
   #  - AArch64 (which includes NEON)
-  #  - PowerPC with AltiVec (not currently supported)
+  #  - PowerPC with AltiVec
   , unless(arch('aarch64') or have_cpu_feature('sse2') or arch('powerpc64'), skip)
   , when(unregisterised(), skip)
   , when(arch('wasm32'), skip)

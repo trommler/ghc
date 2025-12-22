@@ -166,16 +166,18 @@ stmtToInstrs stmt = do
     CmmAssign reg src
       | isFloatType ty -> assignReg_FltCode format reg src
       | target32Bit platform &&
-        isWord64 ty    -> assignReg_I64Code      reg src
-      | otherwise      -> assignReg_IntCode format reg src
+        isWord64 ty    -> assignReg_I64Code        reg src
+      | isBitsType ty  -> assignReg_IntCode format reg src
+      | otherwise      -> assignReg_VecCode format reg src
         where ty = cmmRegType reg
               format = cmmTypeFormat ty
 
     CmmStore addr src _alignment
       | isFloatType ty -> assignMem_FltCode format addr src
-      | target32Bit platform &&
-        isWord64 ty    -> assignMem_I64Code      addr src
-      | otherwise      -> assignMem_IntCode format addr src
+      | target32Bit platform
+      , isWord64 ty    -> assignMem_I64Code        addr src
+      | isBitsType ty  -> assignMem_IntCode format addr src
+      | otherwise      -> assignMem_VecCode format addr src
         where ty = cmmExprType platform src
               format = cmmTypeFormat ty
 
@@ -1103,6 +1105,9 @@ assignReg_IntCode :: Format -> CmmReg  -> CmmExpr -> NatM InstrBlock
 assignMem_FltCode :: Format -> CmmExpr -> CmmExpr -> NatM InstrBlock
 assignReg_FltCode :: Format -> CmmReg  -> CmmExpr -> NatM InstrBlock
 
+assignMem_VecCode :: Format -> CmmExpr -> CmmExpr -> NatM InstrBlock
+assignReg_VecCode :: Format -> CmmReg  -> CmmExpr -> NatM InstrBlock
+
 assignMem_IntCode pk addr src = do
     (srcReg, code) <- getSomeReg src
     Amode dstAddr addr_code <- case pk of
@@ -1125,6 +1130,8 @@ assignReg_IntCode _ reg src
 -- Easy, isn't it?
 assignMem_FltCode = assignMem_IntCode
 assignReg_FltCode = assignReg_IntCode
+assignMem_VecCode = assignMem_IntCode
+assignReg_VecCode = assignReg_IntCode
 
 
 
