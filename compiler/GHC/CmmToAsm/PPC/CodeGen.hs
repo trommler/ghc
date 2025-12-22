@@ -657,7 +657,7 @@ getRegister' _ _ (CmmMachOp mop [x, y]) -- dyadic PrimOps
       MO_S_Shr rep -> srCode rep True SRA x y
       MO_U_Shr rep -> srCode rep False SR x y
 
-      MO_V_Extract {} -> vectorsNeedLlvm
+      MO_V_Extract l w -> panic "getRegister: Vector Extract"
       MO_V_Add {} -> vectorsNeedLlvm
       MO_V_Sub {} -> vectorsNeedLlvm
       MO_V_Mul {} -> vectorsNeedLlvm
@@ -735,7 +735,7 @@ getRegister' _ _ (CmmMachOp mop [x, y, z]) -- ternary PrimOps
         | otherwise
         -> vectorsNeedLlvm
 
-      MO_V_Insert {} -> vectorsNeedLlvm
+      MO_V_Insert l w -> panic "getRegister: vector insert"
       MO_VF_Insert {} -> vectorsNeedLlvm
 
       _ -> panic "PPC.CodeGen.getRegister: no match"
