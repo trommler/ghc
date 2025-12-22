@@ -1714,6 +1714,7 @@ dynamic_flags_deps = [
   , make_ord_flag defGhcFlag "mavx512pf"    (noArg (\d ->
                                                          d { avx512pf = True }))
   , make_ord_flag defGhcFlag "mfma"         (noArg (\d -> d { fma = True }))
+  , make_ord_flag defGhcFlag "maltivec"     (noArg (\d -> d { altivec =True }))
 
         ------ Plugin flags ------------------------------------------------
   , make_ord_flag defGhcFlag "fplugin-opt" (hasArg addPluginModuleNameOption)
