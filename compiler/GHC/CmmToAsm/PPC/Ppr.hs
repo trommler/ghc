@@ -330,6 +330,9 @@ pprDataItem platform lit
         ppr_item FF32 _ = [text "\t.float\t" <> pprImm platform imm]
         ppr_item FF64 _ = [text "\t.double\t" <> pprImm platform imm]
 
+        ppr_item (VecFormat _ scalar) (CmmVec lits)
+           = concatMap (ppr_item $ scalarFormatFormat scalar) lits
+
         ppr_item _ _
                 = panic "PPC.Ppr.pprDataItem: no match"
 
